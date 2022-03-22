@@ -1,65 +1,20 @@
 use std::io::BufRead;
 
-use crate::position::*;
 use crate::token::*;
-use crate::{char_reader::*, matchers::numerical::match_numerical};
 use crate::{
     first_match,
     matchers::{identifier::match_identifier, whitespace::*},
 };
+use crate::{matchers::numerical::match_numerical, scanner::*};
 
 pub struct Lexer {
-    pub char_reader: CharReader,
-    pub position: Position,
-    pub newline: Option<NewLine>,
-    pub character: char,
+    pub scanner: Scanner,
 }
 
 impl Lexer {
     pub fn new(source: impl BufRead + 'static) -> Self {
-        let mut lexer = Self {
-            char_reader: CharReader::new(source),
-            position: Position::default(),
-            newline: None,
-            character: '\0',
-        };
-        lexer.next_char();
-        lexer
-    }
-
-    pub fn next_char(&mut self) {
-        self.position.next_char();
-        match self.char_reader.next() {
-            Some(c) => {
-                self.character = c;
-            }
-            None => {
-                self.character = '\x03';
-            }
-        }
-    }
-
-    pub fn new_token(&self, token: TokenType) -> Option<Token> {
-        Some(Token {
-            token_type: token,
-            byte: self.char_reader.get_byte(),
-            position: self.position,
-        })
-    }
-
-    pub fn next_line(&mut self, newline: NewLine) -> Option<Token> {
-        if self.newline.is_none() {
-            self.newline = Some(newline);
-            self.position.next_line();
-            None
-        } else if self.newline == Some(newline) {
-            self.position.next_line();
-            None
-        } else {
-            self.new_token(TokenType::Error(format!(
-                "{:?} line ending used in file with {:?} line endings",
-                newline, self.newline,
-            )))
+        Self {
+            scanner: Scanner::new(source),
         }
     }
 }
@@ -69,7 +24,7 @@ impl Iterator for Lexer {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(token) = first_match!(
-            self,
+            &mut self.scanner,
             match_whitespaces,
             match_etx,
             match_numerical,
@@ -80,12 +35,12 @@ impl Iterator for Lexer {
                 _ => Some(token),
             }
         } else {
-            let invalid_char = self.character;
-            self.next_char();
-            self.new_token(TokenType::Error(format!(
+            let invalid_char = self.scanner.curr();
+            self.scanner.next();
+            Some(Token::new(TokenType::Error(format!(
                 "Invalid character '{}'",
                 invalid_char,
-            )))
+            )), self.scanner.pos(), self.scanner.pos()))
         }
     }
 }

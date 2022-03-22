@@ -1,58 +1,66 @@
 use crate::{
-    lexer::Lexer,
+    scanner::Scanner,
     token::{Token, TokenType},
 };
 
-pub fn match_numerical(lexer: &mut Lexer) -> Option<Token> {
-    if lexer.character.is_ascii_digit() {
-        let mut integer_part: i64 = lexer.character as i64 - '0' as i64;
-        if lexer.character != '0' {
-            lexer.next_char();
+pub fn match_numerical(scanner: &mut Scanner) -> Option<Token> {
+    if scanner.curr().is_ascii_digit() {
+        let mut integer_part: i64 = scanner.curr() as i64 - '0' as i64;
+        if scanner.curr() != '0' {
+            scanner.next();
             loop {
-                if lexer.character.is_ascii_digit() {
+                if scanner.curr().is_ascii_digit() {
                     integer_part = integer_part.checked_mul(10).expect("Int too big D:");
-                    integer_part += lexer.character as i64 - '0' as i64;
-                    lexer.next_char();
-                } else if lexer.character == '_' {
-                    lexer.next_char();
+                    integer_part += scanner.curr() as i64 - '0' as i64;
+                    scanner.next();
+                } else if scanner.curr() == '_' {
+                    scanner.next();
                 } else {
                     break;
                 }
             }
         } else {
-            lexer.next_char();
+            scanner.next();
         }
-        if let Some(token) = match_float(lexer, integer_part) {
+        if let Some(token) = match_float(scanner, integer_part) {
             Some(token)
         } else {
-            lexer.new_token(TokenType::Int(integer_part))
+            Some(Token::new(
+                TokenType::Int(integer_part),
+                scanner.pos(),
+                scanner.pos(),
+            ))
         }
     } else {
         None
     }
 }
 
-pub fn match_float(lexer: &mut Lexer, integer_part: i64) -> Option<Token> {
-    if lexer.character == '.' {
-        lexer.next_char();
-        if lexer.character.is_ascii_digit() {
+pub fn match_float(scanner: &mut Scanner, integer_part: i64) -> Option<Token> {
+    if scanner.curr() == '.' {
+        scanner.next();
+        if scanner.curr().is_ascii_digit() {
             let mut digits = 1;
-            let mut decimal_part: i64 = lexer.character as i64 - '0' as i64;
-            lexer.next_char();
+            let mut decimal_part: i64 = scanner.curr() as i64 - '0' as i64;
+            scanner.next();
             loop {
-                if lexer.character.is_ascii_digit() {
+                if scanner.curr().is_ascii_digit() {
                     decimal_part = decimal_part.checked_mul(10).expect("Int too big D:");
                     digits += 1;
-                    decimal_part += lexer.character as i64 - '0' as i64;
-                    lexer.next_char();
-                } else if lexer.character == '_' {
-                    lexer.next_char();
+                    decimal_part += scanner.curr() as i64 - '0' as i64;
+                    scanner.next();
+                } else if scanner.curr() == '_' {
+                    scanner.next();
                 } else {
                     break;
                 }
             }
-            lexer.new_token(crate::token::TokenType::Float(
-                integer_part as f64 + decimal_part as f64 / 10i64.pow(digits) as f64,
+            Some(Token::new(
+                TokenType::Float(
+                    integer_part as f64 + decimal_part as f64 / 10i64.pow(digits) as f64,
+                ),
+                scanner.pos(),
+                scanner.pos(),
             ))
         } else {
             None

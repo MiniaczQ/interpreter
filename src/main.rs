@@ -2,7 +2,7 @@ use std::{fs::OpenOptions, io::BufReader};
 
 use lexer::Lexer;
 
-mod char_reader;
+mod scanner;
 mod lexer;
 mod macros;
 mod matchers;

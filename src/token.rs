@@ -19,6 +19,16 @@ pub enum TokenType {
 #[derive(Debug, Clone)]
 pub struct Token {
     pub token_type: TokenType,
-    pub byte: usize,
-    pub position: Position,
+    pub start: Position,
+    pub stop: Position,
+}
+
+impl Token {
+    pub fn new(token_type: TokenType, start: Position, stop: Position) -> Self {
+        Self {
+            token_type,
+            start,
+            stop,
+        }
+    }
 }

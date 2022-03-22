@@ -2,11 +2,11 @@ use std::{fs::OpenOptions, io::BufReader};
 
 use lexer::Lexer;
 
-mod scanner;
 mod lexer;
 mod macros;
 mod matchers;
 mod position;
+mod scanner;
 mod token;
 
 fn main() {

@@ -1,10 +1,7 @@
 use std::io::BufRead;
 
 use crate::token::*;
-use crate::{
-    first_match,
-    matchers::{identifier::match_identifier},
-};
+use crate::{first_match, matchers::identifier::match_identifier};
 use crate::{matchers::numerical::match_numerical, scanner::*};
 
 pub struct Lexer {
@@ -27,14 +24,10 @@ impl Iterator for Lexer {
             self.scanner.next();
         }
         if self.scanner.curr() == '\x03' {
-            return None
+            return None;
         }
         let b = &mut TokenBuilder::new(&mut self.scanner);
-        if let Some(token) = first_match!(
-            b,
-            match_numerical,
-            match_identifier
-        ) {
+        if let Some(token) = first_match!(b, match_numerical, match_identifier) {
             Some(token)
         } else {
             let invalid_char = b.curr();

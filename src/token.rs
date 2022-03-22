@@ -2,14 +2,12 @@ use crate::position::Position;
 
 #[derive(Debug, Clone)]
 pub enum TokenType {
-    OpPlus,
-    OpMinus,
+    //OpPlus,
+    //OpMinus,
 
-    Comment,
-
+    //Comment,
     Identifier(String),
-    String(String),
-
+    //String(String),
     Float(f64),
     Int(i64),
 

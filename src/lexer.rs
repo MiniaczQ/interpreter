@@ -52,16 +52,14 @@ impl Lexer {
             self.newline = Some(newline);
             self.position.next_line();
             None
+        } else if self.newline == Some(newline) {
+            self.position.next_line();
+            None
         } else {
-            if self.newline == Some(newline) {
-                self.position.next_line();
-                None
-            } else {
-                self.new_token(TokenType::Error(format!(
-                    "{:?} line ending used in file with {:?} line endings",
-                    newline, self.newline,
-                )))
-            }
+            self.new_token(TokenType::Error(format!(
+                "{:?} line ending used in file with {:?} line endings",
+                newline, self.newline,
+            )))
         }
     }
 }
@@ -78,7 +76,7 @@ impl Iterator for Lexer {
             match_identifier
         ) {
             match token.token_type {
-                TokenType::EndOfText => return None,
+                TokenType::EndOfText => None,
                 _ => Some(token),
             }
         } else {

@@ -5,10 +5,10 @@ use crate::{
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum NewLine {
-    CR,
-    LF,
-    CRLF,
-    LFCR,
+    Cr,
+    Lf,
+    Crlf,
+    Lfcr,
 }
 
 pub fn match_newline(lexer: &mut Lexer) -> Option<NewLine> {
@@ -18,9 +18,9 @@ pub fn match_newline(lexer: &mut Lexer) -> Option<NewLine> {
             match lexer.character {
                 '\r' => {
                     lexer.next_char();
-                    Some(NewLine::LFCR)
+                    Some(NewLine::Lfcr)
                 }
-                _ => Some(NewLine::LF),
+                _ => Some(NewLine::Lf),
             }
         }
         '\r' => {
@@ -28,9 +28,9 @@ pub fn match_newline(lexer: &mut Lexer) -> Option<NewLine> {
             match lexer.character {
                 '\n' => {
                     lexer.next_char();
-                    Some(NewLine::CRLF)
+                    Some(NewLine::Crlf)
                 }
-                _ => Some(NewLine::CR),
+                _ => Some(NewLine::Cr),
             }
         }
         _ => None,

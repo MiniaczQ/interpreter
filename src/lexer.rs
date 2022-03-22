@@ -1,9 +1,13 @@
 use std::io::BufRead;
 
-use crate::matchers::{identifier::match_identifier, whitespace::*};
 use crate::position::*;
 use crate::token::*;
 use crate::{char_reader::*, matchers::numerical::match_numerical};
+use crate::{
+    first_match,
+    matchers::{identifier::match_identifier, whitespace::*},
+    try_return,
+};
 
 pub struct Lexer {
     pub char_reader: CharReader,
@@ -67,24 +71,25 @@ impl Iterator for Lexer {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(token) = match_whitespaces(self) {
-            return Some(token);
-        };
-        if let Some(_token) = match_etx(self) {
-            return None;
+        if let Some(token) = first_match!(
+            self,
+            match_whitespaces,
+            match_etx,
+            match_numerical,
+            match_identifier
+        ) {
+            match token.token_type {
+                TokenType::EndOfText => {return None},
+                _ => Some(token)
+            }
+        } else {
+            let invalid_char = self.character;
+            self.next_char();
+            self.new_token(TokenType::Error(format!(
+                "Invalid character '{}'",
+                invalid_char,
+            )))
         }
-        if let Some(token) = match_numerical(self) {
-            return Some(token);
-        }
-        if let Some(token) = match_identifier(self) {
-            return Some(token);
-        }
-        let invalid_char = self.character;
-        self.next_char();
-        self.new_token(TokenType::Error(format!(
-            "Invalid character '{}'",
-            invalid_char,
-        )))
     }
 }
 

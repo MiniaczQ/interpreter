@@ -4,6 +4,7 @@ use lexer::Lexer;
 
 mod char_reader;
 mod lexer;
+mod macros;
 mod matchers;
 mod position;
 mod token;

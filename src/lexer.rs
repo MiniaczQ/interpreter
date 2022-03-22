@@ -3,7 +3,7 @@ use std::io::BufRead;
 use crate::token::*;
 use crate::{
     first_match,
-    matchers::{identifier::match_identifier, whitespace::*},
+    matchers::{identifier::match_identifier},
 };
 use crate::{matchers::numerical::match_numerical, scanner::*};
 
@@ -23,24 +23,26 @@ impl Iterator for Lexer {
     type Item = Token;
 
     fn next(&mut self) -> Option<Self::Item> {
+        while self.scanner.curr().is_whitespace() {
+            self.scanner.next();
+        }
+        if self.scanner.curr() == '\x03' {
+            return None
+        }
+        let b = &mut TokenBuilder::new(&mut self.scanner);
         if let Some(token) = first_match!(
-            &mut self.scanner,
-            match_whitespaces,
-            match_etx,
+            b,
             match_numerical,
             match_identifier
         ) {
-            match token.token_type {
-                TokenType::EndOfText => None,
-                _ => Some(token),
-            }
+            Some(token)
         } else {
-            let invalid_char = self.scanner.curr();
-            self.scanner.next();
-            Some(Token::new(TokenType::Error(format!(
+            let invalid_char = b.curr();
+            b.next();
+            Some(b.bake(TokenType::Error(format!(
                 "Invalid character '{}'",
                 invalid_char,
-            )), self.scanner.pos(), self.scanner.pos()))
+            ))))
         }
     }
 }

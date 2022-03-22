@@ -1,4 +1,4 @@
-use crate::position::Position;
+use crate::{position::Position, scanner::Scanner};
 
 #[derive(Debug, Clone)]
 pub enum TokenType {
@@ -11,8 +11,6 @@ pub enum TokenType {
     Float(f64),
     Int(i64),
 
-    EndOfText,
-
     Error(String),
 }
 
@@ -23,12 +21,30 @@ pub struct Token {
     pub stop: Position,
 }
 
-impl Token {
-    pub fn new(token_type: TokenType, start: Position, stop: Position) -> Self {
-        Self {
+pub struct TokenBuilder<'a> {
+    scanner: &'a mut Scanner,
+    start: Position,
+}
+
+impl<'a> TokenBuilder<'a> {
+    pub fn new(scanner: &'a mut Scanner) -> Self {
+        let start = (&*scanner).prev_pos();
+        Self { scanner, start }
+    }
+
+    pub fn next(&mut self) {
+        self.scanner.next()
+    }
+
+    pub fn curr(&self) -> char {
+        self.scanner.curr()
+    }
+
+    pub fn bake(&self, token_type: TokenType) -> Token {
+        Token {
             token_type,
-            start,
-            stop,
+            start: self.start,
+            stop: self.scanner.prev_pos(),
         }
     }
 }

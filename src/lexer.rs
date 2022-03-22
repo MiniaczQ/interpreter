@@ -6,7 +6,6 @@ use crate::{char_reader::*, matchers::numerical::match_numerical};
 use crate::{
     first_match,
     matchers::{identifier::match_identifier, whitespace::*},
-    try_return,
 };
 
 pub struct Lexer {
@@ -79,8 +78,8 @@ impl Iterator for Lexer {
             match_identifier
         ) {
             match token.token_type {
-                TokenType::EndOfText => {return None},
-                _ => Some(token)
+                TokenType::EndOfText => return None,
+                _ => Some(token),
             }
         } else {
             let invalid_char = self.character;

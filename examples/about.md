@@ -5,7 +5,8 @@ Język będzie służył do operacji na tablicach.
  - Silnie typowany
  - Statycznie typowany
  - Zmienne są mutowalne
- - Zmienne to referencje
+ - Zmienne to (mutowalne) referencje
+ - Jednowątkowy, synchroniczny
  - Zmienne widoczne tylko w blokach kodu i ich zagnieżdżeniach
  - Prawie wszystko jest wyrażeniem
 
@@ -64,6 +65,25 @@ Na przykład:
 let y: int = x = 10;
 ```
 to poprawne wyrażenie.
+
+### Wyrażenie warunkowe
+W przypadku pary `if` `else` przyjmuje wartość bloku gałęzi, który został wykonany.
+```
+let x: int = if y < 3 {
+    1
+} else {
+    20
+};
+```
+W przypadku samego `if` ma typ `none`.
+```
+if y < 5 {
+    foo();
+};
+```
+
+### Operatory
+Wszystkie operacje arytmetyczne i logiczne 
 
 ## Operacje
 Bazuje na ideii `list comperhension` z języka Python,

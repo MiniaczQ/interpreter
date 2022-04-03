@@ -10,7 +10,7 @@ fn range(max: int) -> int[] {
 
     while index < max {
         index = index + 1;
-        list.push(i);
+        append(list, i);
     }
 
     return list;
@@ -21,7 +21,7 @@ fn filter_positive(in_list: float[]) -> float[] {
 
     for x in in_list {
         if x > 0.0 {
-            out_list.push(x);
+            append(out_list, x);
         }
     }
 
@@ -37,9 +37,9 @@ fn main(argc: int, argv: string[]) {
 
     let my_list: int[] = [x if x % 2 == 0 else 1 + x * 2 for x in range(5)];
 
-    print(my_list.to_string());     // [0, 3, 2, 7, 4]
+    print(my_list);     // [0, 3, 2, 7, 4]
 
     let new_list = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0]);
 
-    print(new_list.count().to_string());
+    print(len(new_list));
 }

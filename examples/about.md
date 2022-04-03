@@ -1,29 +1,82 @@
-# Idea języka
+# Język
 Język będzie służył do operacji na tablicach.
-Zawierać będzie 4 typy podstawowe: bool, int, float, string
-oraz ich tablicowe warianty: bool[], int[], float[], string[]
-Bazuje na ideii `list comperhension` z języka Python.
 
-# Założenia TODO
-## Języka
+## Główne założenia
  - Silnie typowany
  - Statycznie typowany
- - Zmienne mutowalne
- - Jednowątkowy, synchroniczny
- - Bezstosowy
+ - Zmienne są mutowalne
+ - Zmienne to referencje
+ - Zmienne widoczne tylko w blokach kodu i ich zagnieżdżeniach
+ - Prawie wszystko jest wyrażeniem
 
-# Gramatyka
-```ebnf
-asd
-    : asd
-    | asdd
-    | sddsds
-    ;
+## Komentarze
+Jednoliniowe `// ...`
 
+i wieloliniowe `/* ... */`
+
+zostaną wykorzystane w przykładowych kawałkach kodu.
+
+## Typy
+Zawierać będzie 4 typy podstawowe: `bool`, `int`, `float`, `string`
+oraz ich tablicowe warianty: `bool[]`, `int[]`, `float[]`, `string[]`.
+
+W implementacji zaistnieje też typ `none`.
+Posłuży on do realizacji typów wyrażeń,
+których nie można przypisać do zmiennych.
+
+## Wyrażenia
+Wszystko oprócz definicji funkcji jest wyrażeniem.
+Znak `;` kończy wyrażenia.
+
+### Bloki kodu
+Przyjmują wartość ostatniego wyrażenia, np.
+```
+{
+    let x: int = bar();
+    10
+}
+```
+ma typ `int` i wartość `10` oraz może być przypisany do zmiennej.
+
+Typ wyrażenia
+```
+{
+    bar();
+}
+```
+to `none` i nie ma on wartości, czyli nie da się go przypisać do zmiennej.
+
+### Deklaracje zmiennych
+Jest wyrażeniem, które zawsze ma typ `none`, czyli nie da się go przypisać do zmiennej.
+```
+let x: int = 10;
 ```
 
+### Przypisanie do zmiennych
+Jest wyrażeniem, które przyjmuje wartość prawej strony przypisania.
+```
+x = 10
+```
+ma wartość 10.
+
+Na przykład:
+```
+let y: int = x = 10;
+```
+to poprawne wyrażenie.
+
+## Operacje
+Bazuje na ideii `list comperhension` z języka Python,
+czyli pozwala na wyrażenia w stylu `[x + 1 for x in xs]`.
+
+co oznacza, że
+`if foo() {true} else {false}`
+lub
+`{foo(); bar()}`
+może być przypisane do zmiennej.
+
 # Sposób wykonania
-Wykorzystam język Rust, edytor VSC i system Windows 10.
+Wykorzystam język Rust, edytor VSC.
 
 # Obsługiwane wejścia
 Język pozwoli na interpretacje pliku lub strumienia wejściowego w formacie utf-8.

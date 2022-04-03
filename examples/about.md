@@ -1,5 +1,7 @@
 # Idea języka
 Język będzie służył do operacji na tablicach.
+Zawierać będzie 4 typy podstawowe: bool, int, float, string
+oraz ich tablicowe warianty: bool[], int[], float[], string[]
 Bazuje na ideii `list comperhension` z języka Python.
 
 # Założenia TODO
@@ -10,16 +12,18 @@ Bazuje na ideii `list comperhension` z języka Python.
  - Jednowątkowy, synchroniczny
  - Bezstosowy
 
-# Składnia TODO
-## Deklaracja zmiennej i przypisanie wartości
-let <IDENTIFIER>: <IDENTIFIER> = <EXPRESSION>;
-<IDENTIFIER> = <EXPRESSION>;
+# Gramatyka
+```ebnf
+asd
+    : asd
+    | asdd
+    | sddsds
+    ;
 
-## Pętle
-for <IDENTIFIER> in <EXPRESSION> {<CODE_BLOCK>}
+```
 
 # Sposób wykonania
-Wykorzystam język Rust
+Wykorzystam język Rust, edytor VSC i system Windows 10.
 
 # Obsługiwane wejścia
 Język pozwoli na interpretacje pliku lub strumienia wejściowego w formacie utf-8.

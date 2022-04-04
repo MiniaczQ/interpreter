@@ -1,12 +1,12 @@
 # Tokens
 ## Dynamic (in regex)
 ```
-IDENTIFIER  = [\pL\pM_][\pL\pM\pN_]*
-COMMENT     = (\/\/.*)|(\/\*[\s\S]*?\*\/)
-STRING      = "((\\")|(\\\\)|([^"]))*?"
-FLOAT       = ([1-9][0-9]*|0)[.][0-9]+
-INTEGER     = [1-9][0-9]*|0
-BOOL        = true|false
+IDENTIFIER      = [\pL\pM_][\pL\pM\pN_]*
+COMMENT         = (\/\/.*)|(\/\*[\s\S]*?\*\/)
+CONST_STRING    = "((\\")|(\\\\)|([^"]))*?"
+CONST_FLOAT     = ([1-9][0-9]*|0)[.][0-9]+
+CONST_INTEGER   = [1-9][0-9]*|0
+CONST_BOOL      = true|false
 ```
 ## Static (in quoted strings)
 ```cpp
@@ -27,11 +27,12 @@ OP_LESSER_EQUAL     = '<='
 OP_GREATER          = '>'
 OP_GREATER_EQUAL    = '>='
 
-OP_ASSIGN           = '='
-OP_RETURN           = '->'
-OP_END              = ';'
-OP_TYPE             = ':'
-OP_SPLIT            = ','
+RANGE            = '..'
+ASSIGN           = '='
+RETURN_SIGNATURE = '->'
+EXPRESSION_END   = ';'
+TYPE_SIGNATURE   = ':'
+SPLIT            = ','
 
 TYPE_INT            = 'int'
 TYPE_FLOAT          = 'float'
@@ -65,15 +66,15 @@ function_definitions
     ;
 
 function_definition
-    = KW_FN, OPEN_BRACKET, parameters, CLOSE_BRACKET, [OP_RETURN, type], code_block
+    = KW_FN, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
     ;
 
 parameters
-    = [parameter, {OP_SPLIT, parameter}]
+    = [parameter, {SPLIT, parameter}]
     ;
 
 parameter
-    = identifier, OP_TYPE, type
+    = identifier, TYPE_SIGNATURE, type
     ;
 
 type
@@ -87,7 +88,9 @@ primitive_type
     | TYPE_BOOL
     ;
 ```
-## Flow control and expressions
+
+## Expressions
+### Code block
 ```ebnf
 code_block
     = OPEN_CODEBLOCK, statements, [expression], CLOSE_CODEBLOCK
@@ -98,50 +101,66 @@ statements
     ;
 
 statement
-    = expression, OP_END
-    | if_statement
-    | loop_statement,
-    | return_statement,
+    = expression, END_EXPRESSION
     ;
+```
 
-if_statement
+### If / if else
+```ebnf
+if_expression
     = KW_IF, expression, code_block, [KW_ELSE, code_block]
     ;
+```
 
-loop_statement
-    = while_statement
-    | for_statement
-    ;
-
-while_statement
+### Loops
+```ebnf
+while_expression
     = KW_WHILE, expression, code_block
     ;
 
-for_statement
+for_expression
     = KW_FOR, identifier, KW_IN, expression, code_block
     ;
+```
 
-return_statement
+### Variable declaration
+variable_declaration
+    = KW_LET, IDENTIFIER, ASSIGN, 
+    ;
+
+### Return
+```ebnf
+return_expression
     = KW_RETURN, expression
+    ;
+```
+
+### Function call
+```ebnf
+function_call
+    = IDENTIFIER, OPEN_BRACKET, function_arguments, CLOSE_BRACKET
+    ;
+
+function_arguments
+    = [expression, {SPLIT, expression}]
+    ;
+```
+
+### Constants
+```ebnf
+primitive_constant
+    = CONST_FLOAT
+    | CONST_INTEGER
+    | CONST_BOOL
+    ;
+
+list_constant
+    = OPEN_LIST, [primitive_constant, {SPLIT, primitive_constant}], CLOSE_LIST
     ;
 
 constant
-    = STRING
-    | FLOAT
-    | INTEGER
-    | BOOL
+    = primitive_constant
+    | list_constant
+    | CONST_STRING
     ;
-
-```
-## Function calls
-```ebnf
-
-```
-## Variable definition and assignment
-```ebnf
-
-```
-## Arithmetical and logical operators
-```ebnf
-
 ```

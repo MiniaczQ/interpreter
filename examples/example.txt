@@ -10,6 +10,8 @@ fn range(max: int) -> int[] {
     }
 }
 
+
+
 /*
 Returns a list with only positive values.
 */
@@ -25,7 +27,11 @@ fn filter_positive(in_list: float[]) -> float[] {
     return out_list;
 }
 
-// Entry point
+
+
+/*
+Entry point
+*/
 fn main() {
     print("Hello world!");  // Hello world!
 
@@ -39,7 +45,7 @@ fn main() {
         }
     };
 
-    print(my_list[0::2]);         // [0, 3]
+    print(my_list[0::2]);   // [0, 3]
 
 
 

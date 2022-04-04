@@ -91,12 +91,16 @@ oddzielony operatorem `:`.
 
 Zmienna zawsze musi zostać zainicjowana,
 więc od razu następuje przypisanie wartości.
+```
+let x: int = 10;
+```
 
 Deklaracja jest wyrażeniem, które zawsze ma typ `none`,
 czyli nie da się go przypisać do zmiennej.
 ```
-let x: int = 10;
+let y: int = let x: int = 10
 ```
+nie jest poprawne
 
 ### Przypisanie do zmiennych
 Zaczyna się od nazwy zmiennej,
@@ -291,49 +295,48 @@ W przypadku funkcji, które nie zwracają wartości (zwracają typ `none`)
 można zastosować samo słowo kluczowe `return`.
 
 ## Zgodność typów
-Typy muszą być zgodne w:
+Typy muszą być zgodne w m.in.:
  - operacjach arytmetycznych, logicznych, przypisania
- - gałęziach wykonania warunkowego `if` `else`
- - wartości bloku kodu ciała funkcji,  
-   instrukcjach `return`
+ - wartości bloku kodu ciała funkcji i instrukcjach `return`
  - wywołaniach funkcji
  - przypisaniu wartości do zmiennej
+ - wyrażeniach pętli
+ - wyrażeniach warunkowych
 
 ## Kolejność operatorów
 Nawiasy `(` `)` mogą wymusić inną kolejnośc.
 
     Priorytet       Operator/-y         Opis                    -arność     Łączność        Pozycja
 
-    10              (a, b, ...)         wywołanie funkcji       Unarny      -               suffix
-                    [a..b]              dostęp do pod-listy     Unarny      -               suffix
-                    [a]                 dostęp do indeksu       Unarny      -               suffix
+    9               (a, b, ...)         wywołanie funkcji       N-nary      -               suffix
+                    [a..b]              dostęp do pod-listy     Trinary     -               suffix
+                    [a]                 dostęp do indeksu       Binary      -               suffix
 
-    9               -                   negacja arytmetyczna    Unarny      prawostronna    prefix
+    8               -                   negacja arytmetyczna    Unarny      prawostronna    prefix
                     !                   negacja logiczna        Unarny      prawostronna    prefix
 
-    8               *                   mnożenie                Binarny     lewostronna     infix
+    7               *                   mnożenie                Binarny     lewostronna     infix
                     /                   dzielenie               Binarny     lewostronna     infix
                     %                   reszta z dzielenia      Binarny     lewostronna     infix
     
-    7               +                   dodawanie               Binarny     lewostronna     infix
+    6               +                   dodawanie               Binarny     lewostronna     infix
                     -                   odejmowanie             Binarny     lewostronna     infix
                 
-    6               ==                  równość                 Binarny     lewostronna     infix
+    5               ==                  równość                 Binarny     lewostronna     infix
                     !=                  nierówność              Binarny     lewostronna     infix
                     <                   mniejszość              Binarny     lewostronna     infix
                     <=                  mniejszość lub równość  Binarny     lewostronna     infix
                     >                   większość               Binarny     lewostronna     infix
                     >=                  większośc lub równość   Binarny     lewostronna     infix
     
-    5               &                   koniunkcja logiczna     Binarny     lewostronna     infix
+    4               &                   koniunkcja logiczna     Binarny     lewostronna     infix
 
-    4               |                   alternatywa logiczna    Binarny     lewostronna     infix
+    3               |                   alternatywa logiczna    Binarny     lewostronna     infix
 
-    3               =                   przypisanie wartości    Binarny     prawostronna    infix
-
-    2               =                   deklaracja zmiennej     Unarny      prawostronna    prefix
+    2               =                   przypisanie wartości    Binarny     prawostronna    infix
 
     1               return              wyjście z funkcji       Unarny      prawostronna    prefix
+                    let                 deklaracja zmiennej     Binarny     prawostronna    prefix/suffix
    
 ## Biblioteka standardowa
 Zaoferuje metody:
@@ -359,10 +362,24 @@ która nie przyjmuje żadnych argumentów
 i nie zwraca żadnej wartości.
 
 # Sposób wykonania
-Wykorzystam język Rust.
+Wykorzystam język Rust z paczką `utf8-chars`,
+która pozwala na czytanie pojedynczych znaków utf-8 z bufora,
+w celu realizacji skanera.
+
+Projekt będzie podzielony na kilka modułów,
+każdy będący w stanie działać niezależnie,
+co ułatwi tworzenie testów.  
+Moduły, które na pewno się znajdą to:
+ - analizator leksykalny
+ - analizator składniowy
 
 # Obsługiwane wejścia
 Język pozwoli na interpretacje pliku lub strumienia wejściowego w formacie utf-8.
+
+Obsługa wielu plików może być łatwo zaimplementowana,
+ale taka naiwna implementacja pogorszyłaby czytelność języka.  
+(funkcja `main` tylko w jednym pliku,
+nie wiadomo gdzie zdefiniowane zostały funkcje)
 
 # Uruchomienie
 Język będzie uruchamiany z wiersza poleceń.  
@@ -371,7 +388,7 @@ Uruchomienie z flagą `-f <path>` wykorzysta podany plik jako wejście.
 Uruchomienie z flagą `-i` wykorzysta strumień wejściowy procesu.
 
 # Obsługa błędów statyczna
-Błędy będą ignorowane w czasie analizy (leksykalnej, składniowej),
+Błędy będą ignorowane w czasie analizy (leksykalnej, składniowej, semantycznej),
 ale ich wystąpienie uniemożliwi wykonanie programu.
 Wiadomości o wszystkich błędach zostaną wypisane do strumienia błędów.
 

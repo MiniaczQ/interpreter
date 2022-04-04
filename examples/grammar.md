@@ -242,24 +242,20 @@ variable_assignment_expression
     ;
 ```
 
-### Variable declaration
+### Return or variable declaration
 ```ebnf
-variable_declaration_expression
-    = [KW_LET], variable_assignment_expression
+return_or_variable_declaration_expression
+    = [KW_RETURN | variable_declaration], variable_assignment_expression
     ;
-```
 
-### Return
-```ebnf
-return_expression
-    = [KW_RETURN], variable_declaration_expression
-    ;
+variable_declaration
+    = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
 ```
 
 ### Expression
 ```ebnf
 expression
-    = return_expression
+    = return_or_variable_declaration_expression
     | for_expression
     | while_expression
     | if_expression

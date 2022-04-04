@@ -39,7 +39,7 @@ fn main() {
         }
     };
 
-    print(my_list);         // [0, 3, 2, 7, 4]
+    print(my_list[0::2]);         // [0, 3]
 
 
 

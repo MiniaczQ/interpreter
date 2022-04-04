@@ -297,37 +297,41 @@ Typy muszą być zgodne w:
  - wartości bloku kodu ciała funkcji,  
    instrukcjach `return`
  - wywołaniach funkcji
+ - przypisaniu wartości do zmiennej
 
 ## Kolejność operatorów
 Nawiasy `(` `)` mogą wymusić inną kolejnośc.
 
-    Pierwszeństwo   Operator/-y         Opis                    -arność     Łączność        Pozycja
+    Priorytet       Operator/-y         Opis                    -arność     Łączność        Pozycja
 
-    9               ()                  wywołanie funkcji       Unarny      lewostronna     suffix
-                    [a..b]              dostęp do pod-listy     Unarny      lewostronna     suffix
-                    [a]                 dostęp do indeksu       Unarny      lewostronna     suffix
+    10              (a, b, ...)         wywołanie funkcji       Unarny      -               suffix
+                    [a..b]              dostęp do pod-listy     Unarny      -               suffix
+                    [a]                 dostęp do indeksu       Unarny      -               suffix
 
-    8               -                   negacja arytmetyczna    Unarny      prawostronna    prefix
+    9               -                   negacja arytmetyczna    Unarny      prawostronna    prefix
                     !                   negacja logiczna        Unarny      prawostronna    prefix
 
-    7               *                   mnożenie                Binarny     lewostronna     infix
+    8               *                   mnożenie                Binarny     lewostronna     infix
                     /                   dzielenie               Binarny     lewostronna     infix
                     %                   reszta z dzielenia      Binarny     lewostronna     infix
     
-    6               +                   dodawanie               Binarny     lewostronna     infix
+    7               +                   dodawanie               Binarny     lewostronna     infix
                     -                   odejmowanie             Binarny     lewostronna     infix
-
-    5               &                   suma logiczna           Binarny     lewostronna     infix
-
-    4               |                   alternatywa logiczna    Binarny     lewostronna     infix
                 
-    3               ==                  porównanie              Binarny     lewostronna     infix
+    6               ==                  równość                 Binarny     lewostronna     infix
+                    !=                  nierówność              Binarny     lewostronna     infix
                     <                   mniejszość              Binarny     lewostronna     infix
                     <=                  mniejszość lub równość  Binarny     lewostronna     infix
                     >                   większość               Binarny     lewostronna     infix
                     >=                  większośc lub równość   Binarny     lewostronna     infix
+    
+    5               &                   koniunkcja logiczna     Binarny     lewostronna     infix
 
-    2               =                   przypisanie             Unarny      prawostronna    prefix
+    4               |                   alternatywa logiczna    Binarny     lewostronna     infix
+
+    3               =                   przypisanie wartości    Binarny     prawostronna    infix
+
+    2               =                   deklaracja zmiennej     Unarny      prawostronna    prefix
 
     1               return              wyjście z funkcji       Unarny      prawostronna    prefix
    

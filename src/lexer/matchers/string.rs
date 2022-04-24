@@ -46,3 +46,12 @@ fn complete_string(tb: &mut LexemBuilder) -> Lexem {
         tb.pop();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate
+
+    #[test]
+    fn test_file() {
+    }
+}

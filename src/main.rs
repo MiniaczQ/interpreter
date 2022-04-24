@@ -12,24 +12,25 @@ use lexer::Lexer;
 
 mod lexer;
 mod position;
-mod scanner;
-mod token;
+mod scannable;
 
-///
+/// Source of code
 enum InputType {
     Standard,
     File(PathBuf),
 }
 
-/// Holds information about
+/// Information about execution derived from input parameters
 enum ParsedArgs {
     InstructionManual,
     Run(InputType),
     Error(String),
 }
 
+/// Instruction manual
 static MANUAL: &str = include_str!("manual.txt");
 
+/// Parses arguments
 fn parse_args() -> ParsedArgs {
     let mut args = env::args();
     args.next();
@@ -54,12 +55,14 @@ fn parse_args() -> ParsedArgs {
     }
 }
 
+/// Consumes and prints all lexems
 fn print_lexems(lexer: &mut Lexer) {
     for token in lexer {
         println!("{}", token);
     }
 }
 
+/// Entry point
 fn main() {
     match parse_args() {
         ParsedArgs::InstructionManual => println!("{MANUAL}"),

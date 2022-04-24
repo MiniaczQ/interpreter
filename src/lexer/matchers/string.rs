@@ -1,6 +1,6 @@
-use crate::token::{Token, TokenBuilder, TokenType};
+use crate::{lexer::lexem::{Lexem, LexemBuilder, LexemType}, scannable::Scannable};
 
-pub fn match_string(tb: &mut TokenBuilder) -> Option<Token> {
+pub fn match_string(tb: &mut LexemBuilder) -> Option<Lexem> {
     if tb.peek() == '"' {
         let mut content: Vec<char> = vec![];
         tb.pop();
@@ -18,7 +18,7 @@ pub fn match_string(tb: &mut TokenBuilder) -> Option<Token> {
                 '\x03' => todo!("string never closed"),
                 '"' => {
                     tb.pop();
-                    return Some(tb.bake(TokenType::String(content.into_iter().collect())));
+                    return Some(tb.bake(LexemType::String(content.into_iter().collect())));
                 }
                 _ => content.push(c),
             }

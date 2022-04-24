@@ -1,12 +1,13 @@
+mod char_scanner;
 pub mod keywords;
+pub mod lexem;
 mod macros;
 mod matchers;
 pub mod operators;
 
 use std::io::BufRead;
 
-use crate::scanner::*;
-use crate::token::*;
+use crate::scannable::Scannable;
 
 use crate::first_match;
 use matchers::{
@@ -14,20 +15,22 @@ use matchers::{
     numerical::match_numerical, operator::match_operator, string::match_string,
 };
 
+use self::{char_scanner::CharScanner, lexem::{Lexem, LexemBuilder, LexemType}};
+
 pub struct Lexer {
-    pub scanner: Scanner,
+    pub scanner: CharScanner,
 }
 
 impl Lexer {
     pub fn new(source: impl BufRead + 'static) -> Self {
         Self {
-            scanner: Scanner::new(source),
+            scanner: CharScanner::new(source),
         }
     }
 }
 
 impl Iterator for Lexer {
-    type Item = Token;
+    type Item = Lexem;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.scanner.peek().is_whitespace() {
@@ -36,9 +39,9 @@ impl Iterator for Lexer {
         if self.scanner.peek() == '\x03' {
             return None;
         }
-        let b = &mut TokenBuilder::new(&mut self.scanner);
+        let tb = &mut LexemBuilder::new(&mut self.scanner);
         if let Some(token) = first_match!(
-            b,
+            tb,
             match_numerical,
             match_identifier_or_keyword,
             match_operator,
@@ -47,9 +50,9 @@ impl Iterator for Lexer {
         ) {
             Some(token)
         } else {
-            let invalid_char = b.peek();
-            b.pop();
-            Some(b.bake(TokenType::Error(format!(
+            let invalid_char = tb.peek();
+            tb.pop();
+            Some(tb.bake(LexemType::Error(format!(
                 "Invalid character '{}'",
                 invalid_char,
             ))))

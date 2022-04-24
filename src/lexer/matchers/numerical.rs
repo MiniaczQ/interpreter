@@ -1,6 +1,6 @@
-use crate::token::{Token, TokenBuilder, TokenType};
+use crate::{lexer::lexem::{Lexem, LexemBuilder, LexemType}, scannable::Scannable};
 
-pub fn match_numerical(b: &mut TokenBuilder) -> Option<Token> {
+pub fn match_numerical(b: &mut LexemBuilder) -> Option<Lexem> {
     if b.peek().is_ascii_digit() {
         let mut integer_part: i64 = b.peek() as i64 - '0' as i64;
         if b.peek() != '0' {
@@ -22,14 +22,14 @@ pub fn match_numerical(b: &mut TokenBuilder) -> Option<Token> {
         if let Some(token) = match_float(b, integer_part) {
             Some(token)
         } else {
-            Some(b.bake(TokenType::Int(integer_part)))
+            Some(b.bake(LexemType::Int(integer_part)))
         }
     } else {
         None
     }
 }
 
-pub fn match_float(b: &mut TokenBuilder, integer_part: i64) -> Option<Token> {
+pub fn match_float(b: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
     if b.peek() == '.' {
         b.pop();
         if b.peek().is_ascii_digit() {
@@ -48,7 +48,7 @@ pub fn match_float(b: &mut TokenBuilder, integer_part: i64) -> Option<Token> {
                     break;
                 }
             }
-            Some(b.bake(TokenType::Float(
+            Some(b.bake(LexemType::Float(
                 integer_part as f64 + decimal_part as f64 / 10i64.pow(digits) as f64,
             )))
         } else {

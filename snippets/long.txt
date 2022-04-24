@@ -11,7 +11,6 @@ fn range(max: int) -> int[] {
 }
 
 
-
 /*
 Returns a list with only positive values.
 */
@@ -28,14 +27,11 @@ fn filter_positive(in_list: float[]) -> float[] {
 }
 
 
-
 /*
 Entry point
 */
 fn main() {
     print("Hello world!");  // Hello world!
-
-
 
     let my_list: int[] = for x in range(5) {
         if x % 2 == 0 {
@@ -46,8 +42,6 @@ fn main() {
     };
 
     print(my_list[0::2]);   // [0, 3]
-
-
 
     let new_list = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0, 6.0]);
 

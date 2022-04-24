@@ -15,7 +15,10 @@ use matchers::{
     numerical::match_numerical, operator::match_operator, string::match_string,
 };
 
-use self::{char_scanner::CharScanner, lexem::{Lexem, LexemBuilder, LexemType}};
+use self::{
+    char_scanner::CharScanner,
+    lexem::{Lexem, LexemBuilder, LexemType},
+};
 
 pub struct Lexer {
     pub scanner: CharScanner,
@@ -52,10 +55,10 @@ impl Iterator for Lexer {
         } else {
             let invalid_char = tb.peek();
             tb.pop();
-            Some(tb.bake(LexemType::Error(format!(
+            tb.bake(LexemType::Error(format!(
                 "Invalid character '{}'",
                 invalid_char,
-            ))))
+            )))
         }
     }
 }

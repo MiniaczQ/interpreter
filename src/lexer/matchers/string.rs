@@ -1,5 +1,9 @@
-use crate::{lexer::lexem::{Lexem, LexemBuilder, LexemType}, scannable::Scannable};
+use crate::{
+    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    scannable::Scannable,
+};
 
+/// Matches a string constant
 pub fn match_string(tb: &mut LexemBuilder) -> Option<Lexem> {
     if tb.peek() == '"' {
         let mut content: Vec<char> = vec![];
@@ -18,7 +22,7 @@ pub fn match_string(tb: &mut LexemBuilder) -> Option<Lexem> {
                 '\x03' => todo!("string never closed"),
                 '"' => {
                     tb.pop();
-                    return Some(tb.bake(LexemType::String(content.into_iter().collect())));
+                    return tb.bake(LexemType::String(content.into_iter().collect()));
                 }
                 _ => content.push(c),
             }

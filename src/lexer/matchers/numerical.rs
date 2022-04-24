@@ -1,56 +1,61 @@
-use crate::{lexer::lexem::{Lexem, LexemBuilder, LexemType}, scannable::Scannable};
+use crate::{
+    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    scannable::Scannable,
+};
 
-pub fn match_numerical(b: &mut LexemBuilder) -> Option<Lexem> {
-    if b.peek().is_ascii_digit() {
-        let mut integer_part: i64 = b.peek() as i64 - '0' as i64;
-        if b.peek() != '0' {
-            b.pop();
+/// Matches an integer or a float constant
+pub fn match_numerical(tb: &mut LexemBuilder) -> Option<Lexem> {
+    if tb.peek().is_ascii_digit() {
+        let mut integer_part: i64 = tb.peek() as i64 - '0' as i64;
+        if tb.peek() != '0' {
+            tb.pop();
             loop {
-                if b.peek().is_ascii_digit() {
+                if tb.peek().is_ascii_digit() {
                     integer_part = integer_part.checked_mul(10).expect("Int too big D:");
-                    integer_part += b.peek() as i64 - '0' as i64;
-                    b.pop();
-                } else if b.peek() == '_' {
-                    b.pop();
+                    integer_part += tb.peek() as i64 - '0' as i64;
+                    tb.pop();
+                } else if tb.peek() == '_' {
+                    tb.pop();
                 } else {
                     break;
                 }
             }
         } else {
-            b.pop();
+            tb.pop();
         }
-        if let Some(token) = match_float(b, integer_part) {
+        if let Some(token) = match_float(tb, integer_part) {
             Some(token)
         } else {
-            Some(b.bake(LexemType::Int(integer_part)))
+            tb.bake(LexemType::Int(integer_part))
         }
     } else {
         None
     }
 }
 
-pub fn match_float(b: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
-    if b.peek() == '.' {
-        b.pop();
-        if b.peek().is_ascii_digit() {
+/// Matches a float constant
+fn match_float(tb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
+    if tb.peek() == '.' {
+        tb.pop();
+        if tb.peek().is_ascii_digit() {
             let mut digits = 1;
-            let mut decimal_part: i64 = b.peek() as i64 - '0' as i64;
-            b.pop();
+            let mut decimal_part: i64 = tb.peek() as i64 - '0' as i64;
+            tb.pop();
             loop {
-                if b.peek().is_ascii_digit() {
+                if tb.peek().is_ascii_digit() {
                     decimal_part = decimal_part.checked_mul(10).expect("Too many numbers");
                     digits += 1;
-                    decimal_part += b.peek() as i64 - '0' as i64;
-                    b.pop();
-                } else if b.peek() == '_' {
-                    b.pop();
+                    decimal_part += tb.peek() as i64 - '0' as i64;
+                    tb.pop();
+                } else if tb.peek() == '_' {
+                    tb.pop();
                 } else {
                     break;
                 }
             }
-            Some(b.bake(LexemType::Float(
+            tb.bake(LexemType::Float(
                 integer_part as f64 + decimal_part as f64 / 10i64.pow(digits) as f64,
-            )))
+            ))
         } else {
             None
         }

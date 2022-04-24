@@ -1,18 +1,22 @@
 use crate::{
     lexer::keywords::Keyword,
-    lexer::lexem::{Lexem, LexemBuilder, LexemType}, scannable::Scannable,
+    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    scannable::Scannable,
 };
 
+/// Whether a character can start an identifier
 #[inline]
 fn can_begin(c: char) -> bool {
     c.is_alphabetic() | (c == '_')
 }
 
+/// Whether a character can continue an identifier
 #[inline]
 fn can_continue(c: char) -> bool {
     c.is_alphabetic() | (c == '_') | c.is_ascii_digit()
 }
 
+/// Matches an identifier or a keyword
 pub fn match_identifier_or_keyword(tb: &mut LexemBuilder) -> Option<Lexem> {
     if can_begin(tb.peek()) {
         let mut name = vec![tb.peek()];
@@ -25,29 +29,28 @@ pub fn match_identifier_or_keyword(tb: &mut LexemBuilder) -> Option<Lexem> {
         if let Some(token) = match_keyword(tb, &name) {
             Some(token)
         } else {
-            Some(tb.bake(LexemType::Identifier(name)))
+            tb.bake(LexemType::Identifier(name))
         }
     } else {
         None
     }
 }
 
+/// Matches a keyword
 fn match_keyword(tb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
     match name {
-        "int" => Some(tb.bake(LexemType::Keyword(Keyword::Int))),
-        "float" => Some(tb.bake(LexemType::Keyword(Keyword::Float))),
-        "bool" => Some(tb.bake(LexemType::Keyword(Keyword::Bool))),
-        "string" => Some(tb.bake(LexemType::Keyword(Keyword::String))),
-
-        "let" => Some(tb.bake(LexemType::Keyword(Keyword::Let))),
-        "fn" => Some(tb.bake(LexemType::Keyword(Keyword::Fn))),
-        "return" => Some(tb.bake(LexemType::Keyword(Keyword::Return))),
-        "while" => Some(tb.bake(LexemType::Keyword(Keyword::While))),
-        "for" => Some(tb.bake(LexemType::Keyword(Keyword::For))),
-        "in" => Some(tb.bake(LexemType::Keyword(Keyword::In))),
-        "if" => Some(tb.bake(LexemType::Keyword(Keyword::If))),
-        "else" => Some(tb.bake(LexemType::Keyword(Keyword::Else))),
-
+        "int" => tb.bake(LexemType::Keyword(Keyword::Int)),
+        "float" => tb.bake(LexemType::Keyword(Keyword::Float)),
+        "bool" => tb.bake(LexemType::Keyword(Keyword::Bool)),
+        "string" => tb.bake(LexemType::Keyword(Keyword::String)),
+        "let" => tb.bake(LexemType::Keyword(Keyword::Let)),
+        "fn" => tb.bake(LexemType::Keyword(Keyword::Fn)),
+        "return" => tb.bake(LexemType::Keyword(Keyword::Return)),
+        "while" => tb.bake(LexemType::Keyword(Keyword::While)),
+        "for" => tb.bake(LexemType::Keyword(Keyword::For)),
+        "in" => tb.bake(LexemType::Keyword(Keyword::In)),
+        "if" => tb.bake(LexemType::Keyword(Keyword::If)),
+        "else" => tb.bake(LexemType::Keyword(Keyword::Else)),
         _ => None,
     }
 }

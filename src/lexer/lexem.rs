@@ -55,20 +55,22 @@ impl<'a> LexemBuilder<'a> {
         Self { scanner, start }
     }
 
-    
-
-    pub fn bake(&self, token_type: LexemType) -> Lexem {
+    pub fn bake_raw(&self, token_type: LexemType) -> Lexem {
         Lexem {
             lexem_type: token_type,
             start: self.start,
             stop: self.scanner.last_pos(),
         }
     }
+
+    pub fn bake(&self, token_type: LexemType) -> Option<Lexem> {
+        Some(self.bake_raw(token_type))
+    }
 }
 
 impl<'a> Scannable<char> for LexemBuilder<'a> {
     #[inline]
-    fn pop(&mut self) {
+    fn pop(&mut self) -> bool {
         self.scanner.pop()
     }
 

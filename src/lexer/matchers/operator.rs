@@ -1,14 +1,15 @@
 use crate::{
     char_match,
     lexer::lexem::{Lexem, LexemBuilder, LexemType},
-    lexer::operators::Operator, scannable::Scannable,
+    lexer::operators::Operator,
+    scannable::Scannable,
 };
 
 type Op = Operator;
 
-#[allow(clippy::manual_map)]
+/// Matches an operator
 pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
-    if let Some(operator) = match t_b.peek() {
+    match t_b.peek() {
         '+' => char_match!(t_b, Op::Plus),
         '-' => char_match!(t_b, Op::Minus),
         '*' => char_match!(t_b, Op::Asterisk),
@@ -30,9 +31,6 @@ pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
         '%' => char_match!(t_b, Op::Modulo),
         '.' => char_match!(t_b, Op::Dot),
         _ => None,
-    } {
-        Some(t_b.bake(LexemType::Operator(operator)))
-    } else {
-        None
     }
+    .map(|operator| t_b.bake_raw(LexemType::Operator(operator)))
 }

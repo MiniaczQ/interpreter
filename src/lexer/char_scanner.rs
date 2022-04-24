@@ -73,12 +73,13 @@ impl CharScanner {
 
 impl Scannable<char> for CharScanner {
     /// Moves the scanner one character forward
-    /// 
+    ///
     /// Turns all newlines into `'\n'`
-    fn pop(&mut self) {
+    fn pop(&mut self) -> bool {
         self.prev_position = self.position;
         self.forward();
         self.normalize_newlines();
+        self.current != '\x03'
     }
 
     // Returns the current character

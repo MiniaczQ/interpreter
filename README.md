@@ -1,5 +1,5 @@
 # Interpreter
-of my own language *(to be decided)*
+of my own language.
 
 # Requirements
 - control flow
@@ -10,7 +10,7 @@ of my own language *(to be decided)*
 
 # Tasks
 - [x] Prepare repository and workflow
-- [ ] Formalize language (wip)
-- [ ] Implement lexer (wip)
-- [ ] Implement parser
-- [ ] Implement interpretor
+- [x] Formalize language
+- [x] Implement lexer
+- [ ] Implement parser (wip)
+- [ ] Implement interpreter

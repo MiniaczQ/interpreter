@@ -64,3 +64,31 @@ fn complete_single_line_comment(tb: &mut LexemBuilder) -> Lexem {
         tb.pop();
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::lexer::{
+        lexem::{Lexem, LexemType},
+        matchers::test_utils::{lexem_with, matcher_with}, operators::Operator,
+    };
+
+    use super::match_comment_or_division;
+
+    fn matcher(string: &'static str) -> Option<Lexem> {
+        matcher_with(match_operator, string)
+    }
+
+    fn comment_lexem(operator: Operator, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
+        lexem_with(LexemType::Operator(operator), start, stop)
+    }
+
+    fn division_lexem(start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
+        lexem_with(LexemType::Operator(operator), start, stop)
+    }
+
+    #[test]
+    fn all() {
+        assert_eq!(matcher("+"), lexem(Operator::Plus, (1, 1), (1, 2)));
+        todo!();
+    }
+}

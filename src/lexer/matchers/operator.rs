@@ -34,3 +34,37 @@ pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
     }
     .map(|operator| t_b.bake_raw(LexemType::Operator(operator)))
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::lexer::{
+        lexem::{Lexem, LexemType},
+        matchers::test_utils::{lexem_with, matcher_with}, operators::Operator,
+    };
+
+    use super::match_operator;
+
+    fn matcher(string: &'static str) -> Option<Lexem> {
+        matcher_with(match_operator, string)
+    }
+
+    fn lexem(operator: Operator, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
+        lexem_with(LexemType::Operator(operator), start, stop)
+    }
+
+    #[test]
+    fn all() {
+        assert_eq!(matcher("+"), lexem(Operator::Plus, (1, 1), (1, 2)));
+        todo!();
+    }
+
+    #[test]
+    fn prepended() {
+        assert_eq!(matcher("abcd +"), None);
+    }
+
+    #[test]
+    fn postpended() {
+        assert_eq!(matcher("+ abcd"), lexem(Operator::Plus, (1, 1), (1, 2)));
+    }
+}

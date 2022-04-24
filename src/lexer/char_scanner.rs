@@ -61,7 +61,6 @@ impl CharScanner {
     fn forward(&mut self) {
         self.current = self.next;
         self.next = self.next_char();
-        self.position.next_bytes(self.current.len_utf8());
         self.position.next_col();
     }
 

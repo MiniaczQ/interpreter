@@ -1,11 +1,10 @@
 use std::fmt::Display;
 
 /// Position of a token
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Position {
     row: usize,
     col: usize,
-    byte: usize,
 }
 
 impl Position {
@@ -19,25 +18,22 @@ impl Position {
         self.row += 1;
         self.col = 1;
     }
-
-    /// Forwards the byte by specified amount
-    pub fn next_bytes(&mut self, bytes: usize) {
-        self.byte += bytes;
-    }
 }
 
 impl Default for Position {
     fn default() -> Self {
-        Self {
-            row: 1,
-            col: 1,
-            byte: 0,
-        }
+        Self { row: 1, col: 1 }
     }
 }
 
 impl Display for Position {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("Ln {}, Col {}", self.row, self.col))
+    }
+}
+
+impl From<(usize, usize)> for Position {
+    fn from((row, col): (usize, usize)) -> Self {
+        Self { row, col }
     }
 }

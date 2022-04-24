@@ -8,7 +8,7 @@ use crate::{
 
 use super::char_scanner::CharScanner;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum LexemType {
     Operator(Operator),
     Keyword(Keyword),
@@ -17,6 +17,10 @@ pub enum LexemType {
     String(String),
     Float(f64),
     Int(i64),
+}
+
+impl Eq for LexemType {
+    fn assert_receiver_is_total_eq(&self) {}
 }
 
 impl Display for LexemType {
@@ -33,7 +37,7 @@ impl Display for LexemType {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Lexem {
     pub lexem_type: LexemType,
     pub start: Position,

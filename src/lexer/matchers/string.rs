@@ -49,9 +49,58 @@ fn complete_string(tb: &mut LexemBuilder) -> Lexem {
 
 #[cfg(test)]
 mod tests {
-    use crate
+    use crate::lexer::{
+        lexem::{Lexem, LexemType},
+        matchers::test_utils::{lexem_with, matcher_with},
+    };
+
+    use super::match_string;
+
+    fn matcher(string: &'static str) -> Option<Lexem> {
+        matcher_with(match_string, string)
+    }
+
+    fn lexem(string: &'static str, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
+        lexem_with(LexemType::String(string.to_owned()), start, stop)
+    }
 
     #[test]
-    fn test_file() {
+    fn simple() {
+        assert_eq!(matcher("\"abcd\""), lexem("abcd", (1, 1), (1, 7)));
+    }
+
+    #[test]
+    fn multiline() {
+        assert_eq!(matcher("\"ab\ncd\""), lexem("ab\ncd", (1, 1), (2, 4)));
+    }
+
+    #[test]
+    fn prepended() {
+        assert_eq!(matcher("asd \"abcd\""), None);
+    }
+
+    #[test]
+    fn postpended() {
+        assert_eq!(matcher("\"abcd\" abc"), lexem("abcd", (1, 1), (1, 7)));
+    }
+
+    #[test]
+    fn no_end() {
+        assert_eq!(matcher("\"abcd"), lexem("abcd", (1, 1), (1, 6)));
+    }
+
+    #[test]
+    fn empty() {
+        assert_eq!(matcher("\"\""), lexem("", (1, 1), (1, 3)));
+    }
+
+    #[test]
+    fn empty_no_end() {
+        assert_eq!(matcher("\""), lexem("", (1, 1), (1, 2)));
+    }
+
+    #[test]
+    fn prepended_whitespace() {
+        assert_eq!(matcher(" \"abcd\""), None);
     }
 }

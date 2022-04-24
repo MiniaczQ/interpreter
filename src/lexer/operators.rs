@@ -1,3 +1,4 @@
+/// Possible operators
 #[derive(Debug, Clone)]
 pub enum Operator {
     Plus,            // +

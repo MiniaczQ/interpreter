@@ -1,10 +1,10 @@
+/// Possible keywords
 #[derive(Debug, Clone)]
 pub enum Keyword {
     Int,
     Float,
     Bool,
     String,
-
     Let,
     Fn,
     Return,

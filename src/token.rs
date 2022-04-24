@@ -1,17 +1,41 @@
-use crate::{position::Position, scanner::Scanner};
+use std::fmt::Display;
+
+use crate::{
+    matchers::{identifier_or_keyword::Keyword, operator::Operator},
+    position::Position,
+    scanner::Scanner,
+};
 
 #[derive(Debug, Clone)]
 pub enum TokenType {
-    //OpPlus,
-    //OpMinus,
+    Operator(Operator),
 
-    //Comment,
+    Keyword(Keyword),
+    Comment(String),
     Identifier(String),
-    //String(String),
+    String(String),
     Float(f64),
     Int(i64),
 
     Error(String),
+}
+
+impl Display for TokenType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenType::Operator(op) => f.write_fmt(format_args!("Operator ({:?})", op)),
+            TokenType::Keyword(kw) => f.write_fmt(format_args!("Keyword ({:?})", kw)),
+            TokenType::Identifier(id) => f.write_fmt(format_args!("Identifier ({})", id)),
+            TokenType::Float(v) => f.write_fmt(format_args!("Float ({})", v)),
+            TokenType::Int(v) => f.write_fmt(format_args!("Int ({})", v)),
+            TokenType::Error(s) => f.write_fmt(format_args!("Error ({})", s)),
+            TokenType::String(s) => f.write_fmt(format_args!("String ({:})", s)),
+            TokenType::Comment(s) => f.write_fmt(format_args!("Comment ({:})", s)),
+            //TokenType:: => {
+            //    f.write_fmt(format_args!(""))
+            //},
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -28,23 +52,34 @@ pub struct TokenBuilder<'a> {
 
 impl<'a> TokenBuilder<'a> {
     pub fn new(scanner: &'a mut Scanner) -> Self {
-        let start = (&*scanner).prev_pos();
+        let start = (&*scanner).last_pos();
         Self { scanner, start }
     }
 
-    pub fn next(&mut self) {
-        self.scanner.next()
+    #[inline]
+    pub fn pop(&mut self) {
+        self.scanner.pop()
     }
 
-    pub fn curr(&self) -> char {
-        self.scanner.curr()
+    #[inline]
+    pub fn peek(&self) -> char {
+        self.scanner.peek()
     }
 
     pub fn bake(&self, token_type: TokenType) -> Token {
         Token {
             token_type,
             start: self.start,
-            stop: self.scanner.prev_pos(),
+            stop: self.scanner.last_pos(),
         }
+    }
+}
+
+impl Display for Token {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "{} from ({}) to ({})",
+            self.token_type, self.start, self.stop
+        ))
     }
 }

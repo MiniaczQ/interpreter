@@ -13,26 +13,19 @@ macro_rules! first_match {
     };
 }
 
-macro_rules! char_match_branches {
-    ($token_builder: expr, $pattern:expr, $operator:expr, $($patterns: expr, $operators: expr), +) => { {
-        $pattern => {
-            token_builder.next();
-            Some($operator)
-        },
-        char_match_branches!($($patterns, $operators), +)
-    } };
-}
-
 #[macro_export]
 macro_rules! char_match {
-    ($default: expr, $token_builder: expr) => { {
-        $token_builder.next();
+    ($token_builder: expr, $default: expr) => { {
+        $token_builder.pop();
         Some($default)
     } };
-    ($default: expr, $token_builder: expr, $($patterns: expr, $operators: expr), +) => { {
-        $token_builder.next();
-        match $token_builder.curr() {
-            char_match_branches!($token_builder, $($patterns, $operators), +)
+    ($token_builder: expr, $default: expr, $($pattern: literal, $operator: expr), +) => { {
+        $token_builder.pop();
+        match $token_builder.peek() {
+            $($pattern => {
+                $token_builder.pop();
+                Some($operator)
+            },)*
             _ => Some($default),
         }
     } };

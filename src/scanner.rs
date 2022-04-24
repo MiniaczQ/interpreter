@@ -30,7 +30,7 @@ impl Scanner {
 
     /// Returns next character, EOF is marked as end of text ASCII character
     fn next_char(&mut self) -> char {
-        if let Some(c) = self.source.read_char().unwrap() {
+        if let Some(c) = self.source.read_char().expect("Unexpected error while reading input.") {
             c
         } else {
             '\x03'
@@ -63,19 +63,26 @@ impl Scanner {
 
     /// Moves the scanner one character forward
     /// Turns all newlines into `'\n'`
-    pub fn next(&mut self) {
+    pub fn pop(&mut self) {
         self.prev_position = self.position;
         self.forward();
         self.normalize_newlines();
     }
 
     // Returns the current character
-    pub fn curr(&self) -> char {
+    pub fn peek(&self) -> char {
         self.current
     }
 
     // Returns the current position
-    pub fn prev_pos(&self) -> Position {
+    pub fn last_pos(&self) -> Position {
         self.prev_position
     }
+}
+
+pub trait Scan {
+    fn peek(&self) -> char;
+    fn pop(&mut self);
+    // Return the start position
+    fn last_pos(&self) -> Position;
 }

@@ -1,0 +1,3 @@
+Instruction manual.
+-f/--file <file path>   - Interpret a file
+-i/--interactive        - Interpret standard input

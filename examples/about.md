@@ -410,9 +410,9 @@ Testy jednostkowe:
  - wykrywanie fragmentu składni
  - wywoływanie pojedynczych tokenów
 
-Testy akceptacyjne:
+Testy integracyjne:
  - wykrywanie serii tokenów
  - wykrywanie całego drzewa składniowego
 
-Testy wdrożeniowe:
+Testy akceptacyjne:
  - wykonanie przykładowych fragmentów kodu

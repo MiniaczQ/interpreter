@@ -56,13 +56,14 @@ CLOSE_BRACKET       = ')'
 
 OPEN_LIST           = '['
 CLOSE_LIST          = ']'
+
+ETX                 = '\x03'
 ```
 # Grammar (in EBNF)
 ## Function definitions
 ```ebnf
 function_definitions
-    = function_definition
-    | function_definition, function_definitions
+    = {function_definition}
     ;
 
 function_definition
@@ -250,6 +251,7 @@ return_or_variable_declaration_expression
 
 variable_declaration
     = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
+    ;
 ```
 
 ### Expression
@@ -259,5 +261,6 @@ expression
     | for_expression
     | while_expression
     | if_expression
+    | code_block
     ;
 ```

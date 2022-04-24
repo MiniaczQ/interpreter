@@ -20,7 +20,7 @@ pub enum Operator {
     OpenCurlyBracket,   // {
     CloseCurlyBracket,  // }
     Colon,              // :
-    DoubleColor,        // ::
+    DoubleColon,        // ::
     Semicolon,          // ;
     Split,              // ,
     Dot,                // .

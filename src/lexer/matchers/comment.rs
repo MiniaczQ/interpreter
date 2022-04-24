@@ -31,7 +31,10 @@ fn complete_multi_line_comment(tb: &mut LexemBuilder) -> Lexem {
             '*' => {
                 tb.pop();
                 match tb.peek() {
-                    '/' => break tb.bake_raw(LexemType::Comment(content.into_iter().collect())),
+                    '/' => {
+                        tb.pop();
+                        break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+                    }
                     c => {
                         content.push('*');
                         content.push(c);
@@ -40,6 +43,7 @@ fn complete_multi_line_comment(tb: &mut LexemBuilder) -> Lexem {
             }
             '\x03' => {
                 eprintln!("Comment started at {} never ends.", tb.get_start());
+                tb.pop();
                 break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
             }
             c => {
@@ -69,26 +73,55 @@ fn complete_single_line_comment(tb: &mut LexemBuilder) -> Lexem {
 mod tests {
     use crate::lexer::{
         lexem::{Lexem, LexemType},
-        matchers::test_utils::{lexem_with, matcher_with}, operators::Operator,
+        matchers::test_utils::{lexem_with, matcher_with},
+        operators::Operator,
     };
 
     use super::match_comment_or_division;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        matcher_with(match_operator, string)
+        matcher_with(match_comment_or_division, string)
     }
 
-    fn comment_lexem(operator: Operator, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
-        lexem_with(LexemType::Operator(operator), start, stop)
+    fn comment_lexem(
+        string: &'static str,
+        start: (usize, usize),
+        stop: (usize, usize),
+    ) -> Option<Lexem> {
+        lexem_with(LexemType::Comment(string.to_owned()), start, stop)
     }
 
     fn division_lexem(start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
-        lexem_with(LexemType::Operator(operator), start, stop)
+        lexem_with(LexemType::Operator(Operator::Slash), start, stop)
     }
 
     #[test]
-    fn all() {
-        assert_eq!(matcher("+"), lexem(Operator::Plus, (1, 1), (1, 2)));
-        todo!();
+    fn div_simple() {
+        assert_eq!(matcher("/"), division_lexem((1, 1), (1, 2)));
+    }
+
+    #[test]
+    fn com_single() {
+        assert_eq!(matcher("//ab"), comment_lexem("ab", (1, 1), (1, 5)));
+    }
+
+    #[test]
+    fn com_single_multi() {
+        assert_eq!(matcher("//a\nb"), comment_lexem("a", (1, 1), (1, 4)));
+    }
+
+    #[test]
+    fn com_multi() {
+        assert_eq!(matcher("/*ab*/"), comment_lexem("ab", (1, 1), (1, 7)));
+    }
+
+    #[test]
+    fn com_multi_multi() {
+        assert_eq!(matcher("/*a\nb*/"), comment_lexem("a\nb", (1, 1), (2, 4)));
+    }
+
+    #[test]
+    fn com_multi_no_end() {
+        assert_eq!(matcher("/*a\n"), comment_lexem("a\n", (1, 1), (2, 2)));
     }
 }

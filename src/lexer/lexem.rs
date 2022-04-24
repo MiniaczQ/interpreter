@@ -11,15 +11,12 @@ use super::char_scanner::CharScanner;
 #[derive(Debug, Clone)]
 pub enum LexemType {
     Operator(Operator),
-
     Keyword(Keyword),
     Comment(String),
     Identifier(String),
     String(String),
     Float(f64),
     Int(i64),
-
-    Error(String),
 }
 
 impl Display for LexemType {
@@ -30,7 +27,6 @@ impl Display for LexemType {
             LexemType::Identifier(id) => f.write_fmt(format_args!("Identifier ({})", id)),
             LexemType::Float(v) => f.write_fmt(format_args!("Float ({})", v)),
             LexemType::Int(v) => f.write_fmt(format_args!("Int ({})", v)),
-            LexemType::Error(s) => f.write_fmt(format_args!("Error ({})", s)),
             LexemType::String(s) => f.write_fmt(format_args!("String ({:})", s)),
             LexemType::Comment(s) => f.write_fmt(format_args!("Comment ({:})", s)),
         }
@@ -55,6 +51,17 @@ impl<'a> LexemBuilder<'a> {
         Self { scanner, start }
     }
 
+    /// Lexem start position
+    pub fn get_start(&self) -> Position {
+        self.start
+    }
+
+    /// Scanner position
+    pub fn get_here(&self) -> Position {
+        self.scanner.last_pos()
+    }
+
+    /// Create a lexem
     pub fn bake_raw(&self, token_type: LexemType) -> Lexem {
         Lexem {
             lexem_type: token_type,
@@ -63,6 +70,7 @@ impl<'a> LexemBuilder<'a> {
         }
     }
 
+    /// Create a positive result of lexem matching
     pub fn bake(&self, token_type: LexemType) -> Option<Lexem> {
         Some(self.bake_raw(token_type))
     }

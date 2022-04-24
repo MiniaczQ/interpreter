@@ -68,7 +68,7 @@ fn print_lexems(lexer: &mut Lexer) {
     }
 }
 
-/// Application error containing message and error code
+/// Application error containing message and process return code
 struct AppError {
     msg: String,
     code: u8,
@@ -83,7 +83,7 @@ impl Display for AppError {
 /// Entry point
 fn main() {
     if let Err(e) = app() {
-        println!("{}", e.msg);
+        eprintln!("{}", e.msg);
         std::process::exit(e.code as i32);
     } else {
         std::process::exit(0);

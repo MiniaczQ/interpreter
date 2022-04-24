@@ -31,14 +31,17 @@ fn complete_multi_line_comment(tb: &mut LexemBuilder) -> Lexem {
             '*' => {
                 tb.pop();
                 match tb.peek() {
-                    '/' => return tb.bake_raw(LexemType::Comment(content.into_iter().collect())),
+                    '/' => break tb.bake_raw(LexemType::Comment(content.into_iter().collect())),
                     c => {
                         content.push('*');
                         content.push(c);
                     }
                 }
             }
-            '\x03' => todo!("comment never closed"),
+            '\x03' => {
+                eprintln!("Comment started at {} never ends.", tb.get_start());
+                break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+            }
             c => {
                 content.push(c);
             }
@@ -53,8 +56,7 @@ fn complete_single_line_comment(tb: &mut LexemBuilder) -> Lexem {
     tb.pop();
     loop {
         match tb.peek() {
-            '\n' => return tb.bake_raw(LexemType::Comment(content.into_iter().collect())),
-            '\x03' => todo!("comment never closed"),
+            '\n' | '\x03' => return tb.bake_raw(LexemType::Comment(content.into_iter().collect())),
             c => {
                 content.push(c);
             }

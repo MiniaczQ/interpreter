@@ -9,7 +9,6 @@ use std::io::BufRead;
 
 use crate::scannable::Scannable;
 
-use crate::first_match;
 use matchers::{
     comment::match_comment_or_division, identifier_or_keyword::match_identifier_or_keyword,
     numerical::match_numerical, operator::match_operator, string::match_string,
@@ -17,7 +16,7 @@ use matchers::{
 
 use self::{
     char_scanner::CharScanner,
-    lexem::{Lexem, LexemBuilder, LexemType},
+    lexem::{Lexem, LexemBuilder},
 };
 
 pub struct Lexer {
@@ -30,36 +29,68 @@ impl Lexer {
             scanner: CharScanner::new(source),
         }
     }
+
+    /// Removes whitespace
+    fn skip_whitespace(&mut self) {
+        while self.scanner.peek().is_whitespace() {
+            self.scanner.pop();
+        }
+    }
+
+    /// Matches lexems
+    fn match_lexem(&mut self) -> Option<Lexem> {
+        let tb = &mut LexemBuilder::new(&mut self.scanner);
+        match_numerical(tb)
+            .or_else(|| match_identifier_or_keyword(tb))
+            .or_else(|| match_operator(tb))
+            .or_else(|| match_string(tb))
+            .or_else(|| match_comment_or_division(tb))
+    }
+
+    /// Skips whitespace and matches lexems or ETX
+    fn skip_and_match(&mut self) -> Option<Option<Lexem>> {
+        self.skip_whitespace();
+        if self.scanner.peek() == '\x03' {
+            Some(None)
+        } else {
+            self.match_lexem().map(Some)
+        }
+    }
+
+    /// Catches sequences of invalid characters
+    fn catch_invalid_sequence(&mut self) -> Option<Lexem> {
+        if let Some(lexem) = self.skip_and_match() {
+            lexem
+        } else {
+            let mut invalid_sequence: Vec<char> = vec![];
+            let sequence_start = self.scanner.last_pos();
+            let mut sequence_stop = self.scanner.last_pos();
+            loop {
+                if let Some(lexem) = self.skip_and_match() {
+                    if !invalid_sequence.is_empty() {
+                        eprintln!(
+                            "Invalid sequence of characters `{}` from {} to {}",
+                            invalid_sequence.iter().collect::<String>(),
+                            sequence_start,
+                            sequence_stop
+                        )
+                    }
+                    break lexem;
+                } else {
+                    invalid_sequence.push(self.scanner.peek());
+                    self.scanner.pop();
+                    sequence_stop = self.scanner.last_pos();
+                }
+            }
+        }
+    }
 }
 
 impl Iterator for Lexer {
     type Item = Lexem;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while self.scanner.peek().is_whitespace() {
-            self.scanner.pop();
-        }
-        if self.scanner.peek() == '\x03' {
-            return None;
-        }
-        let tb = &mut LexemBuilder::new(&mut self.scanner);
-        if let Some(token) = first_match!(
-            tb,
-            match_numerical,
-            match_identifier_or_keyword,
-            match_operator,
-            match_string,
-            match_comment_or_division
-        ) {
-            Some(token)
-        } else {
-            let invalid_char = tb.peek();
-            tb.pop();
-            tb.bake(LexemType::Error(format!(
-                "Invalid character '{}'",
-                invalid_char,
-            )))
-        }
+        self.catch_invalid_sequence()
     }
 }
 

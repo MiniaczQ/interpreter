@@ -1,10 +1,6 @@
 use std::fmt::Display;
 
-use crate::{
-    matchers::{identifier_or_keyword::Keyword, operator::Operator},
-    position::Position,
-    scanner::Scanner,
-};
+use crate::{position::Position, scanner::Scanner, lexer::{operators::Operator, keywords::Keyword}};
 
 #[derive(Debug, Clone)]
 pub enum TokenType {

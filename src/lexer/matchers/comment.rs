@@ -1,13 +1,11 @@
-use crate::token::{TokenBuilder, Token, TokenType};
-
-use super::operator::Operator;
+use crate::{token::{Token, TokenBuilder, TokenType}, lexer::operators::Operator};
 
 pub fn match_comment_or_division(tb: &mut TokenBuilder) -> Option<Token> {
     if tb.peek() == '/' {
         tb.pop();
         match tb.peek() {
             '*' => return Some(complete_comment(tb)),
-            _ => return Some(tb.bake(TokenType::Operator(Operator::Slash)))
+            _ => return Some(tb.bake(TokenType::Operator(Operator::Slash))),
         }
     }
     None

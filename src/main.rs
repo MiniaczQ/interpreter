@@ -11,8 +11,6 @@ use std::{
 use lexer::Lexer;
 
 mod lexer;
-mod macros;
-mod matchers;
 mod position;
 mod scanner;
 mod token;

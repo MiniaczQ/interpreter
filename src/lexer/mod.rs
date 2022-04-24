@@ -1,14 +1,18 @@
+pub mod keywords;
+mod macros;
+mod matchers;
+pub mod operators;
+
 use std::io::BufRead;
 
-use crate::{
-    first_match,
-    matchers::{
-        comment::match_comment_or_division, identifier_or_keyword::match_identifier_or_keyword,
-        string::match_string,
-    },
+use crate::scanner::*;
+use crate::token::*;
+
+use crate::first_match;
+use matchers::{
+    comment::match_comment_or_division, identifier_or_keyword::match_identifier_or_keyword,
+    numerical::match_numerical, operator::match_operator, string::match_string,
 };
-use crate::{matchers::numerical::match_numerical, scanner::*};
-use crate::{matchers::operator::match_operator, token::*};
 
 pub struct Lexer {
     pub scanner: Scanner,

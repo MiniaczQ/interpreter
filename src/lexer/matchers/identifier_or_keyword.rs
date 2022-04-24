@@ -1,4 +1,4 @@
-use crate::token::{Token, TokenBuilder, TokenType};
+use crate::{token::{Token, TokenBuilder, TokenType}, lexer::keywords::Keyword};
 
 #[inline]
 fn can_begin(c: char) -> bool {
@@ -27,23 +27,6 @@ pub fn match_identifier_or_keyword(tb: &mut TokenBuilder) -> Option<Token> {
     } else {
         None
     }
-}
-
-#[derive(Debug, Clone)]
-pub enum Keyword {
-    Int,
-    Float,
-    Bool,
-    String,
-
-    Let,
-    Fn,
-    Return,
-    While,
-    For,
-    In,
-    If,
-    Else,
 }
 
 fn match_keyword(tb: &mut TokenBuilder, name: &str) -> Option<Token> {

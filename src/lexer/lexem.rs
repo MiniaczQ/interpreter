@@ -44,6 +44,20 @@ pub struct Lexem {
     pub stop: Position,
 }
 
+impl Lexem {
+    pub fn new(
+        lexem_type: LexemType,
+        start: impl Into<Position>,
+        stop: impl Into<Position>,
+    ) -> Self {
+        Lexem {
+            lexem_type,
+            start: start.into(),
+            stop: stop.into(),
+        }
+    }
+}
+
 pub struct LexemBuilder<'a> {
     scanner: &'a mut CharScanner,
     start: Position,
@@ -67,11 +81,7 @@ impl<'a> LexemBuilder<'a> {
 
     /// Create a lexem
     pub fn bake_raw(&self, token_type: LexemType) -> Lexem {
-        Lexem {
-            lexem_type: token_type,
-            start: self.start,
-            stop: self.scanner.last_pos(),
-        }
+        Lexem::new(token_type, self.start, self.scanner.last_pos())
     }
 
     /// Create a positive result of lexem matching

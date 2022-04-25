@@ -13,4 +13,6 @@ pub enum Keyword {
     In,
     If,
     Else,
+    True,
+    False,
 }

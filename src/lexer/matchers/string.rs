@@ -105,6 +105,21 @@ mod tests {
     }
 
     #[test]
+    fn escape() {
+        assert_eq!(matcher("\"ab\\\"cd\""), lexem("ab\"cd", (1, 1), (1, 9)));
+    }
+
+    #[test]
+    fn escape_the_escape() {
+        assert_eq!(matcher("\"ab\\\\\""), lexem("ab\\", (1, 1), (1, 7)));
+    }
+
+    #[test]
+    fn unknown_escape() {
+        assert_eq!(matcher("\"abc\\d\""), lexem("abc", (1, 1), (1, 8)));
+    }
+
+    #[test]
     fn empty() {
         assert_eq!(matcher(""), None);
     }

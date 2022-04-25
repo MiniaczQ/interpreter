@@ -51,6 +51,8 @@ fn match_keyword(tb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
         "in" => tb.bake(LexemType::Keyword(Keyword::In)),
         "if" => tb.bake(LexemType::Keyword(Keyword::If)),
         "else" => tb.bake(LexemType::Keyword(Keyword::Else)),
+        "true" => tb.bake(LexemType::Keyword(Keyword::True)),
+        "false" => tb.bake(LexemType::Keyword(Keyword::False)),
         _ => None,
     }
 }
@@ -95,6 +97,8 @@ mod tests {
         assert_eq!(matcher("in"), kw_lexem(Keyword::In, (1, 1), (1, 3)));
         assert_eq!(matcher("if"), kw_lexem(Keyword::If, (1, 1), (1, 3)));
         assert_eq!(matcher("else"), kw_lexem(Keyword::Else, (1, 1), (1, 5)));
+        assert_eq!(matcher("true"), kw_lexem(Keyword::True, (1, 1), (1, 5)));
+        assert_eq!(matcher("false"), kw_lexem(Keyword::False, (1, 1), (1, 6)));
     }
 
     #[test]

@@ -43,8 +43,9 @@ fn complete_multi_line_comment(tb: &mut LexemBuilder) -> Lexem {
             }
             '\x03' => {
                 eprintln!("Comment started at {} never ends.", tb.get_start());
+                let t = tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
                 tb.pop();
-                break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+                break t;
             }
             c => {
                 content.push(c);
@@ -131,7 +132,7 @@ mod tests {
 
     #[test]
     fn com_multi_no_end() {
-        assert_eq!(matcher("/*a\n"), comment_lexem("a\n", (1, 1), (2, 2)));
+        assert_eq!(matcher("/*a\n"), comment_lexem("a\n", (1, 1), (2, 1)));
     }
 
     #[test]

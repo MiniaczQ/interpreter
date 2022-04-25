@@ -169,7 +169,7 @@ function_arguments
     ;
 
 list_access
-    = OPEN_LIST, range_access, CLOSE_LIST
+    = OPEN_LIST, index_or_range_access, CLOSE_LIST
     ;
 
 index_or_range_access

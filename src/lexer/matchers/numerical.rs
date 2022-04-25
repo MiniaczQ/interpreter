@@ -17,7 +17,7 @@ pub fn match_numerical(tb: &mut LexemBuilder) -> Option<Lexem> {
                         tb.pop();
                     } else {
                         eprintln!(
-                            "Float decimal part too big from {} to {}.",
+                            "Integer too big from {} to {}.",
                             tb.get_start(),
                             tb.get_here()
                         );
@@ -59,7 +59,7 @@ fn match_float(tb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
                         tb.pop();
                     } else {
                         eprintln!(
-                            "Float decimal part too big from {} to {}.",
+                            "Decimal part too big from {} to {}.",
                             tb.get_start(),
                             tb.get_here()
                         );

@@ -1,0 +1,49 @@
+/*
+Returns a list from 0 to max - 1
+*/
+fn range(max: int) -> int[] {
+    let index: int = 0;
+
+    while index < max {
+        index = index + 1;
+        index
+    }
+}
+
+
+/*
+Returns a list with only positive values.
+*/
+fn filter_positive(in_list: float[]) -> float[] {
+    let out_list: float[] = [];
+
+    for x in in_list {
+        if x > 0.0 {
+            append(out_list, x);
+        };
+    };
+
+    return out_list;
+}
+
+
+/*
+Entry point
+*/
+fn main() {
+    print("Hello world!");  // Hello world!
+
+    let my_list: int[] = for x in range(5) {
+        if x % 2 == 0 {
+            x
+        } else {
+            1 + x * 2
+        }
+    };
+
+    print(my_list[0::2]);   // [0, 3]
+
+    let new_list = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0, 6.0]);
+
+    print(len(new_list));   // 3
+}

@@ -1,12 +1,11 @@
 # Interpreter
-of my own language.
+of my own language in Rust.
 
-# Requirements
-- control flow
-- looping
-- functions
-- operator priority
-- special feature (one of: custom type, generics, destructuring, etc.)
+Name tbd.
+
+Described in `about.md`
+
+Grammar in `grammar.md`
 
 # Tasks
 - [x] Prepare repository and workflow

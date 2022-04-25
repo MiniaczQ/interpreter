@@ -13,3 +13,16 @@ Grammar in `grammar.md`
 - [x] Implement lexer
 - [ ] Implement parser (wip)
 - [ ] Implement interpreter
+
+# How to use:
+1. [Download](https://github.com/MiniaczQ/interpreter/releases) distribution for your OS (Windows or Linux)
+2. Run the interpreter through command line
+
+# Usage example
+## Linux Bash
+`./interpreter -i < source.txt`
+`./interpterer -f source.txt`
+
+## Windows Powershell
+`Get-Content -Path source.txt | .\interpreter.exe -i`
+`.\interpreter.exe -f source.txt`

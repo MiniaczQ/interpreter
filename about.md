@@ -23,9 +23,11 @@ oraz ich tablicowe warianty: `bool[]`, `int[]`, `float[]`.
 
 Dostępny będzie też typ `string` zachowujący się jak tablica znaków.
 
-W implementacji zaistnieje też typ `none`.  
-Posłuży on do realizacji typów wyrażeń,
+W implementacji zaistnieją też typy `none` i `any`.  
+Typ `none` posłuży do realizacji typów wyrażeń,
 których nie można przypisać do zmiennych.
+Z kolei `any` zostanie wykorzystywany w funkcjach
+standardowych do obsługi różnych typów argumentów.
 
 ## Wyrażenia
 Wszystko oprócz definicji funkcji jest wyrażeniem.
@@ -277,14 +279,16 @@ fn print_but_dont_return(x: int) {
 }
 ```
 
-### Przeciążanie
-Może istnieć wiele funkcji o tej samej nazwie, ale różnych typach parametrów.
+### Funkcje o zmiennym typie parametrów
+Może istnieć wiele funkcji o tej samej nazwie, ale różnych typach parametrów:
 ```
-fn foo() -> int {0}
-
-fn foo(x: int) -> int {x}
+print(0)
+print(1.0)
+print(true)
+print("Hello world!")
 ```
-(powodem na to jest potrzeba implementacji funkcji np. `print` dla wielu typów wejściowych)
+Do realizacji tego zostanie wykorzystany wewnętrzny typ `any`
+i będzie to dostępne tylko w funkcjach standardowych.
 
 ### Instrukcja `return`
 Funkcja zwróci wartość wyrażenia bloku kodu ciała funkcji,

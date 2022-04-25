@@ -11,7 +11,7 @@ type Op = Operator;
 pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
     match t_b.peek() {
         '+' => char_match!(t_b, Op::Plus),
-        '-' => char_match!(t_b, Op::Minus),
+        '-' => char_match!(t_b, Op::Minus, '>', Op::Arrow),
         '*' => char_match!(t_b, Op::Asterisk),
         '=' => char_match!(t_b, Op::Equal, '=', Op::DoubleEqual),
         '<' => char_match!(t_b, Op::Lesser, '=', Op::LesserEqual),
@@ -27,9 +27,8 @@ pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
         '|' => char_match!(t_b, Op::Or),
         ';' => char_match!(t_b, Op::Semicolon),
         ',' => char_match!(t_b, Op::Split),
-        '!' => char_match!(t_b, Op::ExclamationMark),
+        '!' => char_match!(t_b, Op::ExclamationMark, '=', Op::Unequal),
         '%' => char_match!(t_b, Op::Modulo),
-        '.' => char_match!(t_b, Op::Dot),
         _ => None,
     }
     .map(|operator| t_b.bake_raw(LexemType::Operator(operator)))
@@ -97,9 +96,10 @@ mod tests {
         assert_eq!(matcher("::"), lexem(Operator::DoubleColon, (1, 1), (1, 3)));
         assert_eq!(matcher(";"), lexem(Operator::Semicolon, (1, 1), (1, 2)));
         assert_eq!(matcher(","), lexem(Operator::Split, (1, 1), (1, 2)));
-        assert_eq!(matcher("."), lexem(Operator::Dot, (1, 1), (1, 2)));
         assert_eq!(matcher("&"), lexem(Operator::And, (1, 1), (1, 2)));
         assert_eq!(matcher("|"), lexem(Operator::Or, (1, 1), (1, 2)));
+        assert_eq!(matcher("->"), lexem(Operator::Arrow, (1, 1), (1, 3)));
+        assert_eq!(matcher("!="), lexem(Operator::Unequal, (1, 1), (1, 3)));
     }
 
     #[test]

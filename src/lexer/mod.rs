@@ -172,7 +172,6 @@ mod tests {
             Lexem::new(LexemType::Identifier("breaks".to_owned()), (1, 30), (1, 36)),
             Lexem::new(LexemType::Identifier("stuff".to_owned()), (1, 37), (1, 42)),
             Lexem::new(LexemType::Int(0), (1, 43), (1, 44)),
-            Lexem::new(LexemType::Operator(Operator::Dot), (1, 45), (1, 46)),
             Lexem::new(LexemType::Int(323), (1, 46), (1, 49)),
         ];
         let output = parser.into_iter().collect::<Vec<Lexem>>();

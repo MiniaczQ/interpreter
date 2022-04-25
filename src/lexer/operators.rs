@@ -7,7 +7,9 @@ pub enum Operator {
     Slash,              // /
     Modulo,             // %
     ExclamationMark,    // !
-    Equal,              // =
+    And,                // &
+    Or,                 // |
+    Unequal,            // !=
     DoubleEqual,        // ==
     Greater,            // >
     GreaterEqual,       // >=
@@ -21,9 +23,8 @@ pub enum Operator {
     CloseCurlyBracket,  // }
     Colon,              // :
     DoubleColon,        // ::
+    Equal,              // =
+    Arrow,              // ->
     Semicolon,          // ;
     Split,              // ,
-    Dot,                // .
-    And,                // &
-    Or,                 // |
 }

@@ -90,7 +90,7 @@ mod tests {
     }
 
     #[test]
-    fn empty() {
+    fn empty_str() {
         assert_eq!(matcher("\"\""), lexem("", (1, 1), (1, 3)));
     }
 
@@ -102,5 +102,10 @@ mod tests {
     #[test]
     fn prepended_whitespace() {
         assert_eq!(matcher(" \"abcd\""), None);
+    }
+
+    #[test]
+    fn empty() {
+        assert_eq!(matcher(""), None);
     }
 }

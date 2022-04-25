@@ -109,10 +109,19 @@ mod tests {
     fn com_single_multi() {
         assert_eq!(matcher("//a\nb"), comment_lexem("a", (1, 1), (1, 4)));
     }
+    #[test]
+    fn empty_com_single_multi() {
+        assert_eq!(matcher("//\n"), comment_lexem("", (1, 1), (1, 3)));
+    }
 
     #[test]
     fn com_multi() {
         assert_eq!(matcher("/*ab*/"), comment_lexem("ab", (1, 1), (1, 7)));
+    }
+
+    #[test]
+    fn empty_com_multi() {
+        assert_eq!(matcher("/**/"), comment_lexem("", (1, 1), (1, 5)));
     }
 
     #[test]
@@ -123,5 +132,10 @@ mod tests {
     #[test]
     fn com_multi_no_end() {
         assert_eq!(matcher("/*a\n"), comment_lexem("a\n", (1, 1), (2, 2)));
+    }
+
+    #[test]
+    fn empty() {
+        assert_eq!(matcher(""), None);
     }
 }

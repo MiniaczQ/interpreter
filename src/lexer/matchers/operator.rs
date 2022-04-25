@@ -111,4 +111,9 @@ mod tests {
     fn postpended() {
         assert_eq!(matcher("+ abcd"), lexem(Operator::Plus, (1, 1), (1, 2)));
     }
+
+    #[test]
+    fn empty() {
+        assert_eq!(matcher(""), None);
+    }
 }

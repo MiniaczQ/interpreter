@@ -5,6 +5,7 @@ use crate::lexer::{
     lexem::{Lexem, LexemBuilder, LexemType},
 };
 
+#[allow(dead_code)]
 pub fn matcher_with(
     matcher: fn(&mut LexemBuilder) -> Option<Lexem>,
     string: &'static str,
@@ -14,6 +15,7 @@ pub fn matcher_with(
     matcher(lb)
 }
 
+#[allow(dead_code)]
 pub fn lexem_with(
     lexem_type: LexemType,
     start: (usize, usize),

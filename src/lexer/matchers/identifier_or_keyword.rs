@@ -21,7 +21,7 @@ pub fn match_identifier_or_keyword(tb: &mut LexemBuilder) -> Option<Lexem> {
     if can_begin(tb.peek()) {
         let mut name = vec![tb.peek()];
         tb.pop();
-        while can_continue(tb.peek()) {
+        while can_continue(tb.peek()) { // TODO maksymalna długość
             name.push(tb.peek());
             tb.pop();
         }

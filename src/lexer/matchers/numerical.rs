@@ -6,14 +6,14 @@ use crate::{
 /// Matches an integer or a float constant
 pub fn match_numerical(tb: &mut LexemBuilder) -> Option<Lexem> {
     if tb.peek().is_ascii_digit() {
-        let mut integer_part: i64 = tb.peek() as i64 - '0' as i64;
+        let mut integer_part: i64 = tb.peek() as i64 - '0' as i64; // TODO wyjąc konwertowanie
         if tb.peek() != '0' {
             tb.pop();
-            loop {
+            loop { // TODO użyć while
                 if tb.peek().is_ascii_digit() {
                     if let Some(new_integer_part) = integer_part.checked_mul(10) {
                         integer_part = new_integer_part;
-                        integer_part += tb.peek() as i64 - '0' as i64;
+                        integer_part += tb.peek() as i64 - '0' as i64; // TODO Sprawdzić czy nie ma przepełnienia
                         tb.pop();
                     } else {
                         eprintln!(
@@ -44,7 +44,7 @@ pub fn match_numerical(tb: &mut LexemBuilder) -> Option<Lexem> {
 
 /// Matches a float constant
 fn match_float(tb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
-    if tb.peek() == '.' {
+    if tb.peek() == '.' { // TODO odwrócić warunek
         tb.pop();
         if tb.peek().is_ascii_digit() {
             let mut digits = 1;
@@ -125,6 +125,14 @@ mod tests {
         assert_eq!(
             matcher("9_223_372_036_854_775_807"),
             int_lexem(9223372036854775807, (1, 1), (1, 26))
+        );
+    }
+
+    #[test]
+    fn int_limit2() {
+        assert_eq!(
+            matcher("9_223_372_036_854_775_808"),
+            int_lexem(9223372036854775800, (1, 1), (1, 26))
         );
     }
 

@@ -21,6 +21,7 @@ use self::{
 
 pub struct Lexer {
     pub scanner: CharScanner,
+    // TODO bufor na błędy
 }
 
 impl Lexer {

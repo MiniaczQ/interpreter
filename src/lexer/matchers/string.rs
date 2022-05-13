@@ -22,11 +22,11 @@ fn complete_string(tb: &mut LexemBuilder) -> Lexem {
             '\\' => {
                 let pos = tb.get_here();
                 tb.pop();
-                match tb.peek() {
+                match tb.peek() { // Więcej znaków ucieczki np. z JSON-a
                     '\\' => content.push('\\'),
                     '"' => content.push('"'),
                     c => {
-                        eprintln!(
+                        eprintln!( // Zwracać błąd lepiej
                             "Unknown escape sequence `\\{}` inside string at {}.",
                             c, pos
                         )

@@ -1,40 +1,47 @@
 use crate::{
-    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    lexer::lexem::{Lexem, LexemBuilder, LexemErrorVariant, LexemType},
     scannable::Scannable,
 };
 
 /// Matches a string constant
-pub fn match_string(tb: &mut LexemBuilder) -> Option<Lexem> {
-    if tb.peek() == '"' {
+pub fn match_string(tb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
+    if tb.curr() == '"' {
         tb.pop();
-        Some(complete_string(tb))
+        Some(complete_string(tb, max))
     } else {
         None
     }
 }
 
+/// Handles different kinds of escape characters
+fn escape_characters(tb: &mut LexemBuilder, content: &mut Vec<char>) {
+    match tb.curr() {
+        '0' => content.push('\0'),
+        'b' => content.push('\x08'),
+        'f' => content.push('\x0c'),
+        'n' => content.push('\n'),
+        'r' => content.push('\r'),
+        't' => content.push('\t'),
+        '"' => content.push('"'),
+        '\\' => content.push('\\'),
+        c => {
+            tb.error(LexemErrorVariant::InvalidEscapeCharacter(c));
+        }
+    }
+}
+
 /// Completes a string constant
-fn complete_string(tb: &mut LexemBuilder) -> Lexem {
+fn complete_string(tb: &mut LexemBuilder, max: usize) -> Lexem {
     let mut content: Vec<char> = vec![];
     loop {
-        let c = tb.peek();
-        match tb.peek() {
+        let c = tb.curr();
+        match tb.curr() {
             '\\' => {
-                let pos = tb.get_here();
                 tb.pop();
-                match tb.peek() { // Więcej znaków ucieczki np. z JSON-a
-                    '\\' => content.push('\\'),
-                    '"' => content.push('"'),
-                    c => {
-                        eprintln!( // Zwracać błąd lepiej
-                            "Unknown escape sequence `\\{}` inside string at {}.",
-                            c, pos
-                        )
-                    }
-                }
+                escape_characters(tb, &mut content);
             }
             '\x03' => {
-                eprintln!("String started at {} never ends.", tb.get_start());
+                tb.error(LexemErrorVariant::StringNeverEnds);
                 break tb.bake_raw(LexemType::String(content.into_iter().collect()));
             }
             '"' => {
@@ -43,6 +50,11 @@ fn complete_string(tb: &mut LexemBuilder) -> Lexem {
             }
             _ => content.push(c),
         }
+        if content.len() > max {
+            content.pop();
+            tb.error(LexemErrorVariant::StringTooLong);
+            break tb.bake_raw(LexemType::String(content.into_iter().collect()));
+        }
         tb.pop();
     }
 }
@@ -50,14 +62,20 @@ fn complete_string(tb: &mut LexemBuilder) -> Lexem {
 #[cfg(test)]
 mod tests {
     use crate::lexer::{
-        lexem::{Lexem, LexemType},
+        lexem::{Lexem, LexemError, LexemErrorVariant, LexemType},
         matchers::test_utils::{lexem_with, matcher_with},
     };
 
     use super::match_string;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        matcher_with(match_string, string)
+        let r = matcher_with(|tb| match_string(tb, 32), string);
+        assert!(r.1.is_empty());
+        r.0
+    }
+
+    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
+        matcher_with(|tb| match_string(tb, 32), string)
     }
 
     fn lexem(string: &'static str, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {
@@ -86,7 +104,9 @@ mod tests {
 
     #[test]
     fn no_end() {
-        assert_eq!(matcher("\"abcd"), lexem("abcd", (1, 1), (1, 6)));
+        let (result, errors) = err_matcher("\"abcd");
+        assert_eq!(result, lexem("abcd", (1, 1), (1, 6)));
+        assert!(errors[0].variant == LexemErrorVariant::StringNeverEnds);
     }
 
     #[test]
@@ -96,7 +116,9 @@ mod tests {
 
     #[test]
     fn empty_no_end() {
-        assert_eq!(matcher("\""), lexem("", (1, 1), (1, 2)));
+        let (result, errors) = err_matcher("\"");
+        assert_eq!(result, lexem("", (1, 1), (1, 2)));
+        assert!(errors[0].variant == LexemErrorVariant::StringNeverEnds);
     }
 
     #[test]
@@ -107,6 +129,12 @@ mod tests {
     #[test]
     fn escape() {
         assert_eq!(matcher("\"ab\\\"cd\""), lexem("ab\"cd", (1, 1), (1, 9)));
+        assert_eq!(matcher("\"\\0\""), lexem("\0", (1, 1), (1, 5)));
+        assert_eq!(matcher("\"\\b\""), lexem("\x08", (1, 1), (1, 5)));
+        assert_eq!(matcher("\"\\f\""), lexem("\x0c", (1, 1), (1, 5)));
+        assert_eq!(matcher("\"\\n\""), lexem("\n", (1, 1), (1, 5)));
+        assert_eq!(matcher("\"\\r\""), lexem("\r", (1, 1), (1, 5)));
+        assert_eq!(matcher("\"\\t\""), lexem("\t", (1, 1), (1, 5)));
     }
 
     #[test]
@@ -116,7 +144,27 @@ mod tests {
 
     #[test]
     fn unknown_escape() {
-        assert_eq!(matcher("\"abc\\d\""), lexem("abc", (1, 1), (1, 8)));
+        let (result, errors) = err_matcher("\"abc\\j\"");
+        assert_eq!(result, lexem("abc", (1, 1), (1, 8)));
+        assert!(errors[0].variant == LexemErrorVariant::InvalidEscapeCharacter('j'));
+    }
+
+    #[test]
+    fn max_long() {
+        assert_eq!(
+            matcher("\"___a___b___a___c___a___b___a___d\""),
+            lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 35))
+        );
+    }
+
+    #[test]
+    fn too_long() {
+        let (result, errors) = err_matcher("\"___a___b___a___c___a___b___a___d_\"");
+        assert_eq!(
+            result,
+            lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 34))
+        );
+        assert!(errors[0].variant == LexemErrorVariant::StringTooLong);
     }
 
     #[test]

@@ -11,7 +11,7 @@ macro_rules! char_match {
     } };
     ($token_builder: expr, $default: expr, $($pattern: literal, $operator: expr), +) => { {
         $token_builder.pop();
-        match $token_builder.peek() {
+        match $token_builder.curr() {
             $($pattern => {
                 $token_builder.pop();
                 Some($operator)

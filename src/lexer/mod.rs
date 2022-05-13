@@ -16,42 +16,49 @@ use matchers::{
 
 use self::{
     char_scanner::CharScanner,
-    lexem::{Lexem, LexemBuilder},
+    lexem::{Lexem, LexemBuilder, LexemError, LexemErrorVariant},
 };
 
 pub struct Lexer {
+    max_identifier_length: usize,
+    max_string_length: usize,
+    max_comment_length: usize,
     pub scanner: CharScanner,
-    // TODO bufor na błędy
+    pub errors: Vec<LexemError>,
 }
 
 impl Lexer {
     pub fn new(source: impl BufRead + 'static) -> Self {
         Self {
+            max_identifier_length: 256,
+            max_string_length: 256,
+            max_comment_length: 256,
             scanner: CharScanner::new(source),
+            errors: vec![],
         }
     }
 
     /// Removes whitespace
     fn skip_whitespace(&mut self) {
-        while self.scanner.peek().is_whitespace() {
+        while self.scanner.curr().is_whitespace() {
             self.scanner.pop();
         }
     }
 
     /// Matches lexems
     fn match_lexem(&mut self) -> Option<Lexem> {
-        let tb = &mut LexemBuilder::new(&mut self.scanner);
+        let tb = &mut LexemBuilder::new(&mut self.scanner, &mut self.errors);
         match_numerical(tb)
-            .or_else(|| match_identifier_or_keyword(tb))
+            .or_else(|| match_identifier_or_keyword(tb, self.max_identifier_length))
             .or_else(|| match_operator(tb))
-            .or_else(|| match_string(tb))
-            .or_else(|| match_comment_or_division(tb))
+            .or_else(|| match_string(tb, self.max_string_length))
+            .or_else(|| match_comment_or_division(tb, self.max_comment_length))
     }
 
     /// Skips whitespace and matches lexems or ETX
     fn skip_and_match(&mut self) -> Option<Option<Lexem>> {
         self.skip_whitespace();
-        if self.scanner.peek() == '\x03' {
+        if self.scanner.curr() == '\x03' {
             Some(None)
         } else {
             self.match_lexem().map(Some)
@@ -69,29 +76,37 @@ impl Lexer {
             loop {
                 if let Some(lexem) = self.skip_and_match() {
                     if !invalid_sequence.is_empty() {
-                        eprintln!(
-                            "Invalid sequence of characters `{}` from {} to {}",
-                            invalid_sequence.iter().collect::<String>(),
-                            sequence_start,
-                            sequence_stop
-                        )
+                        self.errors.push(LexemError {
+                            start: sequence_start,
+                            end: sequence_stop,
+                            variant: LexemErrorVariant::InvalidSequence(
+                                invalid_sequence.iter().collect::<String>(),
+                            ),
+                        });
                     }
                     break lexem;
                 } else {
-                    invalid_sequence.push(self.scanner.peek());
+                    invalid_sequence.push(self.scanner.curr());
                     self.scanner.pop();
                     sequence_stop = self.scanner.last_pos();
                 }
             }
         }
     }
-}
 
-impl Iterator for Lexer {
-    type Item = Lexem;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    /// Returns lexems until it runs out
+    #[allow(dead_code)]
+    pub fn next(&mut self) -> Option<Lexem> {
         self.catch_invalid_sequence()
+    }
+
+    /// Returns all lexems
+    pub fn all(&mut self) -> Vec<Lexem> {
+        let mut lexems = vec![];
+        while let Some(l) = self.catch_invalid_sequence() {
+            lexems.push(l);
+        }
+        lexems
     }
 }
 
@@ -99,7 +114,7 @@ impl Iterator for Lexer {
 mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
-    use crate::lexer::{keywords::Keyword, operators::Operator, Lexer};
+    use crate::lexer::{keywords::Keyword, lexem::LexemErrorVariant, operators::Operator, Lexer};
 
     use super::lexem::{Lexem, LexemType};
 
@@ -146,23 +161,25 @@ mod tests {
             .read(true)
             .open("snippets/short.txt")
             .unwrap();
-        let parser = Lexer::new(BufReader::new(file));
-        let output = parser.into_iter().collect::<Vec<Lexem>>();
+        let mut parser = Lexer::new(BufReader::new(file));
+        let output = parser.all();
         assert_eq!(output, correct_output());
+        assert!(parser.errors.is_empty());
     }
 
     #[test]
     fn test_string() {
         let string = "// do nothing\nfn main() {\n    let a = 5;\n}";
-        let parser = Lexer::new(BufReader::new(string.as_bytes()));
-        let output = parser.into_iter().collect::<Vec<Lexem>>();
+        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let output = parser.all();
         assert_eq!(output, correct_output());
+        assert!(parser.errors.is_empty());
     }
 
     #[test]
     fn invalid_sequence() {
         let string = "invalid $@#@$#@$#$@ sequence breaks$stuff 0#.323";
-        let parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(LexemType::Identifier("invalid".to_owned()), (1, 1), (1, 8)),
             Lexem::new(
@@ -175,14 +192,20 @@ mod tests {
             Lexem::new(LexemType::Int(0), (1, 43), (1, 44)),
             Lexem::new(LexemType::Int(323), (1, 46), (1, 49)),
         ];
-        let output = parser.into_iter().collect::<Vec<Lexem>>();
+        let output = parser.all();
         assert_eq!(output, correct_output);
+        assert!(
+            parser.errors[0].variant
+                == LexemErrorVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
+        );
+        assert!(parser.errors[1].variant == LexemErrorVariant::InvalidSequence("$".to_owned()));
+        assert!(parser.errors[2].variant == LexemErrorVariant::InvalidSequence("#.".to_owned()));
     }
 
     #[test]
     fn incomplete_string() {
         let string = "// do nothing\nfn main() \"{\n    let a = 5;\n}\n";
-        let parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(
                 LexemType::Comment(" do nothing".to_owned()),
@@ -207,14 +230,15 @@ mod tests {
                 (5, 1),
             ),
         ];
-        let output = parser.into_iter().collect::<Vec<Lexem>>();
+        let output = parser.all();
         assert_eq!(output, correct_output);
+        assert!(parser.errors[0].variant == LexemErrorVariant::StringNeverEnds);
     }
 
     #[test]
     fn incomplete_comment() {
         let string = "// do nothing\nfn main() /*{\n    let a = 5;\n}\n";
-        let parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(
                 LexemType::Comment(" do nothing".to_owned()),
@@ -239,7 +263,8 @@ mod tests {
                 (5, 1),
             ),
         ];
-        let output = parser.into_iter().collect::<Vec<Lexem>>();
+        let output = parser.all();
         assert_eq!(output, correct_output);
+        assert!(parser.errors[0].variant == LexemErrorVariant::CommentNeverEnds);
     }
 }

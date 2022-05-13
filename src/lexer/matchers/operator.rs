@@ -9,7 +9,7 @@ type Op = Operator;
 
 /// Matches an operator
 pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
-    match t_b.peek() {
+    match t_b.curr() {
         '+' => char_match!(t_b, Op::Plus),
         '-' => char_match!(t_b, Op::Minus, '>', Op::Arrow),
         '*' => char_match!(t_b, Op::Asterisk),
@@ -45,7 +45,9 @@ mod tests {
     use super::match_operator;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        matcher_with(match_operator, string)
+        let r = matcher_with(match_operator, string);
+        assert!(r.1.is_empty());
+        r.0
     }
 
     fn lexem(operator: Operator, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {

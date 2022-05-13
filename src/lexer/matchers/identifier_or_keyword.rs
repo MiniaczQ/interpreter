@@ -1,6 +1,6 @@
 use crate::{
     lexer::keywords::Keyword,
-    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    lexer::lexem::{Lexem, LexemBuilder, LexemErrorVariant, LexemType},
     scannable::Scannable,
 };
 
@@ -17,12 +17,17 @@ fn can_continue(c: char) -> bool {
 }
 
 /// Matches an identifier or a keyword
-pub fn match_identifier_or_keyword(tb: &mut LexemBuilder) -> Option<Lexem> {
-    if can_begin(tb.peek()) {
-        let mut name = vec![tb.peek()];
+pub fn match_identifier_or_keyword(tb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
+    if can_begin(tb.curr()) {
+        let mut name = vec![tb.curr()];
         tb.pop();
-        while can_continue(tb.peek()) { // TODO maksymalna długość
-            name.push(tb.peek());
+        while can_continue(tb.curr()) {
+            name.push(tb.curr());
+            if name.len() > max {
+                name.pop();
+                tb.error(LexemErrorVariant::IdentifierTooLong);
+                break;
+            }
             tb.pop();
         }
         let name: String = name.into_iter().collect();
@@ -61,14 +66,20 @@ fn match_keyword(tb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
 mod tests {
     use crate::lexer::{
         keywords::Keyword,
-        lexem::{Lexem, LexemType},
+        lexem::{Lexem, LexemError, LexemErrorVariant, LexemType},
         matchers::test_utils::{lexem_with, matcher_with},
     };
 
     use super::match_identifier_or_keyword;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        matcher_with(match_identifier_or_keyword, string)
+        let r = matcher_with(|tb| match_identifier_or_keyword(tb, 32), string);
+        assert!(r.1.is_empty());
+        r.0
+    }
+
+    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
+        matcher_with(|tb| match_identifier_or_keyword(tb, 32), string)
     }
 
     fn id_lexem(
@@ -130,6 +141,24 @@ mod tests {
         assert_eq!(matcher("a___bc_d"), id_lexem("a___bc_d", (1, 1), (1, 9)));
         assert_eq!(matcher("_0"), id_lexem("_0", (1, 1), (1, 3)));
         assert_eq!(matcher("_"), id_lexem("_", (1, 1), (1, 2)));
+    }
+
+    #[test]
+    fn id_max_long() {
+        assert_eq!(
+            matcher("___a___b___a___c___a___b___a___d"),
+            id_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 33))
+        );
+    }
+
+    #[test]
+    fn id_too_long() {
+        let (result, errors) = err_matcher("___a___b___a___c___a___b___a___d_");
+        assert_eq!(
+            result,
+            id_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 33))
+        );
+        assert!(errors[0].variant == LexemErrorVariant::IdentifierTooLong);
     }
 
     #[test]

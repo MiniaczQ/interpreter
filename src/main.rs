@@ -63,7 +63,7 @@ fn parse_args() -> Result<ParsedArgs, AppError> {
 
 /// Consumes and prints all lexems
 fn print_lexems(lexer: &mut Lexer) {
-    for token in lexer {
+    for token in lexer.all() {
         println!("{}", token);
     }
 }

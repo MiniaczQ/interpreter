@@ -18,27 +18,22 @@ fn can_continue(c: char) -> bool {
 
 /// Matches an identifier or a keyword
 pub fn match_identifier_or_keyword(lb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
-    if can_begin(lb.curr()) {
-        let mut name = vec![lb.curr()];
-        lb.pop();
-        while can_continue(lb.curr()) {
-            name.push(lb.curr());
-            if name.len() > max {
-                name.pop();
-                lb.error(LexemErrorVariant::IdentifierTooLong);
-                break;
-            }
-            lb.pop();
-        }
-        let name: String = name.into_iter().collect();
-        if let Some(token) = match_keyword(lb, &name) {
-            Some(token)
-        } else {
-            lb.bake(LexemType::Identifier(name))
-        }
-    } else {
-        None
+    if !can_begin(lb.curr()) {
+        return None;
     }
+    let mut name = vec![lb.curr()];
+    lb.pop();
+    while can_continue(lb.curr()) {
+        name.push(lb.curr());
+        if name.len() > max {
+            name.pop();
+            lb.error(LexemErrorVariant::IdentifierTooLong);
+            break;
+        }
+        lb.pop();
+    }
+    let name: String = name.into_iter().collect();
+    match_keyword(lb, &name).or_else(|| lb.bake(LexemType::Identifier(name)))
 }
 
 /// Matches a keyword

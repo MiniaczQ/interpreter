@@ -37,11 +37,7 @@ pub fn match_numerical(lb: &mut LexemBuilder) -> Option<Lexem> {
     } else {
         lb.pop();
     }
-    if let Some(token) = match_float(lb, integer_part) {
-        Some(token)
-    } else {
-        lb.bake(LexemType::Int(integer_part))
-    }
+    match_float(lb, integer_part).or_else(|| lb.bake(LexemType::Int(integer_part)))
 }
 
 /// Matches a float constant

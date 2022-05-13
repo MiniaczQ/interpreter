@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
 
 use crate::{
     lexer::{keywords::Keyword, operators::Operator},
@@ -61,22 +61,68 @@ impl Lexem {
 pub struct LexemBuilder<'a> {
     scanner: &'a mut CharScanner,
     start: Position,
+    errors: &'a mut Vec<LexemError>,
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum LexemErrorVariant {
+    CommentNeverEnds,
+    CommentTooLong,
+    StringNeverEnds,
+    StringTooLong,
+    IntegerPartTooBig,
+    DecimalPartTooBig,
+    IdentifierTooLong,
+    InvalidEscapeCharacter(char),
+    InvalidSequence(String),
+}
+
+impl Display for LexemErrorVariant {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            LexemErrorVariant::CommentNeverEnds => f.write_str("comment never ends"),
+            LexemErrorVariant::CommentTooLong => f.write_str("comment too long"),
+            LexemErrorVariant::StringNeverEnds => f.write_str("string never ends"),
+            LexemErrorVariant::StringTooLong => f.write_str("string too long"),
+            LexemErrorVariant::IntegerPartTooBig => f.write_str("integer part too big"),
+            LexemErrorVariant::DecimalPartTooBig => f.write_str("decimal part too big"),
+            LexemErrorVariant::IdentifierTooLong => f.write_str("identifier too long"),
+            LexemErrorVariant::InvalidEscapeCharacter(c) => {
+                f.write_fmt(format_args!("invalid escape character `\\{}`", c))
+            }
+            LexemErrorVariant::InvalidSequence(s) => {
+                f.write_fmt(format_args!("invalid sequence `{}`", s))
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct LexemError {
+    pub start: Position,
+    pub end: Position,
+    pub variant: LexemErrorVariant,
+}
+
+impl Display for LexemError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Error from {} to {}: {}",
+            self.start, self.end, self.variant
+        ))
+    }
+}
+
+impl Error for LexemError {}
+
 impl<'a> LexemBuilder<'a> {
-    pub fn new(scanner: &'a mut CharScanner) -> Self {
+    pub fn new(scanner: &'a mut CharScanner, errors: &'a mut Vec<LexemError>) -> Self {
         let start = (&*scanner).last_pos();
-        Self { scanner, start }
-    }
-
-    /// Lexem start position
-    pub fn get_start(&self) -> Position {
-        self.start
-    }
-
-    /// Scanner position
-    pub fn get_here(&self) -> Position {
-        self.scanner.last_pos()
+        Self {
+            scanner,
+            start,
+            errors,
+        }
     }
 
     /// Create a lexem
@@ -88,6 +134,15 @@ impl<'a> LexemBuilder<'a> {
     pub fn bake(&self, token_type: LexemType) -> Option<Lexem> {
         Some(self.bake_raw(token_type))
     }
+
+    /// Reports an error that happen during building
+    pub fn error(&mut self, e: LexemErrorVariant) {
+        self.errors.push(LexemError {
+            start: self.start,
+            end: self.scanner.last_pos(),
+            variant: e,
+        });
+    }
 }
 
 impl<'a> Scannable<char> for LexemBuilder<'a> {
@@ -97,8 +152,8 @@ impl<'a> Scannable<char> for LexemBuilder<'a> {
     }
 
     #[inline]
-    fn peek(&self) -> char {
-        self.scanner.peek()
+    fn curr(&self) -> char {
+        self.scanner.curr()
     }
 }
 

@@ -63,8 +63,15 @@ fn parse_args() -> Result<ParsedArgs, AppError> {
 
 /// Consumes and prints all lexems
 fn print_lexems(lexer: &mut Lexer) {
-    for token in lexer {
+    for token in lexer.all() {
         println!("{}", token);
+    }
+}
+
+/// Prints all errors
+fn print_errors(lexer: &Lexer) {
+    for e in &lexer.errors {
+        eprintln!("{}", e);
     }
 }
 
@@ -120,6 +127,8 @@ fn run(input: InputType) -> Result<(), AppError> {
     let mut lexer = Lexer::new(reader);
 
     print_lexems(&mut lexer); // TEMPORARY
+
+    print_errors(&lexer);
 
     Ok(())
 }

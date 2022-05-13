@@ -1,97 +1,93 @@
 use crate::{
-    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    lexer::lexem::{Lexem, LexemBuilder, LexemErrorVariant, LexemType},
     scannable::Scannable,
 };
 
+/// Turns `0` - `9` characters to their `i64` representation
+fn char2num(c: char) -> i64 {
+    c as i64 - '0' as i64
+}
+
+/// Performs a checked multiplication followed by addition of `a * b + c`
+fn checked_mul_add(a: i64, b: i64, c: i64) -> Option<i64> {
+    a.checked_mul(b).and_then(|v| v.checked_add(c))
+}
+
 /// Matches an integer or a float constant
-pub fn match_numerical(tb: &mut LexemBuilder) -> Option<Lexem> {
-    if tb.peek().is_ascii_digit() {
-        let mut integer_part: i64 = tb.peek() as i64 - '0' as i64; // TODO wyjąc konwertowanie
-        if tb.peek() != '0' {
-            tb.pop();
-            loop { // TODO użyć while
-                if tb.peek().is_ascii_digit() {
-                    if let Some(new_integer_part) = integer_part.checked_mul(10) {
-                        integer_part = new_integer_part;
-                        integer_part += tb.peek() as i64 - '0' as i64; // TODO Sprawdzić czy nie ma przepełnienia
-                        tb.pop();
-                    } else {
-                        eprintln!(
-                            "Integer too big from {} to {}.",
-                            tb.get_start(),
-                            tb.get_here()
-                        );
-                        break;
-                    }
-                } else if tb.peek() == '_' {
-                    tb.pop();
-                } else {
-                    break;
-                }
+pub fn match_numerical(lb: &mut LexemBuilder) -> Option<Lexem> {
+    if !lb.curr().is_ascii_digit() {
+        return None;
+    }
+    let mut integer_part: i64 = char2num(lb.curr());
+    if lb.curr() != '0' {
+        lb.pop();
+        while lb.curr().is_ascii_digit() || lb.curr() == '_' {
+            if lb.curr() == '_' {
+                lb.pop();
+            } else if let Some(new_integer_part) =
+                checked_mul_add(integer_part, 10, char2num(lb.curr()))
+            {
+                integer_part = new_integer_part;
+                lb.pop();
+            } else {
+                lb.error(LexemErrorVariant::IntegerPartTooBig);
+                break;
             }
-        } else {
-            tb.pop();
-        }
-        if let Some(token) = match_float(tb, integer_part) {
-            Some(token)
-        } else {
-            tb.bake(LexemType::Int(integer_part))
         }
     } else {
-        None
+        lb.pop();
     }
+    match_float(lb, integer_part).or_else(|| lb.bake(LexemType::Int(integer_part)))
 }
 
 /// Matches a float constant
-fn match_float(tb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
-    if tb.peek() == '.' { // TODO odwrócić warunek
-        tb.pop();
-        if tb.peek().is_ascii_digit() {
-            let mut digits = 1;
-            let mut decimal_part: i64 = tb.peek() as i64 - '0' as i64;
-            tb.pop();
-            loop {
-                if tb.peek().is_ascii_digit() {
-                    if let Some(new_decimal_part) = decimal_part.checked_mul(10) {
-                        decimal_part = new_decimal_part;
-                        digits += 1;
-                        decimal_part += tb.peek() as i64 - '0' as i64;
-                        tb.pop();
-                    } else {
-                        eprintln!(
-                            "Decimal part too big from {} to {}.",
-                            tb.get_start(),
-                            tb.get_here()
-                        );
-                        break;
-                    }
-                } else if tb.peek() == '_' {
-                    tb.pop();
-                } else {
-                    break;
-                }
+fn match_float(lb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
+    if lb.curr() != '.' {
+        return None;
+    }
+    lb.pop();
+    if lb.curr().is_ascii_digit() {
+        let mut digits = 1;
+        let mut decimal_part: i64 = char2num(lb.curr());
+        lb.pop();
+        while lb.curr().is_ascii_digit() || lb.curr() == '_' {
+            if lb.curr() == '_' {
+                lb.pop();
+            } else if let Some(new_decimal_part) =
+                checked_mul_add(decimal_part, 10, char2num(lb.curr()))
+            {
+                decimal_part = new_decimal_part;
+                digits += 1;
+                lb.pop();
+            } else {
+                lb.error(LexemErrorVariant::DecimalPartTooBig);
+                break;
             }
-            tb.bake(LexemType::Float(
-                integer_part as f64 + decimal_part as f64 / 10f64.powf(digits as f64),
-            ))
-        } else {
-            tb.bake(LexemType::Float(integer_part as f64))
         }
+        lb.bake(LexemType::Float(
+            integer_part as f64 + decimal_part as f64 / 10f64.powf(digits as f64),
+        ))
     } else {
-        None
+        lb.bake(LexemType::Float(integer_part as f64))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::lexer::{
-        lexem::{Lexem, LexemType},
+        lexem::{Lexem, LexemError, LexemErrorVariant, LexemType},
         matchers::test_utils::{lexem_with, matcher_with},
     };
 
     use super::match_numerical;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
+        let r = matcher_with(match_numerical, string);
+        assert!(r.1.is_empty());
+        r.0
+    }
+
+    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
         matcher_with(match_numerical, string)
     }
 
@@ -129,19 +125,17 @@ mod tests {
     }
 
     #[test]
-    fn int_limit2() {
-        assert_eq!(
-            matcher("9_223_372_036_854_775_808"),
-            int_lexem(9223372036854775800, (1, 1), (1, 26))
-        );
+    fn int_just_above_limit() {
+        let (result, errors) = err_matcher("9_223_372_036_854_775_808");
+        assert_eq!(result, int_lexem(922337203685477580, (1, 1), (1, 25)));
+        assert!(errors[0].variant == LexemErrorVariant::IntegerPartTooBig);
     }
 
     #[test]
     fn int_above_limit() {
-        assert_eq!(
-            matcher("101273576184162375213625468214"),
-            int_lexem(1012735761841623752, (1, 1), (1, 20))
-        );
+        let (result, errors) = err_matcher("101273576184162375213625468214");
+        assert_eq!(result, int_lexem(1012735761841623752, (1, 1), (1, 20)));
+        assert!(errors[0].variant == LexemErrorVariant::IntegerPartTooBig);
     }
 
     #[test]
@@ -187,11 +181,20 @@ mod tests {
     }
 
     #[test]
-    fn float_above_limit() {
+    fn float_just_above_limit() {
+        let (result, errors) = err_matcher("0.9_223_372_036_854_775_808");
         assert_eq!(
-            matcher("0.101273576184162375213625468214"),
-            float_lexem(0.10127357618416238, (1, 1), (1, 22))
+            result,
+            float_lexem(0.922_337_203_685_477_7, (1, 1), (1, 27))
         );
+        assert!(errors[0].variant == LexemErrorVariant::DecimalPartTooBig);
+    }
+
+    #[test]
+    fn float_above_limit() {
+        let (result, errors) = err_matcher("0.101273576184162375213625468214");
+        assert_eq!(result, float_lexem(0.10127357618416238, (1, 1), (1, 22)));
+        assert!(errors[0].variant == LexemErrorVariant::DecimalPartTooBig);
     }
 
     #[test]

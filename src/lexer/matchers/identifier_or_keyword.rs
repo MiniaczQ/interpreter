@@ -1,6 +1,6 @@
 use crate::{
     lexer::keywords::Keyword,
-    lexer::lexem::{Lexem, LexemBuilder, LexemType},
+    lexer::lexem::{Lexem, LexemBuilder, LexemErrorVariant, LexemType},
     scannable::Scannable,
 };
 
@@ -17,42 +17,42 @@ fn can_continue(c: char) -> bool {
 }
 
 /// Matches an identifier or a keyword
-pub fn match_identifier_or_keyword(tb: &mut LexemBuilder) -> Option<Lexem> {
-    if can_begin(tb.peek()) {
-        let mut name = vec![tb.peek()];
-        tb.pop();
-        while can_continue(tb.peek()) { // TODO maksymalna długość
-            name.push(tb.peek());
-            tb.pop();
-        }
-        let name: String = name.into_iter().collect();
-        if let Some(token) = match_keyword(tb, &name) {
-            Some(token)
-        } else {
-            tb.bake(LexemType::Identifier(name))
-        }
-    } else {
-        None
+pub fn match_identifier_or_keyword(lb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
+    if !can_begin(lb.curr()) {
+        return None;
     }
+    let mut name = vec![lb.curr()];
+    lb.pop();
+    while can_continue(lb.curr()) {
+        name.push(lb.curr());
+        if name.len() > max {
+            name.pop();
+            lb.error(LexemErrorVariant::IdentifierTooLong);
+            break;
+        }
+        lb.pop();
+    }
+    let name: String = name.into_iter().collect();
+    match_keyword(lb, &name).or_else(|| lb.bake(LexemType::Identifier(name)))
 }
 
 /// Matches a keyword
-fn match_keyword(tb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
+fn match_keyword(lb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
     match name {
-        "int" => tb.bake(LexemType::Keyword(Keyword::Int)),
-        "float" => tb.bake(LexemType::Keyword(Keyword::Float)),
-        "bool" => tb.bake(LexemType::Keyword(Keyword::Bool)),
-        "string" => tb.bake(LexemType::Keyword(Keyword::String)),
-        "let" => tb.bake(LexemType::Keyword(Keyword::Let)),
-        "fn" => tb.bake(LexemType::Keyword(Keyword::Fn)),
-        "return" => tb.bake(LexemType::Keyword(Keyword::Return)),
-        "while" => tb.bake(LexemType::Keyword(Keyword::While)),
-        "for" => tb.bake(LexemType::Keyword(Keyword::For)),
-        "in" => tb.bake(LexemType::Keyword(Keyword::In)),
-        "if" => tb.bake(LexemType::Keyword(Keyword::If)),
-        "else" => tb.bake(LexemType::Keyword(Keyword::Else)),
-        "true" => tb.bake(LexemType::Keyword(Keyword::True)),
-        "false" => tb.bake(LexemType::Keyword(Keyword::False)),
+        "int" => lb.bake(LexemType::Keyword(Keyword::Int)),
+        "float" => lb.bake(LexemType::Keyword(Keyword::Float)),
+        "bool" => lb.bake(LexemType::Keyword(Keyword::Bool)),
+        "string" => lb.bake(LexemType::Keyword(Keyword::String)),
+        "let" => lb.bake(LexemType::Keyword(Keyword::Let)),
+        "fn" => lb.bake(LexemType::Keyword(Keyword::Fn)),
+        "return" => lb.bake(LexemType::Keyword(Keyword::Return)),
+        "while" => lb.bake(LexemType::Keyword(Keyword::While)),
+        "for" => lb.bake(LexemType::Keyword(Keyword::For)),
+        "in" => lb.bake(LexemType::Keyword(Keyword::In)),
+        "if" => lb.bake(LexemType::Keyword(Keyword::If)),
+        "else" => lb.bake(LexemType::Keyword(Keyword::Else)),
+        "true" => lb.bake(LexemType::Keyword(Keyword::True)),
+        "false" => lb.bake(LexemType::Keyword(Keyword::False)),
         _ => None,
     }
 }
@@ -61,14 +61,20 @@ fn match_keyword(tb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
 mod tests {
     use crate::lexer::{
         keywords::Keyword,
-        lexem::{Lexem, LexemType},
+        lexem::{Lexem, LexemError, LexemErrorVariant, LexemType},
         matchers::test_utils::{lexem_with, matcher_with},
     };
 
     use super::match_identifier_or_keyword;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        matcher_with(match_identifier_or_keyword, string)
+        let r = matcher_with(|lb| match_identifier_or_keyword(lb, 32), string);
+        assert!(r.1.is_empty());
+        r.0
+    }
+
+    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
+        matcher_with(|lb| match_identifier_or_keyword(lb, 32), string)
     }
 
     fn id_lexem(
@@ -130,6 +136,24 @@ mod tests {
         assert_eq!(matcher("a___bc_d"), id_lexem("a___bc_d", (1, 1), (1, 9)));
         assert_eq!(matcher("_0"), id_lexem("_0", (1, 1), (1, 3)));
         assert_eq!(matcher("_"), id_lexem("_", (1, 1), (1, 2)));
+    }
+
+    #[test]
+    fn id_max_long() {
+        assert_eq!(
+            matcher("___a___b___a___c___a___b___a___d"),
+            id_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 33))
+        );
+    }
+
+    #[test]
+    fn id_too_long() {
+        let (result, errors) = err_matcher("___a___b___a___c___a___b___a___d_");
+        assert_eq!(
+            result,
+            id_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 33))
+        );
+        assert!(errors[0].variant == LexemErrorVariant::IdentifierTooLong);
     }
 
     #[test]

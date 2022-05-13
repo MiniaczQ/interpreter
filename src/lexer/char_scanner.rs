@@ -82,7 +82,7 @@ impl Scannable<char> for CharScanner {
     }
 
     // Returns the current character
-    fn peek(&self) -> char {
+    fn curr(&self) -> char {
         self.current
     }
 }

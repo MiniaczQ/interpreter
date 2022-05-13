@@ -8,30 +8,30 @@ use crate::{
 type Op = Operator;
 
 /// Matches an operator
-pub fn match_operator(t_b: &mut LexemBuilder) -> Option<Lexem> {
-    match t_b.curr() {
-        '+' => char_match!(t_b, Op::Plus),
-        '-' => char_match!(t_b, Op::Minus, '>', Op::Arrow),
-        '*' => char_match!(t_b, Op::Asterisk),
-        '=' => char_match!(t_b, Op::Equal, '=', Op::DoubleEqual),
-        '<' => char_match!(t_b, Op::Lesser, '=', Op::LesserEqual),
-        '>' => char_match!(t_b, Op::Greater, '=', Op::GreaterEqual),
-        '(' => char_match!(t_b, Op::OpenRoundBracket),
-        ')' => char_match!(t_b, Op::CloseRoundBracket),
-        '{' => char_match!(t_b, Op::OpenCurlyBracket),
-        '}' => char_match!(t_b, Op::CloseCurlyBracket),
-        '[' => char_match!(t_b, Op::OpenSquareBracket),
-        ']' => char_match!(t_b, Op::CloseSquareBracket),
-        ':' => char_match!(t_b, Op::Colon, ':', Op::DoubleColon),
-        '&' => char_match!(t_b, Op::And),
-        '|' => char_match!(t_b, Op::Or),
-        ';' => char_match!(t_b, Op::Semicolon),
-        ',' => char_match!(t_b, Op::Split),
-        '!' => char_match!(t_b, Op::ExclamationMark, '=', Op::Unequal),
-        '%' => char_match!(t_b, Op::Modulo),
+pub fn match_operator(lb: &mut LexemBuilder) -> Option<Lexem> {
+    match lb.curr() {
+        '+' => char_match!(lb, Op::Plus),
+        '-' => char_match!(lb, Op::Minus, '>', Op::Arrow),
+        '*' => char_match!(lb, Op::Asterisk),
+        '=' => char_match!(lb, Op::Equal, '=', Op::DoubleEqual),
+        '<' => char_match!(lb, Op::Lesser, '=', Op::LesserEqual),
+        '>' => char_match!(lb, Op::Greater, '=', Op::GreaterEqual),
+        '(' => char_match!(lb, Op::OpenRoundBracket),
+        ')' => char_match!(lb, Op::CloseRoundBracket),
+        '{' => char_match!(lb, Op::OpenCurlyBracket),
+        '}' => char_match!(lb, Op::CloseCurlyBracket),
+        '[' => char_match!(lb, Op::OpenSquareBracket),
+        ']' => char_match!(lb, Op::CloseSquareBracket),
+        ':' => char_match!(lb, Op::Colon, ':', Op::DoubleColon),
+        '&' => char_match!(lb, Op::And),
+        '|' => char_match!(lb, Op::Or),
+        ';' => char_match!(lb, Op::Semicolon),
+        ',' => char_match!(lb, Op::Split),
+        '!' => char_match!(lb, Op::ExclamationMark, '=', Op::Unequal),
+        '%' => char_match!(lb, Op::Modulo),
         _ => None,
     }
-    .map(|operator| t_b.bake_raw(LexemType::Operator(operator)))
+    .map(|operator| lb.bake_raw(LexemType::Operator(operator)))
 }
 
 #[cfg(test)]

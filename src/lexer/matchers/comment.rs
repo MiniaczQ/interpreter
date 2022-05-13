@@ -10,30 +10,30 @@ use crate::{
 ///  - `/`              - division
 ///  - `//`             - single line comment
 ///  - `/* [...] */`    - multi-line comment
-pub fn match_comment_or_division(tb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
-    if tb.curr() == '/' {
-        tb.pop();
-        match tb.curr() {
-            '*' => return Some(complete_multi_line_comment(tb, max)),
-            '/' => return Some(complete_single_line_comment(tb, max)),
-            _ => return tb.bake(LexemType::Operator(Operator::Slash)),
+pub fn match_comment_or_division(lb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
+    if lb.curr() == '/' {
+        lb.pop();
+        match lb.curr() {
+            '*' => return Some(complete_multi_line_comment(lb, max)),
+            '/' => return Some(complete_single_line_comment(lb, max)),
+            _ => return lb.bake(LexemType::Operator(Operator::Slash)),
         }
     }
     None
 }
 
 /// Completes a multi-line comment
-fn complete_multi_line_comment(tb: &mut LexemBuilder, max: usize) -> Lexem {
+fn complete_multi_line_comment(lb: &mut LexemBuilder, max: usize) -> Lexem {
     let mut content: Vec<char> = vec![];
-    tb.pop();
+    lb.pop();
     loop {
-        match tb.curr() {
+        match lb.curr() {
             '*' => {
-                tb.pop();
-                match tb.curr() {
+                lb.pop();
+                match lb.curr() {
                     '/' => {
-                        tb.pop();
-                        break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+                        lb.pop();
+                        break lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
                     }
                     c => {
                         content.push('*');
@@ -42,9 +42,9 @@ fn complete_multi_line_comment(tb: &mut LexemBuilder, max: usize) -> Lexem {
                 }
             }
             '\x03' => {
-                tb.error(LexemErrorVariant::CommentNeverEnds);
-                let t = tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
-                tb.pop();
+                lb.error(LexemErrorVariant::CommentNeverEnds);
+                let t = lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+                lb.pop();
                 break t;
             }
             c => {
@@ -53,30 +53,30 @@ fn complete_multi_line_comment(tb: &mut LexemBuilder, max: usize) -> Lexem {
         }
         if content.len() > max {
             content.pop();
-            tb.error(LexemErrorVariant::CommentTooLong);
-            break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+            lb.error(LexemErrorVariant::CommentTooLong);
+            break lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
         }
-        tb.pop();
+        lb.pop();
     }
 }
 
 /// Completes a single-line comment
-fn complete_single_line_comment(tb: &mut LexemBuilder, max: usize) -> Lexem {
+fn complete_single_line_comment(lb: &mut LexemBuilder, max: usize) -> Lexem {
     let mut content: Vec<char> = vec![];
-    tb.pop();
+    lb.pop();
     loop {
-        match tb.curr() {
-            '\n' | '\x03' => break tb.bake_raw(LexemType::Comment(content.into_iter().collect())),
+        match lb.curr() {
+            '\n' | '\x03' => break lb.bake_raw(LexemType::Comment(content.into_iter().collect())),
             c => {
                 content.push(c);
             }
         }
         if content.len() > max {
             content.pop();
-            tb.error(LexemErrorVariant::CommentTooLong);
-            break tb.bake_raw(LexemType::Comment(content.into_iter().collect()));
+            lb.error(LexemErrorVariant::CommentTooLong);
+            break lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
         }
-        tb.pop();
+        lb.pop();
     }
 }
 
@@ -91,13 +91,13 @@ mod tests {
     use super::match_comment_or_division;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        let r = matcher_with(|tb| match_comment_or_division(tb, 32), string);
+        let r = matcher_with(|lb| match_comment_or_division(lb, 32), string);
         assert!(r.1.is_empty());
         r.0
     }
 
     fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
-        matcher_with(|tb| match_comment_or_division(tb, 32), string)
+        matcher_with(|lb| match_comment_or_division(lb, 32), string)
     }
 
     fn comment_lexem(

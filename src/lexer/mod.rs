@@ -47,12 +47,12 @@ impl Lexer {
 
     /// Matches lexems
     fn match_lexem(&mut self) -> Option<Lexem> {
-        let tb = &mut LexemBuilder::new(&mut self.scanner, &mut self.errors);
-        match_numerical(tb)
-            .or_else(|| match_identifier_or_keyword(tb, self.max_identifier_length))
-            .or_else(|| match_operator(tb))
-            .or_else(|| match_string(tb, self.max_string_length))
-            .or_else(|| match_comment_or_division(tb, self.max_comment_length))
+        let lb = &mut LexemBuilder::new(&mut self.scanner, &mut self.errors);
+        match_numerical(lb)
+            .or_else(|| match_identifier_or_keyword(lb, self.max_identifier_length))
+            .or_else(|| match_operator(lb))
+            .or_else(|| match_string(lb, self.max_string_length))
+            .or_else(|| match_comment_or_division(lb, self.max_comment_length))
     }
 
     /// Skips whitespace and matches lexems or ETX

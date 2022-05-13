@@ -4,18 +4,18 @@ use crate::{
 };
 
 /// Matches a string constant
-pub fn match_string(tb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
-    if tb.curr() == '"' {
-        tb.pop();
-        Some(complete_string(tb, max))
+pub fn match_string(lb: &mut LexemBuilder, max: usize) -> Option<Lexem> {
+    if lb.curr() == '"' {
+        lb.pop();
+        Some(complete_string(lb, max))
     } else {
         None
     }
 }
 
 /// Handles different kinds of escape characters
-fn escape_characters(tb: &mut LexemBuilder, content: &mut Vec<char>) {
-    match tb.curr() {
+fn escape_characters(lb: &mut LexemBuilder, content: &mut Vec<char>) {
+    match lb.curr() {
         '0' => content.push('\0'),
         'b' => content.push('\x08'),
         'f' => content.push('\x0c'),
@@ -25,37 +25,37 @@ fn escape_characters(tb: &mut LexemBuilder, content: &mut Vec<char>) {
         '"' => content.push('"'),
         '\\' => content.push('\\'),
         c => {
-            tb.error(LexemErrorVariant::InvalidEscapeCharacter(c));
+            lb.error(LexemErrorVariant::InvalidEscapeCharacter(c));
         }
     }
 }
 
 /// Completes a string constant
-fn complete_string(tb: &mut LexemBuilder, max: usize) -> Lexem {
+fn complete_string(lb: &mut LexemBuilder, max: usize) -> Lexem {
     let mut content: Vec<char> = vec![];
     loop {
-        let c = tb.curr();
-        match tb.curr() {
+        let c = lb.curr();
+        match lb.curr() {
             '\\' => {
-                tb.pop();
-                escape_characters(tb, &mut content);
+                lb.pop();
+                escape_characters(lb, &mut content);
             }
             '\x03' => {
-                tb.error(LexemErrorVariant::StringNeverEnds);
-                break tb.bake_raw(LexemType::String(content.into_iter().collect()));
+                lb.error(LexemErrorVariant::StringNeverEnds);
+                break lb.bake_raw(LexemType::String(content.into_iter().collect()));
             }
             '"' => {
-                tb.pop();
-                break tb.bake_raw(LexemType::String(content.into_iter().collect()));
+                lb.pop();
+                break lb.bake_raw(LexemType::String(content.into_iter().collect()));
             }
             _ => content.push(c),
         }
         if content.len() > max {
             content.pop();
-            tb.error(LexemErrorVariant::StringTooLong);
-            break tb.bake_raw(LexemType::String(content.into_iter().collect()));
+            lb.error(LexemErrorVariant::StringTooLong);
+            break lb.bake_raw(LexemType::String(content.into_iter().collect()));
         }
-        tb.pop();
+        lb.pop();
     }
 }
 
@@ -69,13 +69,13 @@ mod tests {
     use super::match_string;
 
     fn matcher(string: &'static str) -> Option<Lexem> {
-        let r = matcher_with(|tb| match_string(tb, 32), string);
+        let r = matcher_with(|lb| match_string(lb, 32), string);
         assert!(r.1.is_empty());
         r.0
     }
 
     fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
-        matcher_with(|tb| match_string(tb, 32), string)
+        matcher_with(|lb| match_string(lb, 32), string)
     }
 
     fn lexem(string: &'static str, start: (usize, usize), stop: (usize, usize)) -> Option<Lexem> {

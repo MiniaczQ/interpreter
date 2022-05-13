@@ -14,65 +14,65 @@ fn checked_mul_add(a: i64, b: i64, c: i64) -> Option<i64> {
 }
 
 /// Matches an integer or a float constant
-pub fn match_numerical(tb: &mut LexemBuilder) -> Option<Lexem> {
-    if !tb.curr().is_ascii_digit() {
+pub fn match_numerical(lb: &mut LexemBuilder) -> Option<Lexem> {
+    if !lb.curr().is_ascii_digit() {
         return None;
     }
-    let mut integer_part: i64 = char2num(tb.curr());
-    if tb.curr() != '0' {
-        tb.pop();
-        while tb.curr().is_ascii_digit() || tb.curr() == '_' {
-            if tb.curr() == '_' {
-                tb.pop();
+    let mut integer_part: i64 = char2num(lb.curr());
+    if lb.curr() != '0' {
+        lb.pop();
+        while lb.curr().is_ascii_digit() || lb.curr() == '_' {
+            if lb.curr() == '_' {
+                lb.pop();
             } else if let Some(new_integer_part) =
-                checked_mul_add(integer_part, 10, char2num(tb.curr()))
+                checked_mul_add(integer_part, 10, char2num(lb.curr()))
             {
                 integer_part = new_integer_part;
-                tb.pop();
+                lb.pop();
             } else {
-                tb.error(LexemErrorVariant::IntegerPartTooBig);
+                lb.error(LexemErrorVariant::IntegerPartTooBig);
                 break;
             }
         }
     } else {
-        tb.pop();
+        lb.pop();
     }
-    if let Some(token) = match_float(tb, integer_part) {
+    if let Some(token) = match_float(lb, integer_part) {
         Some(token)
     } else {
-        tb.bake(LexemType::Int(integer_part))
+        lb.bake(LexemType::Int(integer_part))
     }
 }
 
 /// Matches a float constant
-fn match_float(tb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
-    if tb.curr() != '.' {
+fn match_float(lb: &mut LexemBuilder, integer_part: i64) -> Option<Lexem> {
+    if lb.curr() != '.' {
         return None;
     }
-    tb.pop();
-    if tb.curr().is_ascii_digit() {
+    lb.pop();
+    if lb.curr().is_ascii_digit() {
         let mut digits = 1;
-        let mut decimal_part: i64 = char2num(tb.curr());
-        tb.pop();
-        while tb.curr().is_ascii_digit() || tb.curr() == '_' {
-            if tb.curr() == '_' {
-                tb.pop();
+        let mut decimal_part: i64 = char2num(lb.curr());
+        lb.pop();
+        while lb.curr().is_ascii_digit() || lb.curr() == '_' {
+            if lb.curr() == '_' {
+                lb.pop();
             } else if let Some(new_decimal_part) =
-                checked_mul_add(decimal_part, 10, char2num(tb.curr()))
+                checked_mul_add(decimal_part, 10, char2num(lb.curr()))
             {
                 decimal_part = new_decimal_part;
                 digits += 1;
-                tb.pop();
+                lb.pop();
             } else {
-                tb.error(LexemErrorVariant::DecimalPartTooBig);
+                lb.error(LexemErrorVariant::DecimalPartTooBig);
                 break;
             }
         }
-        tb.bake(LexemType::Float(
+        lb.bake(LexemType::Float(
             integer_part as f64 + decimal_part as f64 / 10f64.powf(digits as f64),
         ))
     } else {
-        tb.bake(LexemType::Float(integer_part as f64))
+        lb.bake(LexemType::Float(integer_part as f64))
     }
 }
 

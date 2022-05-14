@@ -67,7 +67,7 @@ function_definitions
     ;
 
 function_definition
-    = KW_FN, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
+    = KW_FN, IDENTIFIER, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
     ;
 
 parameters

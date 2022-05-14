@@ -1,25 +1,15 @@
-use self::literals::Literal;
+use super::ParserError;
 
-use super::CriticalParserError;
-
+mod code_block;
+mod conditional;
 mod expressions;
 mod function;
 mod literals;
+mod loops;
+mod program;
 mod types;
 
 pub trait Node {}
-
-pub enum DataType {
-    Integer,
-    Float,
-    Bool,
-    IntegerList,
-    FloatList,
-    BoolList,
-    String,
-    Any,
-    None,
-}
 
 /// A value
 #[derive(Clone)]
@@ -33,7 +23,7 @@ pub enum Value {
     String(String),
 }
 
-type ParseResult<T> = Result<Option<T>, CriticalParserError>;
+type ParseResult<T> = Result<Option<T>, ParserError>;
 
 /// Result extension for simpler parser control flow.
 pub trait ExtResult<T> {
@@ -57,5 +47,3 @@ impl<T> ExtResult<T> for ParseResult<T> {
         }
     }
 }
-
-pub struct Function {}

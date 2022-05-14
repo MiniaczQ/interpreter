@@ -6,32 +6,56 @@ pub mod grammar;
 mod keywords;
 mod operators;
 mod position;
-pub mod program;
 mod token;
 mod token_scanner;
 
-pub enum CriticalParserErrorVariant {
+/// Errors that prevent parser from working
+pub enum ParserErrorVariant {
     OutOfTokens,
+    MissingType,
+    MissingFunctionIdentifier,
+    MissingFunctionReturnType, // mby warning and default to none type?
+    MissingFunctionBody,
+    MissingIfCondition,
+    MissingIfTrueBranch,
+    MissingIfFalseBranch,
+    MissingWhileLoopCondition,
+    MissingWhileLoopBody,
+    MissingForLoopVariable,
+    MissingForLoopProvider,
+    MissingForLoopBody,
+    InvalidBracketExpression,
+    IncompleteRange,
+    EmptyListAccess,
 }
 
-pub struct CriticalParserError {
-    err: CriticalParserErrorVariant,
+/// Critical errors remember the last position before they happened
+pub struct ParserError {
+    err: ParserErrorVariant,
     pos: Position,
 }
 
-pub enum ElusiveParserErrorVariant {
+/// Errors that the parser can work around
+pub enum ParserWarningVariant {
     TrailingComma,
+    MissingOpeningRoundBracket,
+    MissingClosingRoundBracket,
     MissingClosingSquareBracket,
+    MissingClosingCurlyBracket,
+    MissingColon,
 }
 
-pub struct ElusiveParserError {
-    err: ElusiveParserErrorVariant,
+/// Elusive errors remember the position where they were supposed to be
+pub struct ParserWarning {
+    err: ParserWarningVariant,
     start: Position,
     stop: Position,
 }
 
+/// Language parser.
+///
 pub struct Parser {
-    errors: Vec<ElusiveParserError>,
+    errors: Vec<ParserWarning>,
     pos: Position,
     token_scanner: TokenScanner,
 }
@@ -44,13 +68,28 @@ impl Parser {
             token_scanner,
         }
     }
+}
 
-    pub fn error(&mut self, err: ElusiveParserErrorVariant) {
-        self.errors.push(ElusiveParserError {
+pub trait ErrorHandler {
+    /// Reports errors that can be omited.
+    /// They can be recovered after parsing is over.
+    fn warn(&mut self, err: ParserWarningVariant);
+
+    /// Creates a critical error which aborts parsing.
+    fn error(&mut self, err: ParserErrorVariant) -> ParserError;
+}
+
+impl ErrorHandler for Parser {
+    fn warn(&mut self, err: ParserWarningVariant) {
+        self.errors.push(ParserWarning {
             err,
             start: self.curr().unwrap().start,
             stop: self.curr().unwrap().stop,
         });
+    }
+
+    fn error(&mut self, err: ParserErrorVariant) -> ParserError {
+        ParserError { err, pos: self.pos }
     }
 }
 
@@ -68,14 +107,12 @@ impl Scannable<Option<Token>> for Parser {
 /// Scannable extension
 pub trait ExtScannable: Scannable<Option<Token>> {
     /// Returns a token or parser error if no tokens are available
-    fn token(&mut self) -> Result<Token, CriticalParserError>;
+    fn token(&mut self) -> Result<Token, ParserError>;
 }
 
-impl ExtScannable for Parser {
-    fn token(&mut self) -> Result<Token, CriticalParserError> {
-        self.curr().ok_or(CriticalParserError {
-            err: CriticalParserErrorVariant::OutOfTokens,
-            pos: self.pos,
-        })
+impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
+    fn token(&mut self) -> Result<Token, ParserError> {
+        self.curr()
+            .ok_or(self.error(ParserErrorVariant::OutOfTokens))
     }
 }

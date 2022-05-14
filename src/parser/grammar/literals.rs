@@ -1,34 +1,17 @@
-use crate::scannable::Scannable;
+use crate::{parser::ErrorHandler, scannable::Scannable};
 
 use super::{
     super::{
-        keywords::Keyword, operators::Operator, token::TokenType, ElusiveParserErrorVariant,
-        ExtScannable, Parser,
+        keywords::Keyword, operators::Operator, token::TokenType, ExtScannable, Parser,
+        ParserWarningVariant,
     },
-    DataType, ExtResult, Node, ParseResult, Value,
+    expressions::Expression,
+    ExtResult, ParseResult, Value,
 };
 
 /// A literal value
 #[derive(Clone)]
 pub struct Literal(Value);
-
-//impl Computeable for Literal {
-//    fn data_type(&self) -> DataType {
-//        match self {
-//            Literal(Value::Integer(_)) => DataType::Integer,
-//            Literal(Value::Float(_)) => DataType::Float,
-//            Literal(Value::Bool(_)) => DataType::Bool,
-//            Literal(Value::IntegerList(_)) => DataType::IntegerList,
-//            Literal(Value::FloatList(_)) => DataType::FloatList,
-//            Literal(Value::BoolList(_)) => DataType::BoolList,
-//            Literal(Value::String(_)) => DataType::String,
-//        }
-//    }
-//
-//    fn compute(&self) -> Literal {
-//        self.clone()
-//    }
-//}
 
 /// CONST_INT
 fn parse_integer(p: &mut Parser) -> ParseResult<Literal> {
@@ -56,14 +39,14 @@ fn parse_integer_list(p: &mut Parser) -> ParseResult<Literal> {
                     p.pop();
                     list.push(v);
                 } else {
-                    p.error(ElusiveParserErrorVariant::TrailingComma)
+                    p.warn(ParserWarningVariant::TrailingComma)
                 }
             }
         }
         if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
             p.pop();
         } else {
-            p.error(ElusiveParserErrorVariant::MissingClosingSquareBracket)
+            p.warn(ParserWarningVariant::MissingClosingSquareBracket)
         }
         Ok(Some(Literal(Value::IntegerList(list))))
     } else {
@@ -97,14 +80,14 @@ fn parse_float_list(p: &mut Parser) -> ParseResult<Literal> {
                     p.pop();
                     list.push(v);
                 } else {
-                    p.error(ElusiveParserErrorVariant::TrailingComma)
+                    p.warn(ParserWarningVariant::TrailingComma)
                 }
             }
         }
         if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
             p.pop();
         } else {
-            p.error(ElusiveParserErrorVariant::MissingClosingSquareBracket)
+            p.warn(ParserWarningVariant::MissingClosingSquareBracket)
         }
         Ok(Some(Literal(Value::FloatList(list))))
     } else {
@@ -148,14 +131,14 @@ fn parse_bool_list(p: &mut Parser) -> ParseResult<Literal> {
                     p.pop();
                     list.push(v);
                 } else {
-                    p.error(ElusiveParserErrorVariant::TrailingComma)
+                    p.warn(ParserWarningVariant::TrailingComma)
                 }
             }
         }
         if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
             p.pop();
         } else {
-            p.error(ElusiveParserErrorVariant::MissingClosingSquareBracket)
+            p.warn(ParserWarningVariant::MissingClosingSquareBracket)
         }
         Ok(Some(Literal(Value::BoolList(list))))
     } else {
@@ -173,12 +156,13 @@ fn parse_string(p: &mut Parser) -> ParseResult<Literal> {
     }
 }
 
-pub fn parse_literal(p: &mut Parser) -> ParseResult<Literal> {
-    parse_integer(p)
+pub fn parse_literal(p: &mut Parser) -> ParseResult<Expression> {
+    let l = parse_integer(p)
         .alt(|| parse_integer_list(p))
         .alt(|| parse_float(p))
         .alt(|| parse_float_list(p))
         .alt(|| parse_bool(p))
         .alt(|| parse_bool_list(p))
-        .alt(|| parse_string(p))
+        .alt(|| parse_string(p))?;
+    Ok(l.map(|l| Expression::Literal(l)))
 }

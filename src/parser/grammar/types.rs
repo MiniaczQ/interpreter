@@ -1,12 +1,24 @@
 use crate::{
     parser::{
-        keywords::Keyword, operators::Operator, token::TokenType, ElusiveParserErrorVariant,
-        ExtScannable, Parser,
+        keywords::Keyword, operators::Operator, token::TokenType, ExtScannable, Parser,
+        ParserWarningVariant, ErrorHandler,
     },
     scannable::Scannable,
 };
 
-use super::{DataType, ParseResult};
+use super::ParseResult;
+
+pub enum DataType {
+    Integer,
+    Float,
+    Bool,
+    IntegerList,
+    FloatList,
+    BoolList,
+    String,
+    Any,
+    None,
+}
 
 //type
 //    = primitive_type, [OPEN_LIST, CLOSE_LIST]
@@ -46,7 +58,7 @@ fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> Par
         if let TokenType::Operator(Operator::OpenSquareBracket) = p.token()?.token_type {
             p.pop();
         } else {
-            p.error(ElusiveParserErrorVariant::MissingClosingSquareBracket);
+            p.warn(ParserWarningVariant::MissingClosingSquareBracket);
         }
         Ok(Some(list))
     } else {

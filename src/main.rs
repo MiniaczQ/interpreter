@@ -9,7 +9,7 @@ use std::{
 use lexer::Lexer;
 
 mod lexer;
-mod position;
+mod parser;
 mod scannable;
 
 /// Source of code

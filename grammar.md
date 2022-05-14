@@ -94,7 +94,7 @@ primitive_type
 ### Code block
 ```ebnf
 code_block
-    = OPEN_CODEBLOCK, statements, [expression], CLOSE_CODEBLOCK
+    = OPEN_CODEBLOCK, statements, CLOSE_CODEBLOCK
     ;
 
 statements
@@ -102,7 +102,8 @@ statements
     ;
 
 statement
-    = expression, END_EXPRESSION
+    = expression
+    | EXPRESSION_END
     ;
 ```
 
@@ -126,19 +127,25 @@ for_expression
 
 ### Constants
 ```ebnf
-primitive_constant
-    = CONST_INT
-    | CONST_FLOAT
-    | CONST_BOOL
+int_list_constant
+    = OPEN_LIST, [CONST_INT, {SPLIT, CONST_INT}], CLOSE_LIST
     ;
 
-list_constant
-    = OPEN_LIST, [primitive_constant, {SPLIT, primitive_constant}], CLOSE_LIST
+float_list_constant
+    = OPEN_LIST, [CONST_FLOAT, {SPLIT, CONST_FLOAT}], CLOSE_LIST
+    ;
+
+bool_list_constant
+    = OPEN_LIST, [CONST_BOOL, {SPLIT, CONST_BOOL}], CLOSE_LIST
     ;
 
 constant
-    = primitive_constant
-    | list_constant
+    = CONST_INT
+    | int_list_constant
+    | CONST_FLOAT
+    | float_list_constant
+    | CONST_BOOL
+    | bool_list_constant
     | CONST_STRING
     ;
 ```

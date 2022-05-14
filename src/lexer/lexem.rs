@@ -2,7 +2,7 @@ use std::{error::Error, fmt::Display};
 
 use crate::{
     lexer::{keywords::Keyword, operators::Operator},
-    position::Position,
+    lexer::position::Position,
     scannable::Scannable,
 };
 

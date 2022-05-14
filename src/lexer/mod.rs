@@ -4,6 +4,7 @@ pub mod lexem;
 mod macros;
 mod matchers;
 pub mod operators;
+pub mod position;
 
 use std::io::BufRead;
 

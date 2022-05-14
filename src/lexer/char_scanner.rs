@@ -2,7 +2,7 @@ use std::io::BufRead;
 
 use utf8_chars::BufReadCharsExt;
 
-use crate::{position::Position, scannable::Scannable};
+use crate::{lexer::position::Position, scannable::Scannable};
 
 /// Lexer pre-processor and single `char` buffer
 pub struct CharScanner {

@@ -10,6 +10,7 @@ pub mod literals;
 pub mod loops;
 pub mod program;
 pub mod types;
+mod utility;
 
 pub trait Node {}
 

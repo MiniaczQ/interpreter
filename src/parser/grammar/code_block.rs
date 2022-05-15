@@ -57,6 +57,115 @@ pub fn parse_code_block(p: &mut Parser) -> OptRes<CodeBlock> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+
+    use grammar::{
+        code_block::{CodeBlock, Statement},
+        expressions::Expression,
+        literals::Literal,
+        Value,
+    };
+
+    use super::parse_code_block;
+
     #[test]
-    fn test() {}
+    fn miss() {
+        let (result, warnings) = partial_parse(
+            vec![dummy_token(TokenType::Operator(Op::CloseCurlyBracket))],
+            parse_code_block,
+        );
+        assert_eq!(result, Ok(None));
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn ok() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                dummy_token(TokenType::Int(5)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_code_block,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            CodeBlock {
+                statements: vec![
+                    Statement::Expression(Expression::Identifier("a".to_owned())),
+                    Statement::Semicolon,
+                    Statement::Expression(Expression::Literal(Literal(Value::Integer(5)))),
+                    Statement::Semicolon,
+                ]
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn missing_bracket() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                token(TokenType::Keyword(Kw::Fn), (2, 6), (2, 8)),
+            ],
+            parse_code_block,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            CodeBlock {
+                statements: vec![Statement::Semicolon]
+            }
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingCurlyBracket,
+                start: Position::new(2, 6),
+                stop: Position::new(2, 8),
+            }
+        );
+    }
+
+    #[test]
+    fn out_of_tokens() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                token(TokenType::Operator(Op::Semicolon), (2, 5), (2, 6)),
+            ],
+            parse_code_block,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::OutOfTokens,
+                pos: Position::new(2, 6),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn no_statements() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_code_block,
+        );
+        assert_eq!(result.unwrap().unwrap(), CodeBlock { statements: vec![] });
+
+        assert!(warnings.is_empty());
+    }
 }

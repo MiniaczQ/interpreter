@@ -543,6 +543,8 @@ pub fn parse_expression(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+
     #[test]
     fn test() {}
 }

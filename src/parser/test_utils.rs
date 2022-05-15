@@ -58,4 +58,13 @@ pub mod tests {
         let mut parser = Parser::new(scanner);
         (parser.parse(), parser.get_warnings())
     }
+
+    pub fn partial_parse<T>(
+        tokens: Vec<Token>,
+        parse_func: fn(p: &mut Parser) -> Result<Option<T>, ParserError>,
+    ) -> (Result<Option<T>, ParserError>, Vec<ParserWarning>) {
+        let scanner = DummyScanner::new(tokens);
+        let mut parser = Parser::new(scanner);
+        (parse_func(&mut parser), parser.get_warnings())
+    }
 }

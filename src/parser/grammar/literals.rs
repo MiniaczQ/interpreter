@@ -84,6 +84,8 @@ pub fn parse_literal(p: &mut Parser) -> OptRes<Literal> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+
     #[test]
     fn test() {}
 }

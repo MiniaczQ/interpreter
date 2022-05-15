@@ -68,6 +68,8 @@ pub fn parse_for_loop(p: &mut Parser) -> OptRes<ForLoop> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+
     #[test]
     fn test() {}
 }

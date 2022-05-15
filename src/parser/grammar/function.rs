@@ -91,6 +91,8 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+
     #[test]
     fn test() {}
 }

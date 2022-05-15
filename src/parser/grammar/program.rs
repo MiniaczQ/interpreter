@@ -37,6 +37,8 @@ pub fn parse_program(p: &mut Parser) -> Res<Program> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+
     #[test]
     fn test() {}
 }

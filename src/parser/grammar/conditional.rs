@@ -46,6 +46,8 @@ pub fn parse_if_else(p: &mut Parser) -> OptRes<IfElse> {
 
 #[cfg(test)]
 mod tests {
+    use super::super::test_utils::tests::*;
+    
     #[test]
     fn test() {}
 }

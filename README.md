@@ -11,8 +11,8 @@ Grammar in `grammar.md`
 - [x] Prepare repository and workflow
 - [x] Formalize language
 - [x] Implement lexer
-- [ ] Implement parser (wip)
-- [ ] Implement interpreter
+- [x] Implement parser
+- [ ] Implement interpreter (wip)
 
 # How to use:
 1. [Download](https://github.com/MiniaczQ/interpreter/releases) distribution for your OS (Windows or Linux)

@@ -38,32 +38,178 @@ fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> Opt
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::grammar::{types::parse_type, DataType};
+
     use super::super::test_utils::tests::*;
 
     #[test]
-    fn miss() {}
+    fn miss() {
+        let (result, warnings) = partial_parse(
+            vec![token(TokenType::Keyword(Kw::Let), (2, 4), (2, 6))],
+            parse_type,
+        );
+        assert_eq!(result, Ok(None));
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn int() {}
+    fn int() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::Integer);
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn int_list() {}
+    fn int_list() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::IntegerList);
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn float_list() {}
+    fn float() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Float)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::Float);
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn float() {}
+    fn float_list() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Float)),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::FloatList);
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn bool_list() {}
+    fn bool() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Bool)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::Bool);
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn bool() {}
+    fn bool_list() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Bool)),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::BoolList);
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn list_missing_bracket() {}
+    fn list_missing_bracket() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Bool)),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                token(TokenType::Keyword(Kw::Let), (7, 8), (7, 11)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::BoolList);
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingSquareBracket,
+                start: Position::new(7, 8),
+                stop: Position::new(7, 11)
+            }
+        );
+    }
 
     #[test]
-    fn out_of_tokens() {}
+    fn string() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::String)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::String);
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn string_no_list() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::String)),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Keyword(Kw::Let)),
+            ],
+            parse_type,
+        );
+        assert_eq!(result.unwrap().unwrap(), DataType::String);
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn out_of_tokens() {
+        let (result, warnings) = partial_parse(
+            vec![token(TokenType::Keyword(Kw::Int), (2, 4), (2, 6))],
+            parse_type,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::OutOfTokens,
+                pos: Position::new(2, 6),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 }

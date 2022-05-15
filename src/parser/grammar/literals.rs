@@ -91,7 +91,7 @@ mod tests {
     #[test]
     fn miss() {
         let (result, warnings) = partial_parse(
-            vec![token(TokenType::Keyword(Kw::Let), (2, 4), (2, 6))],
+            vec![dummy_token(TokenType::Keyword(Kw::Let))],
             parse_literal,
         );
         assert_eq!(result, Ok(None));

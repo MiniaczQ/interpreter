@@ -111,6 +111,7 @@ fn run(input: InputType) -> Result<(), AppError> {
             }
         }
     };
+    
     let mut lexer = Lexer::new(reader);
 
     {

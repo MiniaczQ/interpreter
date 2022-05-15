@@ -116,7 +116,18 @@ fn run(input: InputType) -> Result<(), AppError> {
     {
         let mut parser = Parser::new(TokenScanner::new(&mut lexer));
 
-        println!("[RESULT] {:?}", parser.parse());
+        match parser.parse() {
+            Ok(program) => println!("{}", program),
+            Err(error) => println!("{}", error),
+        }
+
+        for w in parser.get_warnings() {
+            println!("{}", w);
+        }
+    }
+
+    for w in lexer.get_warnings() {
+        println!("[{}", w);
     }
 
     Ok(())

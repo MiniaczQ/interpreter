@@ -1,12 +1,23 @@
+use std::fmt::Display;
+
+use ron::ser::PrettyConfig;
+
 use super::{
     function::{parse_function_def, FunctionDef},
     utility::*,
 };
 
 /// Main program
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Program {
     functions: Vec<FunctionDef>,
+}
+
+impl Display for Program {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let config = PrettyConfig::new();
+        f.write_str(&ron::ser::to_string_pretty(self, config).unwrap())
+    }
 }
 
 /// function_definitions

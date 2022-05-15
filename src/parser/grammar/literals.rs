@@ -5,7 +5,7 @@ use super::{
 };
 
 /// A literal value
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Literal(Value);
 
 /// list_constant

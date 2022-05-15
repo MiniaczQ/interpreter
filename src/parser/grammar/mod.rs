@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use self::expressions::Expression;
 
 pub mod code_block;
@@ -11,7 +13,7 @@ pub mod types;
 mod utility;
 
 /// A value
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Value {
     List(Vec<Expression>),
     Integer(i64),
@@ -21,7 +23,7 @@ pub enum Value {
 }
 
 /// Possible data types
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum DataType {
     Integer,
     Float,

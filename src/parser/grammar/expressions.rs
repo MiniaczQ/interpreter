@@ -11,7 +11,7 @@ use super::{
 };
 
 /// All possible types of expression
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Expression {
     Literal(Literal),
     Identifier(String),
@@ -28,7 +28,7 @@ pub enum Expression {
         expression: Box<Expression>,
     },
     BinaryOperation {
-        operator: BinaryOp,
+        operator: BinaryOperator,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
     },
@@ -49,22 +49,22 @@ pub enum Expression {
 }
 
 /// Two ways of accessing list elements
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum IndexOrRange {
     Index(Expression),
     Range(Expression, Expression),
 }
 
 /// Algebraic negation and logical negation
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum UnaryOperator {
     AlgebraicNegation,
     LogicalNegation,
 }
 
 /// Binary operators
-#[derive(Debug, Clone)]
-pub enum BinaryOp {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum BinaryOperator {
     Multiplication,
     Division,
     Modulo,
@@ -249,19 +249,19 @@ fn parse_unary_operator_expression(p: &mut Parser) -> OptRes<Expression> {
 /// mul_div_operators
 ///     = OP_MULTIPLICATION | OP_DIVISION | OP_REMAINDER
 ///     ;
-fn parse_mul_div_operators(p: &mut Parser) -> OptRes<BinaryOp> {
+fn parse_mul_div_operators(p: &mut Parser) -> OptRes<BinaryOperator> {
     match p.token()?.token_type {
         TokenType::Operator(Op::Asterisk) => {
             p.pop();
-            Ok(Some(BinaryOp::Multiplication))
+            Ok(Some(BinaryOperator::Multiplication))
         }
         TokenType::Operator(Op::Slash) => {
             p.pop();
-            Ok(Some(BinaryOp::Division))
+            Ok(Some(BinaryOperator::Division))
         }
         TokenType::Operator(Op::Modulo) => {
             p.pop();
-            Ok(Some(BinaryOp::Modulo))
+            Ok(Some(BinaryOperator::Modulo))
         }
         _ => Ok(None),
     }
@@ -292,15 +292,15 @@ fn parse_mul_div_expression(p: &mut Parser) -> OptRes<Expression> {
 /// add_sub_operators
 ///     = OP_PLUS | OP_MINUS
 ///     ;
-fn parse_add_sub_operators(p: &mut Parser) -> OptRes<BinaryOp> {
+fn parse_add_sub_operators(p: &mut Parser) -> OptRes<BinaryOperator> {
     match p.token()?.token_type {
         TokenType::Operator(Op::Plus) => {
             p.pop();
-            Ok(Some(BinaryOp::Addition))
+            Ok(Some(BinaryOperator::Addition))
         }
         TokenType::Operator(Op::Minus) => {
             p.pop();
-            Ok(Some(BinaryOp::Subtraction))
+            Ok(Some(BinaryOperator::Subtraction))
         }
         _ => Ok(None),
     }
@@ -331,31 +331,31 @@ fn parse_add_sub_expression(p: &mut Parser) -> OptRes<Expression> {
 /// comparison_operators
 ///     = OP_EQUAL | OP_UNEQUAL | OP_LESSER | OP_LESSER_EQUAL | OP_GREATER | OP_GREATER_EQUAL
 ///     ;
-fn parse_comparison_operators(p: &mut Parser) -> OptRes<BinaryOp> {
+fn parse_comparison_operators(p: &mut Parser) -> OptRes<BinaryOperator> {
     match p.token()?.token_type {
         TokenType::Operator(Op::DoubleEqual) => {
             p.pop();
-            Ok(Some(BinaryOp::Equal))
+            Ok(Some(BinaryOperator::Equal))
         }
         TokenType::Operator(Op::Unequal) => {
             p.pop();
-            Ok(Some(BinaryOp::Unequal))
+            Ok(Some(BinaryOperator::Unequal))
         }
         TokenType::Operator(Op::Lesser) => {
             p.pop();
-            Ok(Some(BinaryOp::Lesser))
+            Ok(Some(BinaryOperator::Lesser))
         }
         TokenType::Operator(Op::LesserEqual) => {
             p.pop();
-            Ok(Some(BinaryOp::LesserEqual))
+            Ok(Some(BinaryOperator::LesserEqual))
         }
         TokenType::Operator(Op::Greater) => {
             p.pop();
-            Ok(Some(BinaryOp::Greater))
+            Ok(Some(BinaryOperator::Greater))
         }
         TokenType::Operator(Op::GreaterEqual) => {
             p.pop();
-            Ok(Some(BinaryOp::GreaterEqual))
+            Ok(Some(BinaryOperator::GreaterEqual))
         }
         _ => Ok(None),
     }
@@ -391,7 +391,7 @@ fn parse_logical_conjunction_expression(p: &mut Parser) -> OptRes<Expression> {
         while p.operator(Op::And)? {
             if let Some(rhs) = parse_comparison_expression(p)? {
                 lhs = Expression::BinaryOperation {
-                    operator: BinaryOp::And,
+                    operator: BinaryOperator::And,
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };
@@ -413,7 +413,7 @@ fn parse_logical_alternative_expression(p: &mut Parser) -> OptRes<Expression> {
         while p.operator(Op::Or)? {
             if let Some(rhs) = parse_logical_conjunction_expression(p)? {
                 lhs = Expression::BinaryOperation {
-                    operator: BinaryOp::Or,
+                    operator: BinaryOperator::Or,
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };

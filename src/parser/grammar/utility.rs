@@ -14,6 +14,9 @@ pub use crate::parser::{
     ParserWarningVariant as WarnVar,
 };
 
+// Other re-exports
+pub use serde::{Deserialize, Serialize};
+
 // Named types
 pub type OptRes<T> = Result<Option<T>, ParserError>;
 pub type Res<T> = Result<T, ParserError>;

@@ -1,10 +1,12 @@
+use std::error::Error;
+use std::fmt::Display;
+
 use crate::scannable::Scannable;
 
 use self::{
     grammar::program::{parse_program, Program},
     position::Position,
     token::Token,
-    token_scanner::TokenScanner,
 };
 
 pub mod grammar;
@@ -46,9 +48,20 @@ pub enum ParserErrorVariant {
 /// Critical errors remember the last position before they happened
 #[derive(Debug)]
 pub struct ParserError {
-    erro: ParserErrorVariant,
+    error: ParserErrorVariant,
     pos: Position,
 }
+
+impl Display for ParserError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Parser error at {}: {:?}",
+            self.pos, self.error
+        ))
+    }
+}
+
+impl Error for ParserError {}
 
 /// Errors that the parser can work around
 #[derive(Debug)]
@@ -67,10 +80,21 @@ pub enum ParserWarningVariant {
 /// Elusive errors remember the position where they were supposed to be
 #[derive(Debug)]
 pub struct ParserWarning {
-    warn: ParserWarningVariant,
+    warning: ParserWarningVariant,
     start: Position,
     stop: Position,
 }
+
+impl Display for ParserWarning {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "Parser warning from {} to {}: {:?}",
+            self.start, self.stop, self.warning
+        ))
+    }
+}
+
+impl Error for ParserWarning {}
 
 /// Language parser.
 ///
@@ -89,8 +113,15 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Attempts to parse.
+    /// Returns either a `Program` or critical parsing error.
     pub fn parse(&mut self) -> Result<Program, ParserError> {
         parse_program(self)
+    }
+
+    /// Consumes parser and returns all parser warnings.
+    pub fn get_warnings(self) -> Vec<ParserWarning> {
+        self.warnings
     }
 }
 
@@ -107,7 +138,7 @@ pub trait ErrorHandler {
 impl<'a> ErrorHandler for Parser<'a> {
     fn warn(&mut self, err: ParserWarningVariant) {
         let err = ParserWarning {
-            warn: err,
+            warning: err,
             start: self.curr().unwrap().start,
             stop: self.curr().unwrap().stop,
         };
@@ -116,7 +147,7 @@ impl<'a> ErrorHandler for Parser<'a> {
 
     fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError> {
         Err(ParserError {
-            erro: err,
+            error: err,
             pos: self.pos,
         })
     }

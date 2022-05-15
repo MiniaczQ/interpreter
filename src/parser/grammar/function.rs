@@ -6,14 +6,14 @@ use super::{
 };
 
 /// A single function parameter
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Parameter {
     name: String,
     data_type: DataType,
 }
 
 /// Definition of a function
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FunctionDef {
     identifier: String,
     params: Vec<Parameter>,

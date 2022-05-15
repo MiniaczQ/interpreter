@@ -6,7 +6,7 @@ use super::{
 
 /// If expression.
 /// The else block is optional.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IfElse {
     condition: Expression,
     true_case: CodeBlock,
@@ -18,7 +18,7 @@ pub struct IfElse {
 ///     ;
 pub fn parse_if_else(p: &mut Parser) -> OptRes<IfElse> {
     if !p.keyword(Kw::If)? {
-        return Ok(None)
+        return Ok(None);
     }
     if let Some(condition) = parse_expression(p)? {
         if let Some(true_case) = parse_code_block(p)? {

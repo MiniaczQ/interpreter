@@ -1,8 +1,8 @@
 use std::{error::Error, fmt::Display};
 
 use crate::{
-    lexer::{keywords::Keyword, operators::Operator},
     lexer::position::Position,
+    lexer::{keywords::Keyword, operators::Operator},
     scannable::Scannable,
 };
 
@@ -61,11 +61,11 @@ impl Lexem {
 pub struct LexemBuilder<'a> {
     scanner: &'a mut CharScanner,
     start: Position,
-    errors: &'a mut Vec<LexemError>,
+    errors: &'a mut Vec<LexemWarning>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub enum LexemErrorVariant {
+pub enum LexemWarningVariant {
     CommentNeverEnds,
     CommentTooLong,
     StringNeverEnds,
@@ -77,20 +77,20 @@ pub enum LexemErrorVariant {
     InvalidSequence(String),
 }
 
-impl Display for LexemErrorVariant {
+impl Display for LexemWarningVariant {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            LexemErrorVariant::CommentNeverEnds => f.write_str("comment never ends"),
-            LexemErrorVariant::CommentTooLong => f.write_str("comment too long"),
-            LexemErrorVariant::StringNeverEnds => f.write_str("string never ends"),
-            LexemErrorVariant::StringTooLong => f.write_str("string too long"),
-            LexemErrorVariant::IntegerPartTooBig => f.write_str("integer part too big"),
-            LexemErrorVariant::DecimalPartTooBig => f.write_str("decimal part too big"),
-            LexemErrorVariant::IdentifierTooLong => f.write_str("identifier too long"),
-            LexemErrorVariant::InvalidEscapeCharacter(c) => {
+            LexemWarningVariant::CommentNeverEnds => f.write_str("comment never ends"),
+            LexemWarningVariant::CommentTooLong => f.write_str("comment too long"),
+            LexemWarningVariant::StringNeverEnds => f.write_str("string never ends"),
+            LexemWarningVariant::StringTooLong => f.write_str("string too long"),
+            LexemWarningVariant::IntegerPartTooBig => f.write_str("integer part too big"),
+            LexemWarningVariant::DecimalPartTooBig => f.write_str("decimal part too big"),
+            LexemWarningVariant::IdentifierTooLong => f.write_str("identifier too long"),
+            LexemWarningVariant::InvalidEscapeCharacter(c) => {
                 f.write_fmt(format_args!("invalid escape character `\\{}`", c))
             }
-            LexemErrorVariant::InvalidSequence(s) => {
+            LexemWarningVariant::InvalidSequence(s) => {
                 f.write_fmt(format_args!("invalid sequence `{}`", s))
             }
         }
@@ -98,25 +98,25 @@ impl Display for LexemErrorVariant {
 }
 
 #[derive(Debug)]
-pub struct LexemError {
+pub struct LexemWarning {
     pub start: Position,
     pub end: Position,
-    pub variant: LexemErrorVariant,
+    pub variant: LexemWarningVariant,
 }
 
-impl Display for LexemError {
+impl Display for LexemWarning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "Error from {} to {}: {}",
+            "Lexer warning from {} to {}: {}",
             self.start, self.end, self.variant
         ))
     }
 }
 
-impl Error for LexemError {}
+impl Error for LexemWarning {}
 
 impl<'a> LexemBuilder<'a> {
-    pub fn new(scanner: &'a mut CharScanner, errors: &'a mut Vec<LexemError>) -> Self {
+    pub fn new(scanner: &'a mut CharScanner, errors: &'a mut Vec<LexemWarning>) -> Self {
         let start = (&*scanner).last_pos();
         Self {
             scanner,
@@ -136,8 +136,8 @@ impl<'a> LexemBuilder<'a> {
     }
 
     /// Reports an error that happen during building
-    pub fn error(&mut self, e: LexemErrorVariant) {
-        self.errors.push(LexemError {
+    pub fn error(&mut self, e: LexemWarningVariant) {
+        self.errors.push(LexemWarning {
             start: self.start,
             end: self.scanner.last_pos(),
             variant: e,

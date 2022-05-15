@@ -17,7 +17,7 @@ use matchers::{
 
 use self::{
     char_scanner::CharScanner,
-    lexem::{Lexem, LexemBuilder, LexemError, LexemErrorVariant},
+    lexem::{Lexem, LexemBuilder, LexemWarning, LexemWarningVariant},
 };
 
 pub struct Lexer {
@@ -25,7 +25,7 @@ pub struct Lexer {
     max_string_length: usize,
     max_comment_length: usize,
     pub scanner: CharScanner,
-    pub errors: Vec<LexemError>,
+    pub warnings: Vec<LexemWarning>,
 }
 
 impl Lexer {
@@ -35,7 +35,7 @@ impl Lexer {
             max_string_length: 256,
             max_comment_length: 256,
             scanner: CharScanner::new(source),
-            errors: vec![],
+            warnings: vec![],
         }
     }
 
@@ -48,7 +48,7 @@ impl Lexer {
 
     /// Matches lexems
     fn match_lexem(&mut self) -> Option<Lexem> {
-        let lb = &mut LexemBuilder::new(&mut self.scanner, &mut self.errors);
+        let lb = &mut LexemBuilder::new(&mut self.scanner, &mut self.warnings);
         match_numerical(lb)
             .or_else(|| match_identifier_or_keyword(lb, self.max_identifier_length))
             .or_else(|| match_operator(lb))
@@ -77,10 +77,10 @@ impl Lexer {
             loop {
                 if let Some(lexem) = self.skip_and_match() {
                     if !invalid_sequence.is_empty() {
-                        self.errors.push(LexemError {
+                        self.warnings.push(LexemWarning {
                             start: sequence_start,
                             end: sequence_stop,
-                            variant: LexemErrorVariant::InvalidSequence(
+                            variant: LexemWarningVariant::InvalidSequence(
                                 invalid_sequence.iter().collect::<String>(),
                             ),
                         });
@@ -102,6 +102,7 @@ impl Lexer {
     }
 
     /// Returns all lexems
+    #[allow(dead_code)]
     pub fn all(&mut self) -> Vec<Lexem> {
         let mut lexems = vec![];
         while let Some(l) = self.catch_invalid_sequence() {
@@ -109,13 +110,18 @@ impl Lexer {
         }
         lexems
     }
+
+    /// Consumes the lexer and returns the warning buffer.
+    pub fn get_warnings(self) -> Vec<LexemWarning> {
+        self.warnings
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
-    use crate::lexer::{keywords::Keyword, lexem::LexemErrorVariant, operators::Operator, Lexer};
+    use crate::lexer::{keywords::Keyword, lexem::LexemWarningVariant, operators::Operator, Lexer};
 
     use super::lexem::{Lexem, LexemType};
 
@@ -165,7 +171,7 @@ mod tests {
         let mut parser = Lexer::new(BufReader::new(file));
         let output = parser.all();
         assert_eq!(output, correct_output());
-        assert!(parser.errors.is_empty());
+        assert!(parser.warnings.is_empty());
     }
 
     #[test]
@@ -174,7 +180,7 @@ mod tests {
         let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
         let output = parser.all();
         assert_eq!(output, correct_output());
-        assert!(parser.errors.is_empty());
+        assert!(parser.warnings.is_empty());
     }
 
     #[test]
@@ -196,11 +202,13 @@ mod tests {
         let output = parser.all();
         assert_eq!(output, correct_output);
         assert!(
-            parser.errors[0].variant
-                == LexemErrorVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
+            parser.warnings[0].variant
+                == LexemWarningVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
         );
-        assert!(parser.errors[1].variant == LexemErrorVariant::InvalidSequence("$".to_owned()));
-        assert!(parser.errors[2].variant == LexemErrorVariant::InvalidSequence("#.".to_owned()));
+        assert!(parser.warnings[1].variant == LexemWarningVariant::InvalidSequence("$".to_owned()));
+        assert!(
+            parser.warnings[2].variant == LexemWarningVariant::InvalidSequence("#.".to_owned())
+        );
     }
 
     #[test]
@@ -233,7 +241,7 @@ mod tests {
         ];
         let output = parser.all();
         assert_eq!(output, correct_output);
-        assert!(parser.errors[0].variant == LexemErrorVariant::StringNeverEnds);
+        assert!(parser.warnings[0].variant == LexemWarningVariant::StringNeverEnds);
     }
 
     #[test]
@@ -266,6 +274,6 @@ mod tests {
         ];
         let output = parser.all();
         assert_eq!(output, correct_output);
-        assert!(parser.errors[0].variant == LexemErrorVariant::CommentNeverEnds);
+        assert!(parser.warnings[0].variant == LexemWarningVariant::CommentNeverEnds);
     }
 }

@@ -46,7 +46,7 @@ pub enum ParserErrorVariant {
 /// Critical errors remember the last position before they happened
 #[derive(Debug)]
 pub struct ParserError {
-    err: ParserErrorVariant,
+    erro: ParserErrorVariant,
     pos: Position,
 }
 
@@ -67,7 +67,7 @@ pub enum ParserWarningVariant {
 /// Elusive errors remember the position where they were supposed to be
 #[derive(Debug)]
 pub struct ParserWarning {
-    err: ParserWarningVariant,
+    warn: ParserWarningVariant,
     start: Position,
     stop: Position,
 }
@@ -75,7 +75,7 @@ pub struct ParserWarning {
 /// Language parser.
 ///
 pub struct Parser {
-    errors: Vec<ParserWarning>,
+    warnings: Vec<ParserWarning>,
     pos: Position,
     token_scanner: TokenScanner,
 }
@@ -83,7 +83,7 @@ pub struct Parser {
 impl Parser {
     pub fn new(token_scanner: TokenScanner) -> Self {
         Self {
-            errors: vec![],
+            warnings: vec![],
             pos: Position { row: 1, col: 1 },
             token_scanner,
         }
@@ -107,16 +107,18 @@ pub trait ErrorHandler {
 impl ErrorHandler for Parser {
     fn warn(&mut self, err: ParserWarningVariant) {
         let err = ParserWarning {
-            err,
+            warn: err,
             start: self.curr().unwrap().start,
             stop: self.curr().unwrap().stop,
         };
-        println!("[WARNING] {:?}", err);
-        self.errors.push(err);
+        self.warnings.push(err);
     }
 
     fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError> {
-        Err(ParserError { err, pos: self.pos })
+        Err(ParserError {
+            erro: err,
+            pos: self.pos,
+        })
     }
 }
 

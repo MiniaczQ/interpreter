@@ -80,18 +80,7 @@ pub trait ParsingHelper: ExtScannable {
 
     /// Whether parser ran out of tokens
     fn has_tokens(&mut self) -> bool {
-        if let Err(ParserError {
-            err: ErroVar::OutOfTokens,
-            pos: _,
-        }) = self.token()
-        {
-            return false;
-        }
-        true
-    }
-
-    fn dbg(&mut self) {
-        println!("{:?}", self.token());
+        self.token().is_ok()
     }
 }
 

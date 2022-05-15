@@ -84,11 +84,11 @@ pub enum BinaryOp {
 ///     = OPEN_BRACKET, expression, CLOSE_BRACKET
 ///     ;
 fn parse_bracket_expression(p: &mut Parser) -> OptRes<Expression> {
-    if p.operator(Op::OpenRoundBracket)? {
+    if !p.operator(Op::OpenRoundBracket)? {
         return Ok(None);
     }
     if let Some(expression) = parse_expression(p)? {
-        if !p.operator(Op::OpenRoundBracket)? {
+        if !p.operator(Op::CloseRoundBracket)? {
             p.warn(WarnVar::MissingClosingRoundBracket);
         }
         Ok(Some(expression))
@@ -433,7 +433,7 @@ fn parse_logical_alternative_expression(p: &mut Parser) -> OptRes<Expression> {
 fn parse_variable_assignment_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_logical_alternative_expression(p)? {
         if p.operator(Op::Equal)? {
-            if let Some(rhs) = parse_logical_conjunction_expression(p)? {
+            if let Some(rhs) = parse_logical_alternative_expression(p)? {
                 lhs = Expression::Assignment {
                     identifier: Box::new(lhs),
                     expression: Box::new(rhs),

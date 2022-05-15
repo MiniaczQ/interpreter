@@ -40,5 +40,8 @@ mod tests {
     use super::super::test_utils::tests::*;
 
     #[test]
-    fn test() {}
+    fn empty() {}
+
+    #[test]
+    fn non_empty() {}
 }

@@ -546,5 +546,140 @@ mod tests {
     use super::super::test_utils::tests::*;
 
     #[test]
-    fn test() {}
+    fn miss() {}
+
+    #[test]
+    fn bracket_expr() {}
+
+    #[test]
+    fn literal() {}
+
+    #[test]
+    fn identifier() {}
+
+    #[test]
+    fn list_access_index() {}
+
+    #[test]
+    fn list_access_range() {}
+
+    #[test]
+    fn list_access_empty() {}
+
+    #[test]
+    fn list_access_missing_closing_bracket() {}
+
+    #[test]
+    fn list_access_range_incomplete() {}
+
+    #[test]
+    fn function_call() {}
+
+    #[test]
+    fn function_call_trailing_comma() {}
+
+    #[test]
+    fn function_call_empty() {}
+
+    #[test]
+    fn function_call_missing_closing_bracket() {}
+
+    #[test]
+    fn function_call_no_args() {}
+
+    #[test]
+    fn unary_algebraic_negation() {}
+
+    #[test]
+    fn unary_logical_negation() {}
+
+    #[test]
+    fn unary_operation_missing_expression() {}
+
+    #[test]
+    fn binary_multiplication() {}
+
+    #[test]
+    fn binary_division() {}
+
+    #[test]
+    fn binary_modulo() {}
+
+    #[test]
+    fn binary_addition() {}
+
+    #[test]
+    fn binary_subtraction() {}
+
+    #[test]
+    fn binary_equal() {}
+
+    #[test]
+    fn binary_unequal() {}
+
+    #[test]
+    fn binary_lesser() {}
+
+    #[test]
+    fn binary_lesser_equal() {}
+
+    #[test]
+    fn binary_greater() {}
+
+    #[test]
+    fn binary_greater_equal() {}
+
+    #[test]
+    fn binary_and() {}
+
+    #[test]
+    fn binary_or() {}
+
+    #[test]
+    fn binary_operation_missing_rhs() {}
+
+    #[test]
+    fn assignment() {}
+
+    #[test]
+    fn assignment_missing_expression() {}
+
+    #[test]
+    fn declaration() {}
+
+    #[test]
+    fn declaration_missing_type_separator() {}
+
+    #[test]
+    fn declaration_missing_equals_sign() {}
+
+    #[test]
+    fn declaration_missing_type() {}
+
+    #[test]
+    fn declaration_missing_identifier() {}
+
+    #[test]
+    fn declaration_missing_expression() {}
+
+    #[test]
+    fn for_loop() {}
+
+    #[test]
+    fn while_loop() {}
+
+    #[test]
+    fn if_else() {}
+
+    #[test]
+    fn code_block() {}
+
+    #[test]
+    fn return_expr() {}
+
+    #[test]
+    fn return_expr_missing_expression() {}
+
+    #[test]
+    fn out_of_tokens() {}
 }

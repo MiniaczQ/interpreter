@@ -41,5 +41,29 @@ mod tests {
     use super::super::test_utils::tests::*;
 
     #[test]
-    fn test() {}
+    fn miss() {}
+
+    #[test]
+    fn int() {}
+
+    #[test]
+    fn int_list() {}
+
+    #[test]
+    fn float_list() {}
+
+    #[test]
+    fn float() {}
+
+    #[test]
+    fn bool_list() {}
+
+    #[test]
+    fn bool() {}
+
+    #[test]
+    fn list_missing_bracket() {}
+
+    #[test]
+    fn out_of_tokens() {}
 }

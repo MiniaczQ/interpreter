@@ -71,5 +71,32 @@ mod tests {
     use super::super::test_utils::tests::*;
 
     #[test]
-    fn test() {}
+    fn miss() {}
+
+    #[test]
+    fn for_loop() {}
+
+    #[test]
+    fn for_loop_missing_in_keyword() {}
+
+    #[test]
+    fn for_loop_missing_body() {}
+
+    #[test]
+    fn for_loop_missing_provider() {}
+
+    #[test]
+    fn for_loop_missing_variable() {}
+
+    #[test]
+    fn while_loop() {}
+
+    #[test]
+    fn while_loop_missing_body() {}
+
+    #[test]
+    fn while_loop_missing_condition() {}
+
+    #[test]
+    fn out_of_tokens() {}
 }

@@ -1,26 +1,4 @@
-use crate::{
-    parser::{
-        keywords::Keyword, operators::Operator, token::TokenType, ErrorHandler, ExtScannable,
-        Parser, ParserWarningVariant,
-    },
-    scannable::Scannable,
-};
-
-use super::ParseResult;
-
-/// Possible data types
-#[derive(Debug, Clone)]
-pub enum DataType {
-    Integer,
-    Float,
-    Bool,
-    IntegerList,
-    FloatList,
-    BoolList,
-    String,
-    Any,
-    None,
-}
+use super::{utility::*, DataType};
 
 //type
 //    = primitive_type, [OPEN_LIST, CLOSE_LIST]
@@ -32,38 +10,29 @@ pub enum DataType {
 //    | TYPE_FLOAT
 //    | TYPE_BOOL
 //    ;
-pub fn parse_type(p: &mut Parser) -> ParseResult<DataType> {
-    match p.token()?.token_type {
-        TokenType::Keyword(Keyword::Int) => {
-            p.pop();
-            parse_list_variant(p, DataType::Integer, DataType::IntegerList)
-        }
-        TokenType::Keyword(Keyword::Float) => {
-            p.pop();
-            parse_list_variant(p, DataType::Float, DataType::FloatList)
-        }
-        TokenType::Keyword(Keyword::Bool) => {
-            p.pop();
-            parse_list_variant(p, DataType::Bool, DataType::BoolList)
-        }
-        TokenType::Keyword(Keyword::String) => {
-            p.pop();
-            Ok(Some(DataType::String))
-        }
-        _ => Ok(None),
+pub fn parse_type(p: &mut Parser) -> OptRes<DataType> {
+    if p.keyword(Kw::Int)? {
+        return parse_list_variant(p, DataType::Integer, DataType::IntegerList);
     }
+    if p.keyword(Kw::Float)? {
+        return parse_list_variant(p, DataType::Float, DataType::FloatList);
+    }
+    if p.keyword(Kw::Bool)? {
+        return parse_list_variant(p, DataType::Bool, DataType::BoolList);
+    }
+    if p.keyword(Kw::String)? {
+        return Ok(Some(DataType::String));
+    }
+    Ok(None)
 }
 
-fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> ParseResult<DataType> {
-    if let TokenType::Operator(Operator::OpenSquareBracket) = p.token()?.token_type {
-        p.pop();
-        if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
-            p.pop();
-        } else {
-            p.warn(ParserWarningVariant::MissingClosingSquareBracket);
-        }
-        Ok(Some(list))
-    } else {
-        Ok(Some(non_list))
+fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> OptRes<DataType> {
+    if !p.operator(Op::OpenSquareBracket)? {
+        return Ok(Some(non_list));
     }
+    p.pop();
+    if !p.operator(Op::CloseSquareBracket)? {
+        p.warn(WarnVar::MissingClosingSquareBracket);
+    }
+    Ok(Some(list))
 }

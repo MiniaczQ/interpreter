@@ -11,8 +11,8 @@ use super::{
     conditional::{parse_if_else, IfElse},
     literals::{parse_literal, Literal},
     loops::{parse_for_loop, parse_while_loop, ForLoop, WhileLoop},
-    types::{parse_type, DataType},
-    ExtResult, ParseResult,
+    types::{parse_type},
+    ExtResult, ParseResult, DataType,
 };
 
 /// All possible types of expression

@@ -24,6 +24,20 @@ pub enum Value {
     String(String),
 }
 
+/// Possible data types
+#[derive(Debug, Clone)]
+pub enum DataType {
+    Integer,
+    Float,
+    Bool,
+    IntegerList,
+    FloatList,
+    BoolList,
+    String,
+    Any,
+    None,
+}
+
 type ParseResult<T> = Result<Option<T>, ParserError>;
 
 /// Result extension for simpler parser control flow.

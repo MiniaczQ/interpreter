@@ -1,7 +1,7 @@
 use super::{
     code_block::{parse_code_block, CodeBlock},
-    types::{parse_type, DataType},
-    utility::*,
+    types::{parse_type},
+    utility::*, DataType,
 };
 
 /// A single function parameter

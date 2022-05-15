@@ -129,7 +129,7 @@ fn run(input: InputType) -> Result<(), AppError> {
 
     let mut parser = Parser::new(TokenScanner::new(lexer));
 
-    println!("{:?}", parser.parse());
+    println!("[RESULT] {:?}", parser.parse());
 
     Ok(())
 }

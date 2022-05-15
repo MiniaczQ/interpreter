@@ -1,3 +1,5 @@
+use self::expressions::Expression;
+
 use super::ParserError;
 
 pub mod code_block;
@@ -14,12 +16,10 @@ pub trait Node {}
 /// A value
 #[derive(Clone, Debug)]
 pub enum Value {
+    List(Vec<Expression>),
     Integer(i64),
-    IntegerList(Vec<i64>),
     Float(f64),
-    FloatList(Vec<f64>),
     Bool(bool),
-    BoolList(Vec<bool>),
     String(String),
 }
 

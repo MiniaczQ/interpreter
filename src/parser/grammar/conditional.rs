@@ -13,7 +13,7 @@ use super::{
 
 /// If expression.
 /// The else block is optional.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct IfElse {
     condition: Expression,
     true_case: CodeBlock,

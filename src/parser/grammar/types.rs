@@ -9,7 +9,7 @@ use crate::{
 use super::ParseResult;
 
 /// Possible data types
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum DataType {
     Integer,
     Float,
@@ -57,7 +57,7 @@ pub fn parse_type(p: &mut Parser) -> ParseResult<DataType> {
 fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> ParseResult<DataType> {
     if let TokenType::Operator(Operator::OpenSquareBracket) = p.token()?.token_type {
         p.pop();
-        if let TokenType::Operator(Operator::OpenSquareBracket) = p.token()?.token_type {
+        if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
             p.pop();
         } else {
             p.warn(ParserWarningVariant::MissingClosingSquareBracket);

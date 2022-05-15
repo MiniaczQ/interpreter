@@ -43,7 +43,7 @@ fn main() {
 
     print(my_list[0::2]);   // [0, 3]
 
-    let new_list = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0, 6.0]);
+    let new_list: int[] = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0, 6.0]);
 
     print(len(new_list));   // 3
 }

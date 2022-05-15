@@ -40,6 +40,7 @@ pub enum ParserErrorVariant {
     VariableDeclarationMissingIdentifier,
     VariableDeclarationMissingExpression,
     ReturnMissingExpression,
+    ExpectedFunctionDefinition,
 }
 
 /// Critical errors remember the last position before they happened
@@ -60,6 +61,7 @@ pub enum ParserWarningVariant {
     MissingColon,
     VariableDeclarationMissingEqualsSign,
     VariableDeclarationMissingTypeSeparator,
+    ForLoopMissingInKeyword,
 }
 
 /// Elusive errors remember the position where they were supposed to be
@@ -87,8 +89,8 @@ impl Parser {
         }
     }
 
-    pub fn parse(&mut self) -> Program {
-        parse_program(self).unwrap()
+    pub fn parse(&mut self) -> Result<Program, ParserError> {
+        parse_program(self)
     }
 }
 
@@ -104,11 +106,13 @@ pub trait ErrorHandler {
 
 impl ErrorHandler for Parser {
     fn warn(&mut self, err: ParserWarningVariant) {
-        self.errors.push(ParserWarning {
+        let err = ParserWarning {
             err,
             start: self.curr().unwrap().start,
             stop: self.curr().unwrap().stop,
-        });
+        };
+        println!("[WARNING] {:?}", err);
+        self.errors.push(err);
     }
 
     fn error(&mut self, err: ParserErrorVariant) -> ParserError {

@@ -1,6 +1,6 @@
 use super::{keywords::Keyword, operators::Operator, position::Position};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum TokenType {
     Operator(Operator),
     Keyword(Keyword),
@@ -10,7 +10,7 @@ pub enum TokenType {
     Int(i64),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub token_type: TokenType,
     pub start: Position,

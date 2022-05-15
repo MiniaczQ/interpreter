@@ -1,6 +1,7 @@
 use crate::{
     parser::{
-        keywords::Keyword, token::TokenType, ErrorHandler, ExtScannable, Parser, ParserErrorVariant,
+        keywords::Keyword, token::TokenType, ErrorHandler, ExtScannable, Parser,
+        ParserErrorVariant, ParserWarningVariant,
     },
     scannable::Scannable,
 };
@@ -12,7 +13,7 @@ use super::{
 };
 
 /// While loop
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WhileLoop {
     condition: Expression,
     body: CodeBlock,
@@ -39,7 +40,7 @@ pub fn parse_while_loop(p: &mut Parser) -> ParseResult<WhileLoop> {
 }
 
 /// For loop
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ForLoop {
     variable: String,
     provider: Expression,
@@ -54,6 +55,11 @@ pub fn parse_for_loop(p: &mut Parser) -> ParseResult<ForLoop> {
         p.pop();
         if let TokenType::Identifier(variable) = p.token()?.token_type {
             p.pop();
+            if let TokenType::Keyword(Keyword::In) = p.token()?.token_type {
+                p.pop();
+            } else {
+                p.warn(ParserWarningVariant::ForLoopMissingInKeyword);
+            }
             if let Some(provider) = parse_expression(p)? {
                 if let Some(body) = parse_code_block(p)? {
                     Ok(Some(ForLoop {

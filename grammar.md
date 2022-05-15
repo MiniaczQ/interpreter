@@ -127,25 +127,15 @@ for_expression
 
 ### Constants
 ```ebnf
-int_list_constant
-    = OPEN_LIST, [CONST_INT, {SPLIT, CONST_INT}], CLOSE_LIST
-    ;
-
-float_list_constant
-    = OPEN_LIST, [CONST_FLOAT, {SPLIT, CONST_FLOAT}], CLOSE_LIST
-    ;
-
-bool_list_constant
-    = OPEN_LIST, [CONST_BOOL, {SPLIT, CONST_BOOL}], CLOSE_LIST
+list_constant
+    = OPEN_LIST, [expression, {SPLIT, expression}], CLOSE_LIST
     ;
 
 constant
-    = CONST_INT
-    | int_list_constant
+    = list_constant
+    | CONST_INT
     | CONST_FLOAT
-    | float_list_constant
     | CONST_BOOL
-    | bool_list_constant
     | CONST_STRING
     ;
 ```
@@ -250,24 +240,24 @@ variable_assignment_expression
     ;
 ```
 
-### Return or variable declaration
+### For, while, if or codeblock
 ```ebnf
-return_or_variable_declaration_expression
-    = [KW_RETURN | variable_declaration], variable_assignment_expression
-    ;
-
-variable_declaration
-    = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
-    ;
-```
-
-### Expression
-```ebnf
-expression
-    = return_or_variable_declaration_expression
+control_flow_expression
+    = variable_assignment_expression
     | for_expression
     | while_expression
     | if_expression
     | code_block
+    ;
+```
+
+### Expression (return or variable declaration)
+```ebnf
+expression
+    = [KW_RETURN | variable_declaration], control_flow_expression
+    ;
+
+variable_declaration
+    = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
     ;
 ```

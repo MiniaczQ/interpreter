@@ -16,7 +16,7 @@ use super::{
 };
 
 /// All possible types of expression
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Expression {
     Literal(Literal),
     Identifier(String),
@@ -77,6 +77,7 @@ fn parse_bracket_expression(p: &mut Parser) -> ParseResult<Expression> {
 /// IDENTIFIER
 fn parse_identifier_expression(p: &mut Parser) -> ParseResult<Expression> {
     if let TokenType::Identifier(identifier) = p.token()?.token_type {
+        p.pop();
         Ok(Some(Expression::Identifier(identifier)))
     } else {
         Ok(None)
@@ -98,7 +99,7 @@ fn parse_constant_or_identifier_or_bracket_expression(p: &mut Parser) -> ParseRe
 }
 
 /// Two ways of accessing list elements
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum IndexOrRange {
     Index(Expression),
     Range(Expression, Expression),
@@ -206,7 +207,7 @@ fn parse_function_call_or_list_access_expression(p: &mut Parser) -> ParseResult<
 }
 
 /// Algebraic negation and logical negation
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnaryOperator {
     AlgebraicNegation,
     LogicalNegation,
@@ -251,7 +252,7 @@ fn parse_unary_operator_expression(p: &mut Parser) -> ParseResult<Expression> {
 }
 
 /// Binary operators
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum BinaryOperator {
     Multiplication,
     Division,
@@ -483,7 +484,7 @@ struct VariableDeclaration {
 ///     = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
 ///     ;
 fn parse_variable_declaration(p: &mut Parser) -> ParseResult<VariableDeclaration> {
-    if let TokenType::Keyword(Keyword::Return) = p.token()?.token_type {
+    if let TokenType::Keyword(Keyword::Let) = p.token()?.token_type {
         p.pop();
         if let TokenType::Identifier(identifier) = p.token()?.token_type {
             p.pop();
@@ -513,32 +514,6 @@ fn parse_variable_declaration(p: &mut Parser) -> ParseResult<VariableDeclaration
     }
 }
 
-/// return_or_variable_declaration_expression
-///     = [KW_RETURN | variable_declaration], variable_assignment_expression
-///     ;
-fn parse_return_or_variable_declaration_expression(p: &mut Parser) -> ParseResult<Expression> {
-    if let TokenType::Keyword(Keyword::Return) = p.token()?.token_type {
-        p.pop();
-        if let Some(expression) = parse_variable_assignment_expression(p)? {
-            Ok(Some(Expression::Return(Box::new(expression))))
-        } else {
-            Err(p.error(ParserErrorVariant::ReturnMissingExpression))
-        }
-    } else if let Some(variable_declaration) = parse_variable_declaration(p)? {
-        if let Some(expression) = parse_variable_assignment_expression(p)? {
-            Ok(Some(Expression::Declaration {
-                identifier: variable_declaration.identifier,
-                data_type: variable_declaration.data_type,
-                expression: Box::new(expression),
-            }))
-        } else {
-            Err(p.error(ParserErrorVariant::VariableDeclarationMissingExpression))
-        }
-    } else {
-        parse_variable_assignment_expression(p)
-    }
-}
-
 /// for_expression
 fn parse_for_expression(p: &mut Parser) -> ParseResult<Expression> {
     parse_for_loop(p).map(|v| v.map(|v| Expression::For(Box::new(v))))
@@ -559,17 +534,43 @@ fn parse_code_block_expression(p: &mut Parser) -> ParseResult<Expression> {
     parse_code_block(p).map(|v| v.map(Expression::CodeBlock))
 }
 
-/// expression
-///     = return_or_variable_declaration_expression
+/// control_flow_expression
+///     = variable_assignment_expression
 ///     | for_expression
 ///     | while_expression
 ///     | if_expression
 ///     | code_block
 ///     ;
-pub fn parse_expression(p: &mut Parser) -> ParseResult<Expression> {
-    parse_return_or_variable_declaration_expression(p)
+fn parse_control_flow_expression(p: &mut Parser) -> ParseResult<Expression> {
+    parse_variable_assignment_expression(p)
         .alt(|| parse_for_expression(p))
         .alt(|| parse_while_expression(p))
         .alt(|| parse_if_else_expression(p))
         .alt(|| parse_code_block_expression(p))
+}
+
+/// expression
+///     = [KW_RETURN | variable_declaration], control_flow_expression
+///     ;
+pub fn parse_expression(p: &mut Parser) -> ParseResult<Expression> {
+    if let TokenType::Keyword(Keyword::Return) = p.token()?.token_type {
+        p.pop();
+        if let Some(expression) = parse_control_flow_expression(p)? {
+            Ok(Some(Expression::Return(Box::new(expression))))
+        } else {
+            Err(p.error(ParserErrorVariant::ReturnMissingExpression))
+        }
+    } else if let Some(variable_declaration) = parse_variable_declaration(p)? {
+        if let Some(expression) = parse_control_flow_expression(p)? {
+            Ok(Some(Expression::Declaration {
+                identifier: variable_declaration.identifier,
+                data_type: variable_declaration.data_type,
+                expression: Box::new(expression),
+            }))
+        } else {
+            Err(p.error(ParserErrorVariant::VariableDeclarationMissingExpression))
+        }
+    } else {
+        parse_control_flow_expression(p)
+    }
 }

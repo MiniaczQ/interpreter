@@ -12,7 +12,7 @@ use super::{
 };
 
 /// Block of code that returns the last espression
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CodeBlock {
     statements: Vec<Statement>,
 }
@@ -24,7 +24,7 @@ pub fn parse_code_block(p: &mut Parser) -> ParseResult<CodeBlock> {
     if let TokenType::Operator(Operator::OpenCurlyBracket) = p.token()?.token_type {
         p.pop();
         let statements = parse_statements(p)?;
-        if let TokenType::Operator(Operator::OpenCurlyBracket) = p.token()?.token_type {
+        if let TokenType::Operator(Operator::CloseCurlyBracket) = p.token()?.token_type {
             p.pop();
         } else {
             p.warn(ParserWarningVariant::MissingClosingCurlyBracket);
@@ -35,7 +35,7 @@ pub fn parse_code_block(p: &mut Parser) -> ParseResult<CodeBlock> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Statement {
     Expression(Expression),
     Semicolon,
@@ -58,6 +58,7 @@ fn parse_statements(p: &mut Parser) -> Result<Vec<Statement>, ParserError> {
 ///     ;
 fn parse_statement(p: &mut Parser) -> ParseResult<Statement> {
     if let TokenType::Operator(Operator::Semicolon) = p.token()?.token_type {
+        p.pop();
         Ok(Some(Statement::Semicolon))
     } else if let Some(expression) = parse_expression(p)? {
         Ok(Some(Statement::Expression(expression)))

@@ -43,3 +43,9 @@ pub fn parse_if_else(p: &mut Parser) -> OptRes<IfElse> {
         p.error(ErroVar::IfMissingCondition)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

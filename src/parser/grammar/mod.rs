@@ -9,6 +9,7 @@ pub mod function;
 pub mod literals;
 pub mod loops;
 pub mod program;
+mod test_utils;
 pub mod types;
 mod utility;
 

@@ -54,3 +54,9 @@ pub fn parse_code_block(p: &mut Parser) -> OptRes<CodeBlock> {
     }
     Ok(Some(CodeBlock { statements }))
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

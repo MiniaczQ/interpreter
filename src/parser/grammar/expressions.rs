@@ -540,3 +540,9 @@ pub fn parse_expression(p: &mut Parser) -> OptRes<Expression> {
         parse_control_flow_expression(p)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

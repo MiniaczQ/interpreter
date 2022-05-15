@@ -81,3 +81,9 @@ pub fn parse_literal(p: &mut Parser) -> OptRes<Literal> {
         .alt(|| parse_bool(p))
         .alt(|| parse_string(p))
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

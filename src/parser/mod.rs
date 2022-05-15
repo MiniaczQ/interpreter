@@ -179,3 +179,9 @@ impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

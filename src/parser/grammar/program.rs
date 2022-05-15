@@ -34,3 +34,9 @@ pub fn parse_program(p: &mut Parser) -> Res<Program> {
     }
     Ok(Program { functions })
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

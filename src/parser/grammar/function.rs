@@ -88,3 +88,9 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
         p.error(ErroVar::FunctionMissingIdentifier)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

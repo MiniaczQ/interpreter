@@ -132,3 +132,9 @@ fn run(input: InputType) -> Result<(), AppError> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

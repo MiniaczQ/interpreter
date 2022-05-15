@@ -35,3 +35,9 @@ fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> Opt
     }
     Ok(Some(list))
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test() {}
+}

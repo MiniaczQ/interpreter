@@ -183,26 +183,21 @@ impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        parser::{
-            grammar::{
-                code_block::{CodeBlock, Statement},
-                expressions::Expression,
-                function::FunctionDef,
-                literals::Literal,
-                program::Program,
-                DataType, Value,
-            },
-            ParserErrorVariant, ParserWarningVariant, test_utils::tests::{dummy_token, parse, token},
+    use crate::parser::{
+        grammar::{
+            code_block::{CodeBlock, Statement},
+            expressions::Expression,
+            function::FunctionDef,
+            literals::Literal,
+            program::Program,
+            DataType, Value,
         },
+        test_utils::tests::{dummy_token, parse, token},
+        ParserErrorVariant, ParserWarningVariant,
     };
 
     use super::{
-        keywords::Keyword,
-        operators::Operator,
-        position::Position,
-        token::{TokenType},
-        ParserError,
+        keywords::Keyword, operators::Operator, position::Position, token::TokenType, ParserError,
     };
 
     #[test]

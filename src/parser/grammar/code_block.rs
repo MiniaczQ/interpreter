@@ -59,9 +59,7 @@ pub fn parse_code_block(p: &mut Parser) -> OptRes<CodeBlock> {
 mod tests {
     use super::super::test_utils::tests::*;
 
-    use grammar::{
-        code_block::{CodeBlock, Statement},
-    };
+    use grammar::code_block::{CodeBlock, Statement};
 
     use super::parse_code_block;
 

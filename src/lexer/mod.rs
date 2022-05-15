@@ -208,9 +208,7 @@ mod tests {
                 == LexerWarningVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
         );
         assert!(lexer.warnings[1].warning == LexerWarningVariant::InvalidSequence("$".to_owned()));
-        assert!(
-            lexer.warnings[2].warning == LexerWarningVariant::InvalidSequence("#.".to_owned())
-        );
+        assert!(lexer.warnings[2].warning == LexerWarningVariant::InvalidSequence("#.".to_owned()));
     }
 
     #[test]

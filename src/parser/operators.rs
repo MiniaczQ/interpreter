@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Possible operators
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

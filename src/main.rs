@@ -6,10 +6,13 @@ use std::{
     path::PathBuf,
 };
 
-use lexer::Lexer;
+use lexer::{lexem::LexerWarning, Lexer};
+use parser::{
+    grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
+};
 
 mod lexer;
-mod position;
+mod parser;
 mod scannable;
 
 /// Source of code
@@ -61,20 +64,6 @@ fn parse_args() -> Result<ParsedArgs, AppError> {
     }
 }
 
-/// Consumes and prints all lexems
-fn print_lexems(lexer: &mut Lexer) {
-    for token in lexer.all() {
-        println!("{}", token);
-    }
-}
-
-/// Prints all errors
-fn print_errors(lexer: &Lexer) {
-    for e in &lexer.errors {
-        eprintln!("{}", e);
-    }
-}
-
 /// Application error containing message and process return code
 struct AppError {
     msg: String,
@@ -109,6 +98,27 @@ fn app() -> Result<(), AppError> {
     }
 }
 
+/// Run a lexer and parser on some arbitrary reader
+fn parse(
+    reader: Box<dyn BufRead>,
+) -> (
+    Result<Program, ParserError>,
+    Vec<ParserWarning>,
+    Vec<LexerWarning>,
+) {
+    let mut lexer = Lexer::new(reader);
+
+    let (result, parser_warnings) = {
+        let mut parser = Parser::new(TokenScanner::new(&mut lexer));
+        let result = parser.parse();
+        let warnings = parser.get_warnings();
+        (result, warnings)
+    };
+
+    let lexer_warnings = lexer.get_warnings();
+    (result, parser_warnings, lexer_warnings)
+}
+
 /// Run interpreter
 fn run(input: InputType) -> Result<(), AppError> {
     let reader: Box<dyn BufRead> = match input {
@@ -124,11 +134,108 @@ fn run(input: InputType) -> Result<(), AppError> {
             }
         }
     };
-    let mut lexer = Lexer::new(reader);
 
-    print_lexems(&mut lexer); // TEMPORARY
+    let (result, parser_warnings, lexer_warnings) = parse(reader);
 
-    print_errors(&lexer);
+    match result {
+        Ok(program) => println!("{}", program),
+        Err(error) => eprintln!("{}", error),
+    }
+
+    for w in parser_warnings {
+        eprintln!("{}", w);
+    }
+
+    for w in lexer_warnings {
+        eprintln!("{}", w);
+    }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::{fs::OpenOptions, io::BufReader};
+
+    use crate::{
+        lexer::lexem::{LexerWarning, LexerWarningVariant},
+        parse,
+        parser::{
+            grammar::program::Program, ParserError, ParserErrorVariant, ParserWarning,
+            ParserWarningVariant,
+        },
+    };
+
+    fn read(
+        path: &str,
+    ) -> (
+        Result<Program, ParserError>,
+        Vec<ParserWarning>,
+        Vec<LexerWarning>,
+    ) {
+        let file = OpenOptions::new().read(true).open(&path).unwrap();
+        let reader = Box::new(BufReader::new(file));
+        parse(reader)
+    }
+
+    #[test]
+    fn string() {
+        let string = "// do nothing\nfn main() {\n    let a: int = 5;\n}";
+        let reader = Box::new(BufReader::new(string.as_bytes()));
+        let (res, par_warns, lex_warns) = parse(reader);
+        assert!(res.is_ok());
+        assert!(par_warns.is_empty());
+        assert!(lex_warns.is_empty());
+    }
+
+    #[test]
+    fn short() {
+        let (res, par_warns, lex_warns) = read("snippets/short.txt");
+        assert!(res.is_ok());
+        assert!(par_warns.is_empty());
+        assert!(lex_warns.is_empty());
+    }
+
+    #[test]
+    fn long() {
+        let (res, par_warns, lex_warns) = read("snippets/long.txt");
+        assert!(res.is_ok());
+        assert!(par_warns.is_empty());
+        assert!(lex_warns.is_empty());
+    }
+
+    #[test]
+    fn errors() {
+        let (res, par_warns, lex_warns) = read("snippets/parser_error.txt");
+        assert_eq!(
+            res.unwrap_err().error,
+            ParserErrorVariant::VariableDeclarationMissingType
+        );
+        assert_eq!(par_warns.len(), 1);
+        assert_eq!(
+            par_warns[0].warning,
+            ParserWarningVariant::VariableDeclarationMissingTypeSeparator
+        );
+        assert_eq!(lex_warns.len(), 1);
+        assert_eq!(
+            lex_warns[0].warning,
+            LexerWarningVariant::InvalidSequence("#$@".to_owned())
+        );
+    }
+
+    #[test]
+    fn warnings() {
+        let (res, par_warns, lex_warns) = read("snippets/warnings.txt");
+        assert!(res.is_ok());
+        assert_eq!(par_warns.len(), 1);
+        assert_eq!(
+            par_warns[0].warning,
+            ParserWarningVariant::VariableDeclarationMissingTypeSeparator
+        );
+        assert_eq!(lex_warns.len(), 1);
+        assert_eq!(
+            lex_warns[0].warning,
+            LexerWarningVariant::InvalidSequence("#$@".to_owned())
+        );
+    }
 }

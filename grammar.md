@@ -67,7 +67,7 @@ function_definitions
     ;
 
 function_definition
-    = KW_FN, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
+    = KW_FN, IDENTIFIER, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
     ;
 
 parameters
@@ -94,7 +94,7 @@ primitive_type
 ### Code block
 ```ebnf
 code_block
-    = OPEN_CODEBLOCK, statements, [expression], CLOSE_CODEBLOCK
+    = OPEN_CODEBLOCK, statements, CLOSE_CODEBLOCK
     ;
 
 statements
@@ -102,7 +102,8 @@ statements
     ;
 
 statement
-    = expression, END_EXPRESSION
+    = expression
+    | EXPRESSION_END
     ;
 ```
 
@@ -126,19 +127,15 @@ for_expression
 
 ### Constants
 ```ebnf
-primitive_constant
-    = CONST_INT
-    | CONST_FLOAT
-    | CONST_BOOL
-    ;
-
 list_constant
-    = OPEN_LIST, [primitive_constant, {SPLIT, primitive_constant}], CLOSE_LIST
+    = OPEN_LIST, [expression, {SPLIT, expression}], CLOSE_LIST
     ;
 
 constant
-    = primitive_constant
-    | list_constant
+    = list_constant
+    | CONST_INT
+    | CONST_FLOAT
+    | CONST_BOOL
     | CONST_STRING
     ;
 ```
@@ -243,24 +240,24 @@ variable_assignment_expression
     ;
 ```
 
-### Return or variable declaration
+### For, while, if or codeblock
 ```ebnf
-return_or_variable_declaration_expression
-    = [KW_RETURN | variable_declaration], variable_assignment_expression
-    ;
-
-variable_declaration
-    = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
-    ;
-```
-
-### Expression
-```ebnf
-expression
-    = return_or_variable_declaration_expression
+control_flow_expression
+    = variable_assignment_expression
     | for_expression
     | while_expression
     | if_expression
     | code_block
+    ;
+```
+
+### Expression (return or variable declaration)
+```ebnf
+expression
+    = [KW_RETURN | variable_declaration], control_flow_expression
+    ;
+
+variable_declaration
+    = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
     ;
 ```

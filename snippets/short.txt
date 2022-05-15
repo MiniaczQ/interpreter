@@ -1,4 +1,7 @@
 // do nothing
 fn main() {
-    let a = 5;
+    let a: int = 5;
+    let b: float = 6.0;
+    a = a + to_int(b * 2.0);
+    print(a);
 }

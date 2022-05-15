@@ -1,10 +1,10 @@
 use std::fmt::Display;
 
-/// Position of a token
+/// Position of a lexem
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Position {
-    row: usize,
-    col: usize,
+    pub row: usize,
+    pub col: usize,
 }
 
 impl Position {

@@ -2,16 +2,16 @@ use std::io::BufReader;
 
 use crate::lexer::{
     char_scanner::CharScanner,
-    lexem::{Lexem, LexemBuilder, LexemError, LexemType},
+    lexem::{Lexem, LexemBuilder, LexemType, LexerWarning},
 };
 
 #[allow(dead_code)]
 pub fn matcher_with(
     matcher: fn(&mut LexemBuilder) -> Option<Lexem>,
     string: &'static str,
-) -> (Option<Lexem>, Vec<LexemError>) {
+) -> (Option<Lexem>, Vec<LexerWarning>) {
     let mut scanner = CharScanner::new(BufReader::new(string.as_bytes()));
-    let mut errors: Vec<LexemError> = vec![];
+    let mut errors: Vec<LexerWarning> = vec![];
     let lb = &mut LexemBuilder::new(&mut scanner, &mut errors);
     (matcher(lb), errors)
 }

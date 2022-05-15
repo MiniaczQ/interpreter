@@ -1,6 +1,6 @@
 use crate::{
     lexer::{
-        lexem::{Lexem, LexemBuilder, LexemErrorVariant, LexemType},
+        lexem::{Lexem, LexemBuilder, LexemType, LexerWarningVariant},
         operators::Operator,
     },
     scannable::Scannable,
@@ -42,7 +42,7 @@ fn complete_multi_line_comment(lb: &mut LexemBuilder, max: usize) -> Lexem {
                 }
             }
             '\x03' => {
-                lb.error(LexemErrorVariant::CommentNeverEnds);
+                lb.error(LexerWarningVariant::CommentNeverEnds);
                 let t = lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
                 lb.pop();
                 break t;
@@ -53,7 +53,7 @@ fn complete_multi_line_comment(lb: &mut LexemBuilder, max: usize) -> Lexem {
         }
         if content.len() > max {
             content.pop();
-            lb.error(LexemErrorVariant::CommentTooLong);
+            lb.error(LexerWarningVariant::CommentTooLong);
             break lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
         }
         lb.pop();
@@ -73,7 +73,7 @@ fn complete_single_line_comment(lb: &mut LexemBuilder, max: usize) -> Lexem {
         }
         if content.len() > max {
             content.pop();
-            lb.error(LexemErrorVariant::CommentTooLong);
+            lb.error(LexerWarningVariant::CommentTooLong);
             break lb.bake_raw(LexemType::Comment(content.into_iter().collect()));
         }
         lb.pop();
@@ -83,7 +83,7 @@ fn complete_single_line_comment(lb: &mut LexemBuilder, max: usize) -> Lexem {
 #[cfg(test)]
 mod tests {
     use crate::lexer::{
-        lexem::{Lexem, LexemError, LexemErrorVariant, LexemType},
+        lexem::{Lexem, LexemType, LexerWarning, LexerWarningVariant},
         matchers::test_utils::{lexem_with, matcher_with},
         operators::Operator,
     };
@@ -96,7 +96,7 @@ mod tests {
         r.0
     }
 
-    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemError>) {
+    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexerWarning>) {
         matcher_with(|lb| match_comment_or_division(lb, 32), string)
     }
 
@@ -142,7 +142,7 @@ mod tests {
             result,
             comment_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 35))
         );
-        assert!(errors[0].variant == LexemErrorVariant::CommentTooLong);
+        assert!(errors[0].warning == LexerWarningVariant::CommentTooLong);
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
             result,
             comment_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 35))
         );
-        assert!(errors[0].variant == LexemErrorVariant::CommentTooLong);
+        assert!(errors[0].warning == LexerWarningVariant::CommentTooLong);
     }
 
     #[test]
@@ -187,7 +187,7 @@ mod tests {
     fn com_multi_no_end() {
         let (result, errors) = err_matcher("/*a\n");
         assert_eq!(result, comment_lexem("a\n", (1, 1), (2, 1)));
-        assert!(errors[0].variant == LexemErrorVariant::CommentNeverEnds);
+        assert!(errors[0].warning == LexerWarningVariant::CommentNeverEnds);
     }
 
     #[test]

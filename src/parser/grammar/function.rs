@@ -33,7 +33,7 @@ fn parse_parameter(p: &mut Parser) -> ParseResult<Parameter> {
         if let Some(data_type) = parse_type(p)? {
             Ok(Some(Parameter { name, data_type }))
         } else {
-            Err(p.error(ParserErrorVariant::FunctionParameterMissingType))
+            p.error(ParserErrorVariant::FunctionParameterMissingType)
         }
     } else {
         Ok(None)
@@ -84,7 +84,7 @@ pub fn parse_function_def(p: &mut Parser) -> ParseResult<FunctionDef> {
                 if let Some(data_type) = parse_type(p)? {
                     data_type
                 } else {
-                    return Err(p.error(ParserErrorVariant::FunctionMissingReturnType));
+                    return p.error(ParserErrorVariant::FunctionMissingReturnType);
                 }
             } else {
                 DataType::None
@@ -97,10 +97,10 @@ pub fn parse_function_def(p: &mut Parser) -> ParseResult<FunctionDef> {
                     result,
                 }))
             } else {
-                Err(p.error(ParserErrorVariant::FunctionMissingBody))
+                p.error(ParserErrorVariant::FunctionMissingBody)
             }
         } else {
-            Err(p.error(ParserErrorVariant::FunctionMissingIdentifier))
+            p.error(ParserErrorVariant::FunctionMissingIdentifier)
         }
     } else {
         Ok(None)

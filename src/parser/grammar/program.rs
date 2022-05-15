@@ -24,7 +24,7 @@ pub fn parse_program(p: &mut Parser) -> Result<Program, ParserError> {
             Ok(Some(function)) => {
                 functions.push(function);
             }
-            _ => return Err(p.error(ParserErrorVariant::ExpectedFunctionDefinition)),
+            _ => return p.error(ParserErrorVariant::ExpectedFunctionDefinition),
         }
     }
     Ok(Program { functions })

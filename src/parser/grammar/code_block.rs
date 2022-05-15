@@ -1,6 +1,7 @@
-use super::utility::*;
-
-use super::expressions::{parse_expression, Expression};
+use super::{
+    expressions::{parse_expression, Expression},
+    utility::*,
+};
 
 /// Block of code that returns the last espression.
 #[derive(Debug, Clone)]

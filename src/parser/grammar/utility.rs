@@ -1,3 +1,5 @@
+//! Collection of aliases and re-exports for parsing
+
 use crate::parser::ParserError;
 
 // Re-export traits

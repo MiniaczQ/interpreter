@@ -101,7 +101,7 @@ pub trait ErrorHandler {
     fn warn(&mut self, err: ParserWarningVariant);
 
     /// Creates a critical error which aborts parsing.
-    fn error(&mut self, err: ParserErrorVariant) -> ParserError;
+    fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError>;
 }
 
 impl ErrorHandler for Parser {
@@ -115,8 +115,8 @@ impl ErrorHandler for Parser {
         self.errors.push(err);
     }
 
-    fn error(&mut self, err: ParserErrorVariant) -> ParserError {
-        ParserError { err, pos: self.pos }
+    fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError> {
+        Err(ParserError { err, pos: self.pos })
     }
 }
 
@@ -139,7 +139,10 @@ pub trait ExtScannable: Scannable<Option<Token>> {
 
 impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
     fn token(&mut self) -> Result<Token, ParserError> {
-        self.curr()
-            .ok_or_else(|| self.error(ParserErrorVariant::OutOfTokens))
+        if let Some(t) = self.curr() {
+            Ok(t)
+        } else {
+            self.error(ParserErrorVariant::OutOfTokens)
+        }
     }
 }

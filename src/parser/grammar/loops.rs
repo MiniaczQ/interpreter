@@ -29,10 +29,10 @@ pub fn parse_while_loop(p: &mut Parser) -> ParseResult<WhileLoop> {
             if let Some(body) = parse_code_block(p)? {
                 Ok(Some(WhileLoop { condition, body }))
             } else {
-                Err(p.error(ParserErrorVariant::WhileLoopMissingBody))
+                p.error(ParserErrorVariant::WhileLoopMissingBody)
             }
         } else {
-            Err(p.error(ParserErrorVariant::WhileLoopMissingCondition))
+            p.error(ParserErrorVariant::WhileLoopMissingCondition)
         }
     } else {
         Ok(None)
@@ -68,13 +68,13 @@ pub fn parse_for_loop(p: &mut Parser) -> ParseResult<ForLoop> {
                         body,
                     }))
                 } else {
-                    Err(p.error(ParserErrorVariant::ForLoopMissingBody))
+                    p.error(ParserErrorVariant::ForLoopMissingBody)
                 }
             } else {
-                Err(p.error(ParserErrorVariant::ForLoopMissingProvider))
+                p.error(ParserErrorVariant::ForLoopMissingProvider)
             }
         } else {
-            Err(p.error(ParserErrorVariant::ForLoopMissingVariable))
+            p.error(ParserErrorVariant::ForLoopMissingVariable)
         }
     } else {
         Ok(None)

@@ -67,7 +67,7 @@ fn parse_bracket_expression(p: &mut Parser) -> ParseResult<Expression> {
             }
             Ok(Some(expression))
         } else {
-            Err(p.error(ParserErrorVariant::InvalidBracketExpression))
+            p.error(ParserErrorVariant::InvalidBracketExpression)
         }
     } else {
         Ok(None)
@@ -115,7 +115,7 @@ fn parse_index_or_range_access(p: &mut Parser) -> ParseResult<IndexOrRange> {
             if let Some(right_index) = parse_expression(p)? {
                 Ok(Some(IndexOrRange::Range(left_index, right_index)))
             } else {
-                Err(p.error(ParserErrorVariant::ListRangeAccessIncomplete))
+                p.error(ParserErrorVariant::ListRangeAccessIncomplete)
             }
         } else {
             Ok(Some(IndexOrRange::Index(left_index)))
@@ -139,7 +139,7 @@ fn parse_list_access(p: &mut Parser) -> ParseResult<IndexOrRange> {
             }
             Ok(Some(index_or_range))
         } else {
-            Err(p.error(ParserErrorVariant::ListAccessEmpty))
+            p.error(ParserErrorVariant::ListAccessEmpty)
         }
     } else {
         Ok(None)
@@ -242,7 +242,7 @@ fn parse_unary_operator_expression(p: &mut Parser) -> ParseResult<Expression> {
                 expression: Box::new(expression),
             }))
         } else {
-            Err(p.error(ParserErrorVariant::UnaryOperatorMissingExpression))
+            p.error(ParserErrorVariant::UnaryOperatorMissingExpression)
         }
     } else if let Some(expression) = parse_function_call_or_list_access_expression(p)? {
         Ok(Some(expression))
@@ -303,7 +303,7 @@ fn parse_mul_div_expression(p: &mut Parser) -> ParseResult<Expression> {
                     rhs: Box::new(rhs),
                 };
             } else {
-                return Err(p.error(ParserErrorVariant::BinaryOperatorMissingRHS));
+                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -342,7 +342,7 @@ fn parse_add_sub_expression(p: &mut Parser) -> ParseResult<Expression> {
                     rhs: Box::new(rhs),
                 };
             } else {
-                return Err(p.error(ParserErrorVariant::BinaryOperatorMissingRHS));
+                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -397,7 +397,7 @@ fn parse_comparison_expression(p: &mut Parser) -> ParseResult<Expression> {
                     rhs: Box::new(rhs),
                 };
             } else {
-                return Err(p.error(ParserErrorVariant::BinaryOperatorMissingRHS));
+                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -420,7 +420,7 @@ fn parse_logical_conjunction_expression(p: &mut Parser) -> ParseResult<Expressio
                     rhs: Box::new(rhs),
                 };
             } else {
-                return Err(p.error(ParserErrorVariant::BinaryOperatorMissingRHS));
+                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -443,7 +443,7 @@ fn parse_logical_alternative_expression(p: &mut Parser) -> ParseResult<Expressio
                     rhs: Box::new(rhs),
                 };
             } else {
-                return Err(p.error(ParserErrorVariant::BinaryOperatorMissingRHS));
+                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -465,7 +465,7 @@ fn parse_variable_assignment_expression(p: &mut Parser) -> ParseResult<Expressio
                     expression: Box::new(rhs),
                 };
             } else {
-                return Err(p.error(ParserErrorVariant::AssignmentMissingExpression));
+                return p.error(ParserErrorVariant::AssignmentMissingExpression);
             }
         }
         Ok(Some(lhs))
@@ -504,10 +504,10 @@ fn parse_variable_declaration(p: &mut Parser) -> ParseResult<VariableDeclaration
                     data_type,
                 }))
             } else {
-                Err(p.error(ParserErrorVariant::VariableDeclarationMissingType))
+                p.error(ParserErrorVariant::VariableDeclarationMissingType)
             }
         } else {
-            Err(p.error(ParserErrorVariant::VariableDeclarationMissingIdentifier))
+            p.error(ParserErrorVariant::VariableDeclarationMissingIdentifier)
         }
     } else {
         Ok(None)
@@ -558,7 +558,7 @@ pub fn parse_expression(p: &mut Parser) -> ParseResult<Expression> {
         if let Some(expression) = parse_control_flow_expression(p)? {
             Ok(Some(Expression::Return(Box::new(expression))))
         } else {
-            Err(p.error(ParserErrorVariant::ReturnMissingExpression))
+            p.error(ParserErrorVariant::ReturnMissingExpression)
         }
     } else if let Some(variable_declaration) = parse_variable_declaration(p)? {
         if let Some(expression) = parse_control_flow_expression(p)? {
@@ -568,7 +568,7 @@ pub fn parse_expression(p: &mut Parser) -> ParseResult<Expression> {
                 expression: Box::new(expression),
             }))
         } else {
-            Err(p.error(ParserErrorVariant::VariableDeclarationMissingExpression))
+            p.error(ParserErrorVariant::VariableDeclarationMissingExpression)
         }
     } else {
         parse_control_flow_expression(p)

@@ -79,6 +79,18 @@ pub trait ParsingHelper: ExtScannable {
         }
         Ok(None)
     }
+
+    /// Whether parser ran out of tokens
+    fn has_tokens(&mut self) -> bool {
+        if let Err(ParserError {
+            err: ErroVar::OutOfTokens,
+            pos: _,
+        }) = self.token()
+        {
+            return false;
+        }
+        true
+    }
 }
 
 impl<T: ExtScannable> ParsingHelper for T {}

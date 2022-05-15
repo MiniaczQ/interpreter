@@ -1,7 +1,9 @@
-use crate::parser::{ErrorHandler, ExtScannable, Parser, ParserError, ParserErrorVariant};
+use super::{
+    function::{parse_function_def, FunctionDef},
+    utility::*,
+};
 
-use super::function::{parse_function_def, FunctionDef};
-
+/// Main program
 #[derive(Debug)]
 pub struct Program {
     functions: Vec<FunctionDef>,
@@ -10,21 +12,13 @@ pub struct Program {
 /// function_definitions
 ///     = {function_definition}
 ///     ;
-pub fn parse_program(p: &mut Parser) -> Result<Program, ParserError> {
+pub fn parse_program(p: &mut Parser) -> Res<Program> {
     let mut functions = vec![];
-    loop {
-        if let Err(ParserError {
-            err: ParserErrorVariant::OutOfTokens,
-            pos: _,
-        }) = p.token()
-        {
-            break;
-        }
-        match parse_function_def(p) {
-            Ok(Some(function)) => {
-                functions.push(function);
-            }
-            _ => return p.error(ParserErrorVariant::ExpectedFunctionDefinition),
+    while p.has_tokens() {
+        if let Some(function) = parse_function_def(p)? {
+            functions.push(function);
+        } else {
+            return p.error(ErroVar::ExpectedFunctionDefinition);
         }
     }
     Ok(Program { functions })

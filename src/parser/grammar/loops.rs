@@ -7,16 +7,16 @@ use super::{
 /// While loop
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WhileLoop {
-    condition: Expression,
-    body: CodeBlock,
+    pub condition: Expression,
+    pub body: CodeBlock,
 }
 
 /// For loop
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ForLoop {
-    variable: String,
-    provider: Expression,
-    body: CodeBlock,
+    pub variable: String,
+    pub provider: Expression,
+    pub body: CodeBlock,
 }
 
 /// while_expression

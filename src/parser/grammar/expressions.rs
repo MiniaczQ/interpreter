@@ -44,7 +44,7 @@ pub enum Expression {
     },
     For(Box<ForLoop>),
     While(Box<WhileLoop>),
-    If(Box<IfElse>),
+    IfElse(Box<IfElse>),
     CodeBlock(CodeBlock),
 }
 
@@ -493,7 +493,7 @@ fn parse_while_expression(p: &mut Parser) -> OptRes<Expression> {
 
 /// if_expression
 fn parse_if_else_expression(p: &mut Parser) -> OptRes<Expression> {
-    parse_if_else(p).map(|v| v.map(|v| Expression::If(Box::new(v))))
+    parse_if_else(p).map(|v| v.map(|v| Expression::IfElse(Box::new(v))))
 }
 
 /// for_expression
@@ -543,49 +543,381 @@ pub fn parse_expression(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
+    use crate::parser::grammar::{
+        code_block::{CodeBlock, Statement},
+        conditional::IfElse,
+        expressions::{parse_expression, IndexOrRange},
+        loops::{ForLoop, WhileLoop},
+    };
+
     use super::super::test_utils::tests::*;
 
     #[test]
-    fn miss() {}
+    fn miss() {
+        let (result, warnings) = partial_parse(
+            vec![dummy_token(TokenType::Keyword(Kw::Fn))],
+            parse_expression,
+        );
+        assert_eq!(result, Ok(None));
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn bracket_expr() {}
+    fn bracket_expr() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Int(5)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Literal(Literal(Value::Integer(5)))
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn literal() {}
+    fn bracket_expr_missing_bracket() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Int(5)),
+                token(TokenType::Operator(Op::CloseCurlyBracket), (5, 6), (5, 7)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Literal(Literal(Value::Integer(5)))
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingRoundBracket,
+                start: Position::new(5, 6),
+                stop: Position::new(5, 7)
+            }
+        );
+    }
 
     #[test]
-    fn identifier() {}
+    fn bracket_expr_missing_expression() {
+        let (result, warnings) = partial_parse(
+            vec![
+                token(TokenType::Operator(Op::OpenRoundBracket), (2, 4), (2, 5)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::InvalidBracketExpression,
+                pos: Position::new(2, 5),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn list_access_index() {}
+    fn literal() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Int(7)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Literal(Literal(Value::Integer(7)))
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn list_access_range() {}
+    fn identifier() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Identifier("a".to_owned())
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn list_access_empty() {}
+    fn list_access_index() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Int(1)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::ListAccess {
+                list: Box::new(Expression::Identifier("a".to_owned())),
+                access: Box::new(IndexOrRange::Index(Expression::Literal(Literal(
+                    Value::Integer(1)
+                ))))
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn list_access_missing_closing_bracket() {}
+    fn list_access_empty() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                token(TokenType::Operator(Op::OpenSquareBracket), (3, 4), (3, 5)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::ListAccessEmpty,
+                pos: Position::new(3, 5),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn list_access_range_incomplete() {}
+    fn list_access_range() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Int(1)),
+                dummy_token(TokenType::Operator(Op::DoubleColon)),
+                dummy_token(TokenType::Int(5)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::ListAccess {
+                list: Box::new(Expression::Identifier("a".to_owned())),
+                access: Box::new(IndexOrRange::Range(
+                    Expression::Literal(Literal(Value::Integer(1))),
+                    Expression::Literal(Literal(Value::Integer(5)))
+                ))
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn function_call() {}
+    fn list_access_missing_closing_bracket() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Int(1)),
+                dummy_token(TokenType::Operator(Op::DoubleColon)),
+                dummy_token(TokenType::Int(5)),
+                token(TokenType::Operator(Op::Semicolon), (7, 8), (7, 9)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::ListAccess {
+                list: Box::new(Expression::Identifier("a".to_owned())),
+                access: Box::new(IndexOrRange::Range(
+                    Expression::Literal(Literal(Value::Integer(1))),
+                    Expression::Literal(Literal(Value::Integer(5)))
+                ))
+            }
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingSquareBracket,
+                start: Position::new(7, 8),
+                stop: Position::new(7, 9)
+            }
+        );
+    }
 
     #[test]
-    fn function_call_trailing_comma() {}
+    fn list_access_range_incomplete() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
+                dummy_token(TokenType::Int(1)),
+                token(TokenType::Operator(Op::DoubleColon), (3, 8), (3, 10)),
+                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::ListRangeAccessIncomplete,
+                pos: Position::new(3, 10)
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn function_call_empty() {}
+    fn function_call() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Int(30)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::String("ccc".to_owned())),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::FunctionCall {
+                identifier: Box::new(Expression::Identifier("a".to_owned())),
+                arguments: vec![
+                    Expression::Literal(Literal(Value::Integer(30))),
+                    Expression::Literal(Literal(Value::String("ccc".to_owned())))
+                ],
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn function_call_missing_closing_bracket() {}
+    fn function_call_empty() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::FunctionCall {
+                identifier: Box::new(Expression::Identifier("a".to_owned())),
+                arguments: vec![],
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn function_call_no_args() {}
+    fn function_call_trailing_comma() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Int(30)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::String("ccc".to_owned())),
+                dummy_token(TokenType::Operator(Op::Split)),
+                token(TokenType::Operator(Op::CloseRoundBracket), (6, 15), (6, 16)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::FunctionCall {
+                identifier: Box::new(Expression::Identifier("a".to_owned())),
+                arguments: vec![
+                    Expression::Literal(Literal(Value::Integer(30))),
+                    Expression::Literal(Literal(Value::String("ccc".to_owned())))
+                ],
+            }
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::TrailingComma,
+                start: Position::new(6, 15),
+                stop: Position::new(6, 16)
+            }
+        );
+    }
+
+    #[test]
+    fn function_call_missing_closing_bracket() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Int(30)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::String("ccc".to_owned())),
+                token(TokenType::Operator(Op::Semicolon), (13, 20), (13, 21)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::FunctionCall {
+                identifier: Box::new(Expression::Identifier("a".to_owned())),
+                arguments: vec![
+                    Expression::Literal(Literal(Value::Integer(30))),
+                    Expression::Literal(Literal(Value::String("ccc".to_owned())))
+                ],
+            }
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingRoundBracket,
+                start: Position::new(13, 20),
+                stop: Position::new(13, 21)
+            }
+        );
+    }
 
     #[test]
     fn unary_algebraic_negation() {}
@@ -663,23 +995,158 @@ mod tests {
     fn declaration_missing_expression() {}
 
     #[test]
-    fn for_loop() {}
+    fn for_loop() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::For)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Keyword(Kw::In)),
+                dummy_token(TokenType::Identifier("b".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::For(Box::new(ForLoop {
+                variable: "a".to_owned(),
+                provider: Expression::Identifier("b".to_owned()),
+                body: CodeBlock { statements: vec![] }
+            }))
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn while_loop() {}
+    fn while_loop() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::While)),
+                dummy_token(TokenType::Keyword(Kw::True)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::While(Box::new(WhileLoop {
+                condition: Expression::Literal(Literal(Value::Bool(true))),
+                body: CodeBlock { statements: vec![] }
+            }))
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn if_else() {}
+    fn if_else() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::If)),
+                dummy_token(TokenType::Keyword(Kw::True)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+                dummy_token(TokenType::Keyword(Kw::Else)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::IfElse(Box::new(IfElse {
+                condition: Expression::Literal(Literal(Value::Bool(true))),
+                true_case: CodeBlock { statements: vec![] },
+                false_case: Some(CodeBlock { statements: vec![] }),
+            }))
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn code_block() {}
+    fn code_block() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                dummy_token(TokenType::Int(5)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::CodeBlock(CodeBlock {
+                statements: vec![
+                    Statement::Expression(Expression::Identifier("a".to_owned())),
+                    Statement::Semicolon,
+                    Statement::Expression(Expression::Literal(Literal(Value::Integer(5)))),
+                    Statement::Semicolon,
+                ]
+            })
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn return_expr() {}
+    fn return_expr() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Return)),
+                dummy_token(TokenType::Int(0)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Return(Box::new(Expression::Literal(Literal(Value::Integer(0)))))
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn return_expr_missing_expression() {}
+    fn return_expr_missing_expression() {
+        let (result, warnings) = partial_parse(
+            vec![
+                token(TokenType::Keyword(Kw::Return), (4, 2), (4, 8)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::ReturnMissingExpression,
+                pos: Position::new(4, 8),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn out_of_tokens() {}
+    fn out_of_tokens() {
+        let (result, warnings) = partial_parse(
+            vec![token(TokenType::Keyword(Kw::Let), (5, 6), (5, 9))],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::OutOfTokens,
+                pos: Position::new(5, 9),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 }

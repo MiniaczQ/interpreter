@@ -8,9 +8,9 @@ use super::{
 /// The else block is optional.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IfElse {
-    condition: Expression,
-    true_case: CodeBlock,
-    false_case: Option<CodeBlock>,
+    pub condition: Expression,
+    pub true_case: CodeBlock,
+    pub false_case: Option<CodeBlock>,
 }
 
 /// if_expression

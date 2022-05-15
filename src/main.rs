@@ -118,16 +118,16 @@ fn run(input: InputType) -> Result<(), AppError> {
 
         match parser.parse() {
             Ok(program) => println!("{}", program),
-            Err(error) => println!("{}", error),
+            Err(error) => eprintln!("{}", error),
         }
 
         for w in parser.get_warnings() {
-            println!("{}", w);
+            eprintln!("{}", w);
         }
     }
 
     for w in lexer.get_warnings() {
-        println!("{}", w);
+        eprintln!("{}", w);
     }
 
     Ok(())

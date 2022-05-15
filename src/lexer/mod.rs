@@ -80,7 +80,7 @@ impl Lexer {
                         self.warnings.push(LexerWarning {
                             start: sequence_start,
                             end: sequence_stop,
-                            variant: LexerWarningVariant::InvalidSequence(
+                            warning: LexerWarningVariant::InvalidSequence(
                                 invalid_sequence.iter().collect::<String>(),
                             ),
                         });
@@ -170,25 +170,25 @@ mod tests {
             .read(true)
             .open("snippets/very_short.txt")
             .unwrap();
-        let mut parser = Lexer::new(BufReader::new(file));
-        let output = parser.all();
+        let mut lexer = Lexer::new(BufReader::new(file));
+        let output = lexer.all();
         assert_eq!(output, correct_output());
-        assert!(parser.warnings.is_empty());
+        assert!(lexer.warnings.is_empty());
     }
 
     #[test]
     fn test_string() {
         let string = "// do nothing\nfn main() {\n    let a: int = 5;\n}";
-        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
-        let output = parser.all();
+        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
+        let output = lexer.all();
         assert_eq!(output, correct_output());
-        assert!(parser.warnings.is_empty());
+        assert!(lexer.warnings.is_empty());
     }
 
     #[test]
     fn invalid_sequence() {
         let string = "invalid $@#@$#@$#$@ sequence breaks$stuff 0#.323";
-        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(LexemType::Identifier("invalid".to_owned()), (1, 1), (1, 8)),
             Lexem::new(
@@ -201,22 +201,22 @@ mod tests {
             Lexem::new(LexemType::Int(0), (1, 43), (1, 44)),
             Lexem::new(LexemType::Int(323), (1, 46), (1, 49)),
         ];
-        let output = parser.all();
+        let output = lexer.all();
         assert_eq!(output, correct_output);
         assert!(
-            parser.warnings[0].variant
+            lexer.warnings[0].warning
                 == LexerWarningVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
         );
-        assert!(parser.warnings[1].variant == LexerWarningVariant::InvalidSequence("$".to_owned()));
+        assert!(lexer.warnings[1].warning == LexerWarningVariant::InvalidSequence("$".to_owned()));
         assert!(
-            parser.warnings[2].variant == LexerWarningVariant::InvalidSequence("#.".to_owned())
+            lexer.warnings[2].warning == LexerWarningVariant::InvalidSequence("#.".to_owned())
         );
     }
 
     #[test]
     fn incomplete_string() {
         let string = "// do nothing\nfn main() \"{\n    let a = 5;\n}\n";
-        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(
                 LexemType::Comment(" do nothing".to_owned()),
@@ -241,15 +241,15 @@ mod tests {
                 (5, 1),
             ),
         ];
-        let output = parser.all();
+        let output = lexer.all();
         assert_eq!(output, correct_output);
-        assert!(parser.warnings[0].variant == LexerWarningVariant::StringNeverEnds);
+        assert!(lexer.warnings[0].warning == LexerWarningVariant::StringNeverEnds);
     }
 
     #[test]
     fn incomplete_comment() {
         let string = "// do nothing\nfn main() /*{\n    let a = 5;\n}\n";
-        let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(
                 LexemType::Comment(" do nothing".to_owned()),
@@ -274,8 +274,8 @@ mod tests {
                 (5, 1),
             ),
         ];
-        let output = parser.all();
+        let output = lexer.all();
         assert_eq!(output, correct_output);
-        assert!(parser.warnings[0].variant == LexerWarningVariant::CommentNeverEnds);
+        assert!(lexer.warnings[0].warning == LexerWarningVariant::CommentNeverEnds);
     }
 }

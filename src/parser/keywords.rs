@@ -1,5 +1,7 @@
+use serde::{Deserialize, Serialize};
+
 /// Possible keywords
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Keyword {
     Int,
     Float,

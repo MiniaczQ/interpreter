@@ -6,7 +6,7 @@ use super::{
 
 /// If expression.
 /// The else block is optional.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct IfElse {
     condition: Expression,
     true_case: CodeBlock,

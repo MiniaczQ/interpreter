@@ -106,7 +106,7 @@ mod tests {
     fn no_end() {
         let (result, errors) = err_matcher("\"abcd");
         assert_eq!(result, lexem("abcd", (1, 1), (1, 6)));
-        assert!(errors[0].variant == LexerWarningVariant::StringNeverEnds);
+        assert!(errors[0].warning == LexerWarningVariant::StringNeverEnds);
     }
 
     #[test]
@@ -118,7 +118,7 @@ mod tests {
     fn empty_no_end() {
         let (result, errors) = err_matcher("\"");
         assert_eq!(result, lexem("", (1, 1), (1, 2)));
-        assert!(errors[0].variant == LexerWarningVariant::StringNeverEnds);
+        assert!(errors[0].warning == LexerWarningVariant::StringNeverEnds);
     }
 
     #[test]
@@ -146,7 +146,7 @@ mod tests {
     fn unknown_escape() {
         let (result, errors) = err_matcher("\"abc\\j\"");
         assert_eq!(result, lexem("abc", (1, 1), (1, 8)));
-        assert!(errors[0].variant == LexerWarningVariant::InvalidEscapeCharacter('j'));
+        assert!(errors[0].warning == LexerWarningVariant::InvalidEscapeCharacter('j'));
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod tests {
             result,
             lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 34))
         );
-        assert!(errors[0].variant == LexerWarningVariant::StringTooLong);
+        assert!(errors[0].warning == LexerWarningVariant::StringTooLong);
     }
 
     #[test]

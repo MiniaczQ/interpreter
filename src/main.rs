@@ -10,6 +10,7 @@ use lexer::{lexem::LexerWarning, Lexer};
 use parser::{
     grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
 };
+use scannable::Scannable;
 
 mod lexer;
 mod parser;
@@ -107,12 +108,14 @@ fn parse(
     Vec<LexerWarning>,
 ) {
     let mut lexer = Lexer::new(reader);
+
     let (result, parser_warnings) = {
         let mut parser = Parser::new(TokenScanner::new(&mut lexer));
         let result = parser.parse();
         let warnings = parser.get_warnings();
         (result, warnings)
     };
+
     let lexer_warnings = lexer.get_warnings();
     (result, parser_warnings, lexer_warnings)
 }
@@ -135,18 +138,18 @@ fn run(input: InputType) -> Result<(), AppError> {
 
     let (result, parser_warnings, lexer_warnings) = parse(reader);
 
-    match result {
-        Ok(program) => println!("{}", program),
-        Err(error) => eprintln!("{}", error),
-    }
-
-    for w in parser_warnings {
-        eprintln!("{}", w);
-    }
-
-    for w in lexer_warnings {
-        eprintln!("{}", w);
-    }
+    //    match result {
+    //        Ok(program) => println!("{}", program),
+    //        Err(error) => eprintln!("{}", error),
+    //    }
+    //
+    //    for w in parser_warnings {
+    //        eprintln!("{}", w);
+    //    }
+    //
+    //    for w in lexer_warnings {
+    //        eprintln!("{}", w);
+    //    }
 
     Ok(())
 }
@@ -156,9 +159,12 @@ mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
     use crate::{
-        lexer::lexem::LexerWarning,
+        lexer::lexem::{LexerWarning, LexerWarningVariant},
         parse,
-        parser::{grammar::program::Program, ParserError, ParserErrorVariant, ParserWarning},
+        parser::{
+            grammar::program::Program, ParserError, ParserErrorVariant, ParserWarning,
+            ParserWarningVariant,
+        },
     };
 
     fn read(
@@ -171,6 +177,16 @@ mod tests {
         let file = OpenOptions::new().read(true).open(&path).unwrap();
         let reader = Box::new(BufReader::new(file));
         parse(reader)
+    }
+
+    #[test]
+    fn string() {
+        let string = "// do nothing\nfn main() {\n    let a: int = 5;\n}";
+        let reader = Box::new(BufReader::new(string.as_bytes()));
+        let (res, par_warns, lex_warns) = parse(reader);
+        assert!(res.is_ok());
+        assert!(par_warns.is_empty());
+        assert!(lex_warns.is_empty());
     }
 
     #[test]
@@ -193,11 +209,19 @@ mod tests {
     fn errors() {
         let (res, par_warns, lex_warns) = read("snippets/parser_error.txt");
         assert_eq!(
-            std::mem::discriminant(&res.unwrap_err().error),
-            std::mem::discriminant(&ParserErrorVariant::VariableDeclarationMissingType)
+            res.unwrap_err().error,
+            ParserErrorVariant::VariableDeclarationMissingType
         );
         assert_eq!(par_warns.len(), 1);
+        assert_eq!(
+            par_warns[0].warning,
+            ParserWarningVariant::VariableDeclarationMissingTypeSeparator
+        );
         assert_eq!(lex_warns.len(), 1);
+        assert_eq!(
+            lex_warns[0].warning,
+            LexerWarningVariant::InvalidSequence("#$@".to_owned())
+        );
     }
 
     #[test]
@@ -205,6 +229,14 @@ mod tests {
         let (res, par_warns, lex_warns) = read("snippets/warnings.txt");
         assert!(res.is_ok());
         assert_eq!(par_warns.len(), 1);
+        assert_eq!(
+            par_warns[0].warning,
+            ParserWarningVariant::VariableDeclarationMissingTypeSeparator
+        );
         assert_eq!(lex_warns.len(), 1);
+        assert_eq!(
+            lex_warns[0].warning,
+            LexerWarningVariant::InvalidSequence("#$@".to_owned())
+        );
     }
 }

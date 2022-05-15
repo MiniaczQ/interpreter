@@ -8,9 +8,9 @@ use super::{
 };
 
 /// Main program
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Program {
-    functions: Vec<FunctionDef>,
+    pub functions: Vec<FunctionDef>,
 }
 
 impl Display for Program {

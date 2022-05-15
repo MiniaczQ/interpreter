@@ -1,6 +1,8 @@
+use serde::{Serialize, Deserialize};
+
 use super::{keywords::Keyword, operators::Operator, position::Position};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum TokenType {
     Operator(Operator),
     Keyword(Keyword),
@@ -10,7 +12,7 @@ pub enum TokenType {
     Int(i64),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Token {
     pub token_type: TokenType,
     pub start: Position,

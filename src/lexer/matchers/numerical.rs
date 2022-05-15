@@ -128,14 +128,14 @@ mod tests {
     fn int_just_above_limit() {
         let (result, errors) = err_matcher("9_223_372_036_854_775_808");
         assert_eq!(result, int_lexem(922337203685477580, (1, 1), (1, 25)));
-        assert!(errors[0].variant == LexerWarningVariant::IntegerPartTooBig);
+        assert!(errors[0].warning == LexerWarningVariant::IntegerPartTooBig);
     }
 
     #[test]
     fn int_above_limit() {
         let (result, errors) = err_matcher("101273576184162375213625468214");
         assert_eq!(result, int_lexem(1012735761841623752, (1, 1), (1, 20)));
-        assert!(errors[0].variant == LexerWarningVariant::IntegerPartTooBig);
+        assert!(errors[0].warning == LexerWarningVariant::IntegerPartTooBig);
     }
 
     #[test]
@@ -187,14 +187,14 @@ mod tests {
             result,
             float_lexem(0.922_337_203_685_477_7, (1, 1), (1, 27))
         );
-        assert!(errors[0].variant == LexerWarningVariant::DecimalPartTooBig);
+        assert!(errors[0].warning == LexerWarningVariant::DecimalPartTooBig);
     }
 
     #[test]
     fn float_above_limit() {
         let (result, errors) = err_matcher("0.101273576184162375213625468214");
         assert_eq!(result, float_lexem(0.10127357618416238, (1, 1), (1, 22)));
-        assert!(errors[0].variant == LexerWarningVariant::DecimalPartTooBig);
+        assert!(errors[0].warning == LexerWarningVariant::DecimalPartTooBig);
     }
 
     #[test]

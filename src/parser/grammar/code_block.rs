@@ -4,14 +4,14 @@ use super::{
 };
 
 /// Block of code that returns the last espression.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct CodeBlock {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 /// A single statement.
 /// Either an expression or a `;`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Statement {
     Expression(Expression),
     Semicolon,

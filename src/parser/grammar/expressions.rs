@@ -11,7 +11,7 @@ use super::{
 };
 
 /// All possible types of expression
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Expression {
     Literal(Literal),
     Identifier(String),
@@ -49,21 +49,21 @@ pub enum Expression {
 }
 
 /// Two ways of accessing list elements
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum IndexOrRange {
     Index(Expression),
     Range(Expression, Expression),
 }
 
 /// Algebraic negation and logical negation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum UnaryOperator {
     AlgebraicNegation,
     LogicalNegation,
 }
 
 /// Binary operators
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BinaryOperator {
     Multiplication,
     Division,

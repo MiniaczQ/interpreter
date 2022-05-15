@@ -5,8 +5,8 @@ use super::{
 };
 
 /// A literal value
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct Literal(Value);
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Literal(pub Value);
 
 /// list_constant
 ///     = OPEN_LIST, [expression, {SPLIT, expression}], CLOSE_LIST

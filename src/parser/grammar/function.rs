@@ -6,19 +6,19 @@ use super::{
 };
 
 /// A single function parameter
-#[derive(Debug, Serialize, Deserialize)]
-struct Parameter {
-    name: String,
-    data_type: DataType,
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct Parameter {
+    pub name: String,
+    pub data_type: DataType,
 }
 
 /// Definition of a function
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct FunctionDef {
-    identifier: String,
-    params: Vec<Parameter>,
-    code_block: CodeBlock,
-    data_type: DataType,
+    pub identifier: String,
+    pub params: Vec<Parameter>,
+    pub code_block: CodeBlock,
+    pub data_type: DataType,
 }
 
 /// parameter

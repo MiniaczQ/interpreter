@@ -153,7 +153,7 @@ mod tests {
             result,
             id_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 33))
         );
-        assert!(errors[0].variant == LexerWarningVariant::IdentifierTooLong);
+        assert!(errors[0].warning == LexerWarningVariant::IdentifierTooLong);
     }
 
     #[test]

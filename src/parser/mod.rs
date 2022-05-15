@@ -13,11 +13,12 @@ pub mod grammar;
 pub mod keywords;
 pub mod operators;
 pub mod position;
+mod test_utils;
 pub mod token;
 pub mod token_scanner;
 
 /// Errors that prevent parser from working
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ParserErrorVariant {
     OutOfTokens,
     FunctionParameterMissingType,
@@ -46,7 +47,7 @@ pub enum ParserErrorVariant {
 }
 
 /// Critical errors remember the last position before they happened
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ParserError {
     pub error: ParserErrorVariant,
     pub pos: Position,
@@ -64,7 +65,7 @@ impl Display for ParserError {
 impl Error for ParserError {}
 
 /// Errors that the parser can work around
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum ParserWarningVariant {
     TrailingComma,
     MissingOpeningRoundBracket,
@@ -78,7 +79,7 @@ pub enum ParserWarningVariant {
 }
 
 /// Elusive errors remember the position where they were supposed to be
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct ParserWarning {
     pub warning: ParserWarningVariant,
     pub start: Position,
@@ -182,6 +183,138 @@ impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
 
 #[cfg(test)]
 mod tests {
+    use crate::{
+        parser::{
+            grammar::{
+                code_block::{CodeBlock, Statement},
+                expressions::Expression,
+                function::FunctionDef,
+                literals::Literal,
+                program::Program,
+                DataType, Value,
+            },
+            ParserErrorVariant, ParserWarningVariant, test_utils::tests::{dummy_token, parse, token},
+        },
+    };
+
+    use super::{
+        keywords::Keyword,
+        operators::Operator,
+        position::Position,
+        token::{TokenType},
+        ParserError,
+    };
+
     #[test]
-    fn test() {}
+    fn sole_parser() {
+        let (result, warnings) = parse(vec![
+            dummy_token(TokenType::Keyword(Keyword::Fn)),
+            dummy_token(TokenType::Identifier("main".to_owned())),
+            dummy_token(TokenType::Operator(Operator::OpenRoundBracket)),
+            dummy_token(TokenType::Operator(Operator::CloseRoundBracket)),
+            dummy_token(TokenType::Operator(Operator::OpenCurlyBracket)),
+            dummy_token(TokenType::Keyword(Keyword::Let)),
+            dummy_token(TokenType::Identifier("a".to_owned())),
+            dummy_token(TokenType::Operator(Operator::Colon)),
+            dummy_token(TokenType::Keyword(Keyword::Int)),
+            dummy_token(TokenType::Operator(Operator::Equal)),
+            dummy_token(TokenType::Int(5)),
+            dummy_token(TokenType::Operator(Operator::Semicolon)),
+            dummy_token(TokenType::Operator(Operator::CloseCurlyBracket)),
+        ]);
+
+        assert!(warnings.is_empty());
+
+        let program = Program {
+            functions: vec![FunctionDef {
+                identifier: "main".to_owned(),
+                params: vec![],
+                code_block: CodeBlock {
+                    statements: vec![
+                        Statement::Expression(Expression::Declaration {
+                            identifier: "a".to_owned(),
+                            data_type: DataType::Integer,
+                            expression: Box::new(Expression::Literal(Literal(Value::Integer(5)))),
+                        }),
+                        Statement::Semicolon,
+                    ],
+                },
+                data_type: DataType::None,
+            }],
+        };
+
+        assert_eq!(program, result.unwrap());
+    }
+
+    #[test]
+    fn sole_parser_warn() {
+        let (result, warnings) = parse(vec![
+            dummy_token(TokenType::Keyword(Keyword::Fn)),
+            dummy_token(TokenType::Identifier("main".to_owned())),
+            dummy_token(TokenType::Operator(Operator::OpenRoundBracket)),
+            dummy_token(TokenType::Operator(Operator::CloseRoundBracket)),
+            dummy_token(TokenType::Operator(Operator::OpenCurlyBracket)),
+            dummy_token(TokenType::Keyword(Keyword::Let)),
+            dummy_token(TokenType::Identifier("a".to_owned())),
+            dummy_token(TokenType::Keyword(Keyword::Int)),
+            dummy_token(TokenType::Operator(Operator::Equal)),
+            dummy_token(TokenType::Int(5)),
+            dummy_token(TokenType::Operator(Operator::Semicolon)),
+            dummy_token(TokenType::Operator(Operator::CloseCurlyBracket)),
+        ]);
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0].warning,
+            ParserWarningVariant::VariableDeclarationMissingTypeSeparator
+        );
+
+        let program = Program {
+            functions: vec![FunctionDef {
+                identifier: "main".to_owned(),
+                params: vec![],
+                code_block: CodeBlock {
+                    statements: vec![
+                        Statement::Expression(Expression::Declaration {
+                            identifier: "a".to_owned(),
+                            data_type: DataType::Integer,
+                            expression: Box::new(Expression::Literal(Literal(Value::Integer(5)))),
+                        }),
+                        Statement::Semicolon,
+                    ],
+                },
+                data_type: DataType::None,
+            }],
+        };
+
+        assert_eq!(program, result.unwrap());
+    }
+
+    #[test]
+    fn sole_parser_error() {
+        let (result, warnings) = parse(vec![
+            dummy_token(TokenType::Keyword(Keyword::Fn)),
+            dummy_token(TokenType::Identifier("main".to_owned())),
+            dummy_token(TokenType::Operator(Operator::OpenRoundBracket)),
+            dummy_token(TokenType::Operator(Operator::CloseRoundBracket)),
+            dummy_token(TokenType::Operator(Operator::OpenCurlyBracket)),
+            dummy_token(TokenType::Keyword(Keyword::Let)),
+            dummy_token(TokenType::Identifier("a".to_owned())),
+            token(TokenType::Operator(Operator::Colon), (2, 5), (2, 6)),
+            dummy_token(TokenType::Operator(Operator::Equal)),
+            dummy_token(TokenType::Int(5)),
+            dummy_token(TokenType::Operator(Operator::Semicolon)),
+            dummy_token(TokenType::Operator(Operator::CloseCurlyBracket)),
+        ]);
+
+        assert!(warnings.is_empty());
+
+        assert_eq!(
+            ParserError {
+                error: ParserErrorVariant::VariableDeclarationMissingType,
+                pos: Position::new(2, 6),
+            },
+            result.unwrap_err()
+        );
+    }
 }

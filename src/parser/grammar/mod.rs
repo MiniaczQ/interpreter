@@ -9,12 +9,11 @@ pub mod function;
 pub mod literals;
 pub mod loops;
 pub mod program;
-mod test_utils;
 pub mod types;
 mod utility;
 
 /// A value
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Value {
     List(Vec<Expression>),
     Integer(i64),
@@ -24,7 +23,7 @@ pub enum Value {
 }
 
 /// Possible data types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum DataType {
     Integer,
     Float,

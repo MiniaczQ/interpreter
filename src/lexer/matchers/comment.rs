@@ -142,7 +142,7 @@ mod tests {
             result,
             comment_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 35))
         );
-        assert!(errors[0].variant == LexerWarningVariant::CommentTooLong);
+        assert!(errors[0].warning == LexerWarningVariant::CommentTooLong);
     }
 
     #[test]
@@ -170,7 +170,7 @@ mod tests {
             result,
             comment_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 35))
         );
-        assert!(errors[0].variant == LexerWarningVariant::CommentTooLong);
+        assert!(errors[0].warning == LexerWarningVariant::CommentTooLong);
     }
 
     #[test]
@@ -187,7 +187,7 @@ mod tests {
     fn com_multi_no_end() {
         let (result, errors) = err_matcher("/*a\n");
         assert_eq!(result, comment_lexem("a\n", (1, 1), (2, 1)));
-        assert!(errors[0].variant == LexerWarningVariant::CommentNeverEnds);
+        assert!(errors[0].warning == LexerWarningVariant::CommentNeverEnds);
     }
 
     #[test]

@@ -101,14 +101,14 @@ impl Display for LexerWarningVariant {
 pub struct LexerWarning {
     pub start: Position,
     pub end: Position,
-    pub variant: LexerWarningVariant,
+    pub warning: LexerWarningVariant,
 }
 
 impl Display for LexerWarning {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "Lexer warning from {} to {}: {}",
-            self.start, self.end, self.variant
+            self.start, self.end, self.warning
         ))
     }
 }
@@ -140,7 +140,7 @@ impl<'a> LexemBuilder<'a> {
         self.errors.push(LexerWarning {
             start: self.start,
             end: self.scanner.last_pos(),
-            variant: e,
+            warning: e,
         });
     }
 }

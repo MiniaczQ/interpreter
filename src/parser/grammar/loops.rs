@@ -5,14 +5,14 @@ use super::{
 };
 
 /// While loop
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct WhileLoop {
     condition: Expression,
     body: CodeBlock,
 }
 
 /// For loop
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ForLoop {
     variable: String,
     provider: Expression,

@@ -61,9 +61,6 @@ mod tests {
 
     use grammar::{
         code_block::{CodeBlock, Statement},
-        expressions::Expression,
-        literals::Literal,
-        Value,
     };
 
     use super::parse_code_block;

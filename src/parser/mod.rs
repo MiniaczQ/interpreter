@@ -23,9 +23,9 @@ pub enum ParserErrorVariant {
     OutOfTokens,
     FunctionParameterMissingType,
     FunctionMissingIdentifier,
-    FunctionMissingReturnType, // mby warning and default to none type?
+    FunctionMissingReturnType, // could default to `none`
     FunctionMissingBody,
-    IfMissingCondition,
+    IfMissingCondition, // unreachable (following code block is assumed to be the condition)
     IfMissingTrueBranch,
     IfMissingFalseBranch,
     WhileLoopMissingCondition,

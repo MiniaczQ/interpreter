@@ -11,4 +11,6 @@ pub mod tests {
     pub use super::super::super::{
         token::TokenType, ParserError, ParserErrorVariant, ParserWarning, ParserWarningVariant,
     };
+
+    pub use grammar::{expressions::Expression, literals::Literal, Value};
 }

@@ -1,22 +1,8 @@
+#[allow(dead_code)]
 pub mod tests {
-    use crate::{
-        parser::{
-            grammar::{
-                code_block::{CodeBlock, Statement},
-                expressions::Expression,
-                function::FunctionDef,
-                literals::Literal,
-                program::Program,
-                DataType, Value,
-            },
-            ParserErrorVariant, ParserWarningVariant,
-        },
-        scannable::Scannable,
-    };
+    use crate::{parser::grammar::program::Program, scannable::Scannable};
 
     use super::super::{
-        keywords::Keyword,
-        operators::Operator,
         position::Position,
         token::{Token, TokenType},
         Parser, ParserError, ParserWarning,

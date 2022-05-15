@@ -10,7 +10,6 @@ use lexer::{lexem::LexerWarning, Lexer};
 use parser::{
     grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
 };
-use scannable::Scannable;
 
 mod lexer;
 mod parser;
@@ -138,18 +137,18 @@ fn run(input: InputType) -> Result<(), AppError> {
 
     let (result, parser_warnings, lexer_warnings) = parse(reader);
 
-    //    match result {
-    //        Ok(program) => println!("{}", program),
-    //        Err(error) => eprintln!("{}", error),
-    //    }
-    //
-    //    for w in parser_warnings {
-    //        eprintln!("{}", w);
-    //    }
-    //
-    //    for w in lexer_warnings {
-    //        eprintln!("{}", w);
-    //    }
+    match result {
+        Ok(program) => println!("{}", program),
+        Err(error) => eprintln!("{}", error),
+    }
+
+    for w in parser_warnings {
+        eprintln!("{}", w);
+    }
+
+    for w in lexer_warnings {
+        eprintln!("{}", w);
+    }
 
     Ok(())
 }

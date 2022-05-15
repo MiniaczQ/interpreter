@@ -1,15 +1,7 @@
-use crate::{
-    parser::{
-        keywords::Keyword, token::TokenType, ErrorHandler, ExtScannable, Parser,
-        ParserErrorVariant, ParserWarningVariant,
-    },
-    scannable::Scannable,
-};
-
 use super::{
     code_block::{parse_code_block, CodeBlock},
     expressions::{parse_expression, Expression},
-    ParseResult,
+    utility::*,
 };
 
 /// While loop
@@ -17,26 +9,6 @@ use super::{
 pub struct WhileLoop {
     condition: Expression,
     body: CodeBlock,
-}
-
-/// while_expression
-///     = KW_WHILE, expression, code_block
-///     ;
-pub fn parse_while_loop(p: &mut Parser) -> ParseResult<WhileLoop> {
-    if let TokenType::Keyword(Keyword::While) = p.token()?.token_type {
-        p.pop();
-        if let Some(condition) = parse_expression(p)? {
-            if let Some(body) = parse_code_block(p)? {
-                Ok(Some(WhileLoop { condition, body }))
-            } else {
-                p.error(ParserErrorVariant::WhileLoopMissingBody)
-            }
-        } else {
-            p.error(ParserErrorVariant::WhileLoopMissingCondition)
-        }
-    } else {
-        Ok(None)
-    }
 }
 
 /// For loop
@@ -47,36 +19,49 @@ pub struct ForLoop {
     body: CodeBlock,
 }
 
+/// while_expression
+///     = KW_WHILE, expression, code_block
+///     ;
+pub fn parse_while_loop(p: &mut Parser) -> OptRes<WhileLoop> {
+    if !p.keyword(Kw::While)? {
+        return Ok(None);
+    }
+    if let Some(condition) = parse_expression(p)? {
+        if let Some(body) = parse_code_block(p)? {
+            Ok(Some(WhileLoop { condition, body }))
+        } else {
+            p.error(ErroVar::WhileLoopMissingBody)
+        }
+    } else {
+        p.error(ErroVar::WhileLoopMissingCondition)
+    }
+}
+
 /// for_expression
 ///     = KW_FOR, IDENTIFIER, KW_IN, expression, code_block
 ///     ;
-pub fn parse_for_loop(p: &mut Parser) -> ParseResult<ForLoop> {
-    if let TokenType::Keyword(Keyword::For) = p.token()?.token_type {
-        p.pop();
-        if let TokenType::Identifier(variable) = p.token()?.token_type {
-            p.pop();
-            if let TokenType::Keyword(Keyword::In) = p.token()?.token_type {
-                p.pop();
+pub fn parse_for_loop(p: &mut Parser) -> OptRes<ForLoop> {
+    if !p.keyword(Kw::For)? {
+        return Ok(None);
+    }
+    if let Some(variable) = p.identifier()? {
+        if !p.keyword(Kw::In)? {
+            p.warn(WarnVar::ForLoopMissingInKeyword);
+        }
+        if let Some(provider) = parse_expression(p)? {
+            if let Some(body) = parse_code_block(p)? {
+                Ok(Some(ForLoop {
+                    variable,
+                    provider,
+                    body,
+                }))
             } else {
-                p.warn(ParserWarningVariant::ForLoopMissingInKeyword);
-            }
-            if let Some(provider) = parse_expression(p)? {
-                if let Some(body) = parse_code_block(p)? {
-                    Ok(Some(ForLoop {
-                        variable,
-                        provider,
-                        body,
-                    }))
-                } else {
-                    p.error(ParserErrorVariant::ForLoopMissingBody)
-                }
-            } else {
-                p.error(ParserErrorVariant::ForLoopMissingProvider)
+                p.error(ErroVar::ForLoopMissingBody)
             }
         } else {
-            p.error(ParserErrorVariant::ForLoopMissingVariable)
+            p.error(ErroVar::ForLoopMissingProvider)
         }
     } else {
-        Ok(None)
+        p.error(ErroVar::ForLoopMissingVariable)
     }
 }

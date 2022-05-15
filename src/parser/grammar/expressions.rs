@@ -1,18 +1,13 @@
-use crate::{
-    parser::{
-        keywords::Keyword, operators::Operator, token::TokenType, ErrorHandler, ExtScannable,
-        Parser, ParserError, ParserErrorVariant, ParserWarningVariant,
-    },
-    scannable::Scannable,
-};
+use crate::parser::token::TokenType;
 
 use super::{
     code_block::{parse_code_block, CodeBlock},
     conditional::{parse_if_else, IfElse},
     literals::{parse_literal, Literal},
     loops::{parse_for_loop, parse_while_loop, ForLoop, WhileLoop},
-    types::{parse_type},
-    ExtResult, ParseResult, DataType,
+    types::parse_type,
+    utility::*,
+    DataType,
 };
 
 /// All possible types of expression
@@ -33,7 +28,7 @@ pub enum Expression {
         expression: Box<Expression>,
     },
     BinaryOperation {
-        operator: BinaryOperator,
+        operator: BinaryOp,
         lhs: Box<Expression>,
         rhs: Box<Expression>,
     },
@@ -53,21 +48,53 @@ pub enum Expression {
     CodeBlock(CodeBlock),
 }
 
+/// Two ways of accessing list elements
+#[derive(Debug, Clone)]
+pub enum IndexOrRange {
+    Index(Expression),
+    Range(Expression, Expression),
+}
+
+/// Algebraic negation and logical negation
+#[derive(Debug, Clone)]
+pub enum UnaryOperator {
+    AlgebraicNegation,
+    LogicalNegation,
+}
+
+/// Binary operators
+#[derive(Debug, Clone)]
+pub enum BinaryOp {
+    Multiplication,
+    Division,
+    Modulo,
+    Addition,
+    Subtraction,
+    Equal,
+    Unequal,
+    Lesser,
+    LesserEqual,
+    Greater,
+    GreaterEqual,
+    And,
+    Or,
+}
+
 /// grouped
 ///     = OPEN_BRACKET, expression, CLOSE_BRACKET
 ///     ;
-fn parse_bracket_expression(p: &mut Parser) -> ParseResult<Expression> {
-    if let TokenType::Operator(Operator::OpenRoundBracket) = p.token()?.token_type {
+fn parse_bracket_expression(p: &mut Parser) -> OptRes<Expression> {
+    if p.operator(Op::OpenRoundBracket)? {
         p.pop();
         if let Some(expression) = parse_expression(p)? {
-            if let TokenType::Operator(Operator::OpenRoundBracket) = p.token()?.token_type {
+            if p.operator(Op::OpenRoundBracket)? {
                 p.pop();
             } else {
-                p.warn(ParserWarningVariant::MissingClosingRoundBracket);
+                p.warn(WarnVar::MissingClosingRoundBracket);
             }
             Ok(Some(expression))
         } else {
-            p.error(ParserErrorVariant::InvalidBracketExpression)
+            p.error(ErroVar::InvalidBracketExpression)
         }
     } else {
         Ok(None)
@@ -75,8 +102,8 @@ fn parse_bracket_expression(p: &mut Parser) -> ParseResult<Expression> {
 }
 
 /// IDENTIFIER
-fn parse_identifier_expression(p: &mut Parser) -> ParseResult<Expression> {
-    if let TokenType::Identifier(identifier) = p.token()?.token_type {
+fn parse_identifier_expression(p: &mut Parser) -> OptRes<Expression> {
+    if let Some(identifier) = p.identifier()? {
         p.pop();
         Ok(Some(Expression::Identifier(identifier)))
     } else {
@@ -85,37 +112,30 @@ fn parse_identifier_expression(p: &mut Parser) -> ParseResult<Expression> {
 }
 
 /// constant
-fn parse_literal_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_literal_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_literal(p).map(|v| v.map(Expression::Literal))
 }
 
 /// const_or_identifier_expression
 ///     = constant | IDENTIFIER | grouped
 ///     ;
-fn parse_constant_or_identifier_or_bracket_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_constant_or_identifier_or_bracket_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_literal_expression(p)
         .alt(|| parse_bracket_expression(p))
         .alt(|| parse_identifier_expression(p))
 }
 
-/// Two ways of accessing list elements
-#[derive(Debug, Clone)]
-pub enum IndexOrRange {
-    Index(Expression),
-    Range(Expression, Expression),
-}
-
 /// index_or_range_access
 ///     = expression, [RANGE, expression]
 ///     ;
-fn parse_index_or_range_access(p: &mut Parser) -> ParseResult<IndexOrRange> {
+fn parse_index_or_range_access(p: &mut Parser) -> OptRes<IndexOrRange> {
     if let Some(left_index) = parse_expression(p)? {
-        if let TokenType::Operator(Operator::DoubleColon) = p.token()?.token_type {
+        if p.operator(Op::DoubleColon)? {
             p.pop();
             if let Some(right_index) = parse_expression(p)? {
                 Ok(Some(IndexOrRange::Range(left_index, right_index)))
             } else {
-                p.error(ParserErrorVariant::ListRangeAccessIncomplete)
+                p.error(ErroVar::ListRangeAccessIncomplete)
             }
         } else {
             Ok(Some(IndexOrRange::Index(left_index)))
@@ -128,18 +148,18 @@ fn parse_index_or_range_access(p: &mut Parser) -> ParseResult<IndexOrRange> {
 /// list_access
 ///     = OPEN_LIST, index_or_range_access, CLOSE_LIST
 ///     ;
-fn parse_list_access(p: &mut Parser) -> ParseResult<IndexOrRange> {
-    if let TokenType::Operator(Operator::OpenSquareBracket) = p.token()?.token_type {
+fn parse_list_access(p: &mut Parser) -> OptRes<IndexOrRange> {
+    if p.operator(Op::OpenSquareBracket)? {
         p.pop();
         if let Some(index_or_range) = parse_index_or_range_access(p)? {
-            if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
+            if p.operator(Op::CloseSquareBracket)? {
                 p.pop();
             } else {
-                p.warn(ParserWarningVariant::MissingClosingSquareBracket);
+                p.warn(WarnVar::MissingClosingSquareBracket);
             }
             Ok(Some(index_or_range))
         } else {
-            p.error(ParserErrorVariant::ListAccessEmpty)
+            p.error(ErroVar::ListAccessEmpty)
         }
     } else {
         Ok(None)
@@ -149,16 +169,16 @@ fn parse_list_access(p: &mut Parser) -> ParseResult<IndexOrRange> {
 /// function_arguments
 ///     = [expression, {SPLIT, expression}]
 ///     ;
-fn parse_function_arguments(p: &mut Parser) -> Result<Vec<Expression>, ParserError> {
+fn parse_function_arguments(p: &mut Parser) -> Res<Vec<Expression>> {
     let mut arguments = vec![];
     if let Some(argument) = parse_expression(p)? {
         arguments.push(argument);
-        while let TokenType::Operator(Operator::Split) = p.token()?.token_type {
+        while p.operator(Op::Split)? {
             p.pop();
             if let Some(argument) = parse_expression(p)? {
                 arguments.push(argument);
             } else {
-                p.warn(ParserWarningVariant::TrailingComma);
+                p.warn(WarnVar::TrailingComma);
             }
         }
     }
@@ -168,14 +188,14 @@ fn parse_function_arguments(p: &mut Parser) -> Result<Vec<Expression>, ParserErr
 /// function_call
 ///     = OPEN_BRACKET, function_arguments, CLOSE_BRACKET
 ///     ;
-fn parse_function_call(p: &mut Parser) -> ParseResult<Vec<Expression>> {
-    if let TokenType::Operator(Operator::OpenRoundBracket) = p.token()?.token_type {
+fn parse_function_call(p: &mut Parser) -> OptRes<Vec<Expression>> {
+    if p.operator(Op::OpenRoundBracket)? {
         p.pop();
         let args = parse_function_arguments(p)?;
-        if let TokenType::Operator(Operator::CloseRoundBracket) = p.token()?.token_type {
+        if p.operator(Op::CloseRoundBracket)? {
             p.pop();
         } else {
-            p.warn(ParserWarningVariant::MissingClosingRoundBracket);
+            p.warn(WarnVar::MissingClosingRoundBracket);
         }
         Ok(Some(args))
     } else {
@@ -186,7 +206,7 @@ fn parse_function_call(p: &mut Parser) -> ParseResult<Vec<Expression>> {
 /// function_call_or_list_access_expression
 ///     = const_or_identifier_expression, (function_call | list_access)
 ///     ;
-fn parse_function_call_or_list_access_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_function_call_or_list_access_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(expression) = parse_constant_or_identifier_or_bracket_expression(p)? {
         if let Some(arguments) = parse_function_call(p)? {
             Ok(Some(Expression::FunctionCall {
@@ -206,23 +226,16 @@ fn parse_function_call_or_list_access_expression(p: &mut Parser) -> ParseResult<
     }
 }
 
-/// Algebraic negation and logical negation
-#[derive(Debug, Clone)]
-pub enum UnaryOperator {
-    AlgebraicNegation,
-    LogicalNegation,
-}
-
 /// unary_operators
 ///     = OP_NEGATE | OP_MINUS
 ///     ;
-fn parse_unary_operators(p: &mut Parser) -> ParseResult<UnaryOperator> {
+fn parse_unary_operators(p: &mut Parser) -> OptRes<UnaryOperator> {
     match p.token()?.token_type {
-        TokenType::Operator(Operator::Minus) => {
+        TokenType::Operator(Op::Minus) => {
             p.pop();
             Ok(Some(UnaryOperator::AlgebraicNegation))
         }
-        TokenType::Operator(Operator::ExclamationMark) => {
+        TokenType::Operator(Op::ExclamationMark) => {
             p.pop();
             Ok(Some(UnaryOperator::LogicalNegation))
         }
@@ -234,7 +247,7 @@ fn parse_unary_operators(p: &mut Parser) -> ParseResult<UnaryOperator> {
 ///     = unary_operators, unary_operator_expression
 ///     | function_call_or_list_access_expression
 ///     ;
-fn parse_unary_operator_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_unary_operator_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(operator) = parse_unary_operators(p)? {
         if let Some(expression) = parse_unary_operator_expression(p)? {
             Ok(Some(Expression::UnaryOperation {
@@ -242,7 +255,7 @@ fn parse_unary_operator_expression(p: &mut Parser) -> ParseResult<Expression> {
                 expression: Box::new(expression),
             }))
         } else {
-            p.error(ParserErrorVariant::UnaryOperatorMissingExpression)
+            p.error(ErroVar::UnaryOperatorMissingExpression)
         }
     } else if let Some(expression) = parse_function_call_or_list_access_expression(p)? {
         Ok(Some(expression))
@@ -251,40 +264,22 @@ fn parse_unary_operator_expression(p: &mut Parser) -> ParseResult<Expression> {
     }
 }
 
-/// Binary operators
-#[derive(Debug, Clone)]
-pub enum BinaryOperator {
-    Multiplication,
-    Division,
-    Modulo,
-    Addition,
-    Subtraction,
-    Equal,
-    Unequal,
-    Lesser,
-    LesserEqual,
-    Greater,
-    GreaterEqual,
-    And,
-    Or,
-}
-
 /// mul_div_operators
 ///     = OP_MULTIPLICATION | OP_DIVISION | OP_REMAINDER
 ///     ;
-fn parse_mul_div_operators(p: &mut Parser) -> ParseResult<BinaryOperator> {
+fn parse_mul_div_operators(p: &mut Parser) -> OptRes<BinaryOp> {
     match p.token()?.token_type {
-        TokenType::Operator(Operator::Asterisk) => {
+        TokenType::Operator(Op::Asterisk) => {
             p.pop();
-            Ok(Some(BinaryOperator::Multiplication))
+            Ok(Some(BinaryOp::Multiplication))
         }
-        TokenType::Operator(Operator::Slash) => {
+        TokenType::Operator(Op::Slash) => {
             p.pop();
-            Ok(Some(BinaryOperator::Division))
+            Ok(Some(BinaryOp::Division))
         }
-        TokenType::Operator(Operator::Modulo) => {
+        TokenType::Operator(Op::Modulo) => {
             p.pop();
-            Ok(Some(BinaryOperator::Modulo))
+            Ok(Some(BinaryOp::Modulo))
         }
         _ => Ok(None),
     }
@@ -293,7 +288,7 @@ fn parse_mul_div_operators(p: &mut Parser) -> ParseResult<BinaryOperator> {
 /// mul_div_expression
 ///     = unary_operator_expression, {mul_div_operators, unary_operator_expression}
 ///     ;
-fn parse_mul_div_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_mul_div_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_unary_operator_expression(p)? {
         while let Some(operator) = parse_mul_div_operators(p)? {
             if let Some(rhs) = parse_unary_operator_expression(p)? {
@@ -303,7 +298,7 @@ fn parse_mul_div_expression(p: &mut Parser) -> ParseResult<Expression> {
                     rhs: Box::new(rhs),
                 };
             } else {
-                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
+                return p.error(ErroVar::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -315,15 +310,15 @@ fn parse_mul_div_expression(p: &mut Parser) -> ParseResult<Expression> {
 /// add_sub_operators
 ///     = OP_PLUS | OP_MINUS
 ///     ;
-fn parse_add_sub_operators(p: &mut Parser) -> ParseResult<BinaryOperator> {
+fn parse_add_sub_operators(p: &mut Parser) -> OptRes<BinaryOp> {
     match p.token()?.token_type {
-        TokenType::Operator(Operator::Plus) => {
+        TokenType::Operator(Op::Plus) => {
             p.pop();
-            Ok(Some(BinaryOperator::Addition))
+            Ok(Some(BinaryOp::Addition))
         }
-        TokenType::Operator(Operator::Minus) => {
+        TokenType::Operator(Op::Minus) => {
             p.pop();
-            Ok(Some(BinaryOperator::Subtraction))
+            Ok(Some(BinaryOp::Subtraction))
         }
         _ => Ok(None),
     }
@@ -332,7 +327,7 @@ fn parse_add_sub_operators(p: &mut Parser) -> ParseResult<BinaryOperator> {
 /// add_sub_expression
 ///     = mul_div_expression, {add_sub_operators, mul_div_expression}
 ///     ;
-fn parse_add_sub_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_add_sub_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_mul_div_expression(p)? {
         while let Some(operator) = parse_add_sub_operators(p)? {
             if let Some(rhs) = parse_mul_div_expression(p)? {
@@ -342,7 +337,7 @@ fn parse_add_sub_expression(p: &mut Parser) -> ParseResult<Expression> {
                     rhs: Box::new(rhs),
                 };
             } else {
-                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
+                return p.error(ErroVar::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -354,31 +349,31 @@ fn parse_add_sub_expression(p: &mut Parser) -> ParseResult<Expression> {
 /// comparison_operators
 ///     = OP_EQUAL | OP_UNEQUAL | OP_LESSER | OP_LESSER_EQUAL | OP_GREATER | OP_GREATER_EQUAL
 ///     ;
-fn parse_comparison_operators(p: &mut Parser) -> ParseResult<BinaryOperator> {
+fn parse_comparison_operators(p: &mut Parser) -> OptRes<BinaryOp> {
     match p.token()?.token_type {
-        TokenType::Operator(Operator::DoubleEqual) => {
+        TokenType::Operator(Op::DoubleEqual) => {
             p.pop();
-            Ok(Some(BinaryOperator::Equal))
+            Ok(Some(BinaryOp::Equal))
         }
-        TokenType::Operator(Operator::Unequal) => {
+        TokenType::Operator(Op::Unequal) => {
             p.pop();
-            Ok(Some(BinaryOperator::Unequal))
+            Ok(Some(BinaryOp::Unequal))
         }
-        TokenType::Operator(Operator::Lesser) => {
+        TokenType::Operator(Op::Lesser) => {
             p.pop();
-            Ok(Some(BinaryOperator::Lesser))
+            Ok(Some(BinaryOp::Lesser))
         }
-        TokenType::Operator(Operator::LesserEqual) => {
+        TokenType::Operator(Op::LesserEqual) => {
             p.pop();
-            Ok(Some(BinaryOperator::LesserEqual))
+            Ok(Some(BinaryOp::LesserEqual))
         }
-        TokenType::Operator(Operator::Greater) => {
+        TokenType::Operator(Op::Greater) => {
             p.pop();
-            Ok(Some(BinaryOperator::Greater))
+            Ok(Some(BinaryOp::Greater))
         }
-        TokenType::Operator(Operator::GreaterEqual) => {
+        TokenType::Operator(Op::GreaterEqual) => {
             p.pop();
-            Ok(Some(BinaryOperator::GreaterEqual))
+            Ok(Some(BinaryOp::GreaterEqual))
         }
         _ => Ok(None),
     }
@@ -387,7 +382,7 @@ fn parse_comparison_operators(p: &mut Parser) -> ParseResult<BinaryOperator> {
 /// comparison_expression
 ///     = add_sub_expression, {comparison_operators, add_sub_expression}
 ///     ;
-fn parse_comparison_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_comparison_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_add_sub_expression(p)? {
         while let Some(operator) = parse_comparison_operators(p)? {
             if let Some(rhs) = parse_add_sub_expression(p)? {
@@ -397,7 +392,7 @@ fn parse_comparison_expression(p: &mut Parser) -> ParseResult<Expression> {
                     rhs: Box::new(rhs),
                 };
             } else {
-                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
+                return p.error(ErroVar::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -409,18 +404,18 @@ fn parse_comparison_expression(p: &mut Parser) -> ParseResult<Expression> {
 /// logical_conjunction_expression
 ///     = comparison_expression, {OP_AND, comparison_expression}
 ///     ;
-fn parse_logical_conjunction_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_logical_conjunction_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_comparison_expression(p)? {
-        while let TokenType::Operator(Operator::And) = p.token()?.token_type {
+        while p.operator(Op::And)? {
             p.pop();
             if let Some(rhs) = parse_comparison_expression(p)? {
                 lhs = Expression::BinaryOperation {
-                    operator: BinaryOperator::And,
+                    operator: BinaryOp::And,
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };
             } else {
-                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
+                return p.error(ErroVar::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -432,18 +427,18 @@ fn parse_logical_conjunction_expression(p: &mut Parser) -> ParseResult<Expressio
 /// logical_alternative_expression
 ///     = logical_conjunction_expression, {OP_OR, logical_conjunction_expression}
 ///     ;
-fn parse_logical_alternative_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_logical_alternative_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_logical_conjunction_expression(p)? {
-        while let TokenType::Operator(Operator::Or) = p.token()?.token_type {
+        while p.operator(Op::Or)? {
             p.pop();
             if let Some(rhs) = parse_logical_conjunction_expression(p)? {
                 lhs = Expression::BinaryOperation {
-                    operator: BinaryOperator::Or,
+                    operator: BinaryOp::Or,
                     lhs: Box::new(lhs),
                     rhs: Box::new(rhs),
                 };
             } else {
-                return p.error(ParserErrorVariant::BinaryOperatorMissingRHS);
+                return p.error(ErroVar::BinaryOperatorMissingRHS);
             }
         }
         Ok(Some(lhs))
@@ -455,9 +450,9 @@ fn parse_logical_alternative_expression(p: &mut Parser) -> ParseResult<Expressio
 /// variable_assignment_expression
 ///     = logical_alternative_expression, [ASSIGN, expression]
 ///     ;
-fn parse_variable_assignment_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_variable_assignment_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_logical_alternative_expression(p)? {
-        if let TokenType::Operator(Operator::Equal) = p.token()?.token_type {
+        if p.operator(Op::Equal)? {
             p.pop();
             if let Some(rhs) = parse_logical_conjunction_expression(p)? {
                 lhs = Expression::Assignment {
@@ -465,7 +460,7 @@ fn parse_variable_assignment_expression(p: &mut Parser) -> ParseResult<Expressio
                     expression: Box::new(rhs),
                 };
             } else {
-                return p.error(ParserErrorVariant::AssignmentMissingExpression);
+                return p.error(ErroVar::AssignmentMissingExpression);
             }
         }
         Ok(Some(lhs))
@@ -483,31 +478,31 @@ struct VariableDeclaration {
 /// variable_declaration
 ///     = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
 ///     ;
-fn parse_variable_declaration(p: &mut Parser) -> ParseResult<VariableDeclaration> {
-    if let TokenType::Keyword(Keyword::Let) = p.token()?.token_type {
+fn parse_variable_declaration(p: &mut Parser) -> OptRes<VariableDeclaration> {
+    if p.keyword(Kw::Let)? {
         p.pop();
-        if let TokenType::Identifier(identifier) = p.token()?.token_type {
+        if let Some(identifier) = p.identifier()? {
             p.pop();
-            if let TokenType::Operator(Operator::Colon) = p.token()?.token_type {
+            if p.operator(Op::Colon)? {
                 p.pop();
             } else {
-                p.warn(ParserWarningVariant::VariableDeclarationMissingTypeSeparator);
+                p.warn(WarnVar::VariableDeclarationMissingTypeSeparator);
             }
             if let Some(data_type) = parse_type(p)? {
-                if let TokenType::Operator(Operator::Equal) = p.token()?.token_type {
+                if p.operator(Op::Equal)? {
                     p.pop();
                 } else {
-                    p.warn(ParserWarningVariant::VariableDeclarationMissingEqualsSign);
+                    p.warn(WarnVar::VariableDeclarationMissingEqualsSign);
                 }
                 Ok(Some(VariableDeclaration {
                     identifier,
                     data_type,
                 }))
             } else {
-                p.error(ParserErrorVariant::VariableDeclarationMissingType)
+                p.error(ErroVar::VariableDeclarationMissingType)
             }
         } else {
-            p.error(ParserErrorVariant::VariableDeclarationMissingIdentifier)
+            p.error(ErroVar::VariableDeclarationMissingIdentifier)
         }
     } else {
         Ok(None)
@@ -515,22 +510,22 @@ fn parse_variable_declaration(p: &mut Parser) -> ParseResult<VariableDeclaration
 }
 
 /// for_expression
-fn parse_for_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_for_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_for_loop(p).map(|v| v.map(|v| Expression::For(Box::new(v))))
 }
 
 /// while_expression
-fn parse_while_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_while_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_while_loop(p).map(|v| v.map(|v| Expression::While(Box::new(v))))
 }
 
 /// if_expression
-fn parse_if_else_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_if_else_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_if_else(p).map(|v| v.map(|v| Expression::If(Box::new(v))))
 }
 
 /// for_expression
-fn parse_code_block_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_code_block_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_code_block(p).map(|v| v.map(Expression::CodeBlock))
 }
 
@@ -541,7 +536,7 @@ fn parse_code_block_expression(p: &mut Parser) -> ParseResult<Expression> {
 ///     | if_expression
 ///     | code_block
 ///     ;
-fn parse_control_flow_expression(p: &mut Parser) -> ParseResult<Expression> {
+fn parse_control_flow_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_variable_assignment_expression(p)
         .alt(|| parse_for_expression(p))
         .alt(|| parse_while_expression(p))
@@ -552,13 +547,13 @@ fn parse_control_flow_expression(p: &mut Parser) -> ParseResult<Expression> {
 /// expression
 ///     = [KW_RETURN | variable_declaration], control_flow_expression
 ///     ;
-pub fn parse_expression(p: &mut Parser) -> ParseResult<Expression> {
-    if let TokenType::Keyword(Keyword::Return) = p.token()?.token_type {
+pub fn parse_expression(p: &mut Parser) -> OptRes<Expression> {
+    if p.keyword(Kw::Return)? {
         p.pop();
         if let Some(expression) = parse_control_flow_expression(p)? {
             Ok(Some(Expression::Return(Box::new(expression))))
         } else {
-            p.error(ParserErrorVariant::ReturnMissingExpression)
+            p.error(ErroVar::ReturnMissingExpression)
         }
     } else if let Some(variable_declaration) = parse_variable_declaration(p)? {
         if let Some(expression) = parse_control_flow_expression(p)? {
@@ -568,7 +563,7 @@ pub fn parse_expression(p: &mut Parser) -> ParseResult<Expression> {
                 expression: Box::new(expression),
             }))
         } else {
-            p.error(ParserErrorVariant::VariableDeclarationMissingExpression)
+            p.error(ErroVar::VariableDeclarationMissingExpression)
         }
     } else {
         parse_control_flow_expression(p)

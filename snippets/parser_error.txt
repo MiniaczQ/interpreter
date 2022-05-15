@@ -1,0 +1,6 @@
+fn main() -> int {
+    #$@ // Invalid sequence (lexer)
+    let a int = 1; // Missing type separator (parser)
+    let b: = 1; // Missing type (parser, critical)
+    return a
+}

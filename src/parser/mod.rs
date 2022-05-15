@@ -48,8 +48,8 @@ pub enum ParserErrorVariant {
 /// Critical errors remember the last position before they happened
 #[derive(Debug)]
 pub struct ParserError {
-    error: ParserErrorVariant,
-    pos: Position,
+    pub error: ParserErrorVariant,
+    pub pos: Position,
 }
 
 impl Display for ParserError {
@@ -80,9 +80,9 @@ pub enum ParserWarningVariant {
 /// Elusive errors remember the position where they were supposed to be
 #[derive(Debug)]
 pub struct ParserWarning {
-    warning: ParserWarningVariant,
-    start: Position,
-    stop: Position,
+    pub warning: ParserWarningVariant,
+    pub start: Position,
+    pub stop: Position,
 }
 
 impl Display for ParserWarning {

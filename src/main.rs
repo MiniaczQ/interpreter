@@ -153,15 +153,58 @@ fn run(input: InputType) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    #[test]
-    fn short() {}
+    use std::{fs::OpenOptions, io::BufReader};
+
+    use crate::{
+        lexer::lexem::LexerWarning,
+        parse,
+        parser::{grammar::program::Program, ParserError, ParserErrorVariant, ParserWarning},
+    };
+
+    fn read(
+        path: &str,
+    ) -> (
+        Result<Program, ParserError>,
+        Vec<ParserWarning>,
+        Vec<LexerWarning>,
+    ) {
+        let file = OpenOptions::new().read(true).open(&path).unwrap();
+        let reader = Box::new(BufReader::new(file));
+        parse(reader)
+    }
 
     #[test]
-    fn long() {}
+    fn short() {
+        let (res, par_warns, lex_warns) = read("snippets/short.txt");
+        assert!(res.is_ok());
+        assert!(par_warns.is_empty());
+        assert!(lex_warns.is_empty());
+    }
 
     #[test]
-    fn parser_errors() {}
+    fn long() {
+        let (res, par_warns, lex_warns) = read("snippets/long.txt");
+        assert!(res.is_ok());
+        assert!(par_warns.is_empty());
+        assert!(lex_warns.is_empty());
+    }
 
     #[test]
-    fn parser_warnings() {}
+    fn errors() {
+        let (res, par_warns, lex_warns) = read("snippets/parser_error.txt");
+        assert_eq!(
+            std::mem::discriminant(&res.unwrap_err().error),
+            std::mem::discriminant(&ParserErrorVariant::VariableDeclarationMissingType)
+        );
+        assert_eq!(par_warns.len(), 1);
+        assert_eq!(lex_warns.len(), 1);
+    }
+
+    #[test]
+    fn warnings() {
+        let (res, par_warns, lex_warns) = read("snippets/warnings.txt");
+        assert!(res.is_ok());
+        assert_eq!(par_warns.len(), 1);
+        assert_eq!(lex_warns.len(), 1);
+    }
 }

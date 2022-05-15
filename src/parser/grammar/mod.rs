@@ -1,13 +1,13 @@
 use super::ParserError;
 
-mod code_block;
-mod conditional;
-mod expressions;
-mod function;
-mod literals;
-mod loops;
-mod program;
-mod types;
+pub mod code_block;
+pub mod conditional;
+pub mod expressions;
+pub mod function;
+pub mod literals;
+pub mod loops;
+pub mod program;
+pub mod types;
 
 pub trait Node {}
 

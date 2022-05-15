@@ -146,6 +146,7 @@ fn parse_bool_list(p: &mut Parser) -> ParseResult<Literal> {
     }
 }
 
+/// CONST_STRING
 fn parse_string(p: &mut Parser) -> ParseResult<Literal> {
     let t = p.token()?;
     if let TokenType::String(v) = t.token_type {
@@ -156,13 +157,21 @@ fn parse_string(p: &mut Parser) -> ParseResult<Literal> {
     }
 }
 
-pub fn parse_literal(p: &mut Parser) -> ParseResult<Expression> {
-    let l = parse_integer(p)
+/// constant
+///     = CONST_INT
+///     | int_list_constant
+///     | CONST_FLOAT
+///     | float_list_constant
+///     | CONST_BOOL
+///     | bool_list_constant
+///     | CONST_STRING
+///     ;
+pub fn parse_literal(p: &mut Parser) -> ParseResult<Literal> {
+    parse_integer(p)
         .alt(|| parse_integer_list(p))
         .alt(|| parse_float(p))
         .alt(|| parse_float_list(p))
         .alt(|| parse_bool(p))
         .alt(|| parse_bool_list(p))
-        .alt(|| parse_string(p))?;
-    Ok(l.map(|l| Expression::Literal(l)))
+        .alt(|| parse_string(p))
 }

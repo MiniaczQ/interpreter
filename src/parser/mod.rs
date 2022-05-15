@@ -1,6 +1,11 @@
 use crate::scannable::Scannable;
 
-use self::{position::Position, token::Token, token_scanner::TokenScanner};
+use self::{
+    grammar::program::{parse_program, Program},
+    position::Position,
+    token::Token,
+    token_scanner::TokenScanner,
+};
 
 pub mod grammar;
 mod keywords;
@@ -10,32 +15,42 @@ mod token;
 mod token_scanner;
 
 /// Errors that prevent parser from working
+#[derive(Debug)]
 pub enum ParserErrorVariant {
     OutOfTokens,
-    MissingType,
-    MissingFunctionIdentifier,
-    MissingFunctionReturnType, // mby warning and default to none type?
-    MissingFunctionBody,
-    MissingIfCondition,
-    MissingIfTrueBranch,
-    MissingIfFalseBranch,
-    MissingWhileLoopCondition,
-    MissingWhileLoopBody,
-    MissingForLoopVariable,
-    MissingForLoopProvider,
-    MissingForLoopBody,
+    FunctionParameterMissingType,
+    FunctionMissingIdentifier,
+    FunctionMissingReturnType, // mby warning and default to none type?
+    FunctionMissingBody,
+    IfMissingCondition,
+    IfMissingTrueBranch,
+    IfMissingFalseBranch,
+    WhileLoopMissingCondition,
+    WhileLoopMissingBody,
+    ForLoopMissingVariable,
+    ForLoopMissingProvider,
+    ForLoopMissingBody,
     InvalidBracketExpression,
-    IncompleteRange,
-    EmptyListAccess,
+    ListRangeAccessIncomplete,
+    ListAccessEmpty,
+    UnaryOperatorMissingExpression,
+    BinaryOperatorMissingRHS,
+    AssignmentMissingExpression,
+    VariableDeclarationMissingType,
+    VariableDeclarationMissingIdentifier,
+    VariableDeclarationMissingExpression,
+    ReturnMissingExpression,
 }
 
 /// Critical errors remember the last position before they happened
+#[derive(Debug)]
 pub struct ParserError {
     err: ParserErrorVariant,
     pos: Position,
 }
 
 /// Errors that the parser can work around
+#[derive(Debug)]
 pub enum ParserWarningVariant {
     TrailingComma,
     MissingOpeningRoundBracket,
@@ -43,9 +58,12 @@ pub enum ParserWarningVariant {
     MissingClosingSquareBracket,
     MissingClosingCurlyBracket,
     MissingColon,
+    VariableDeclarationMissingEqualsSign,
+    VariableDeclarationMissingTypeSeparator,
 }
 
 /// Elusive errors remember the position where they were supposed to be
+#[derive(Debug)]
 pub struct ParserWarning {
     err: ParserWarningVariant,
     start: Position,
@@ -68,8 +86,13 @@ impl Parser {
             token_scanner,
         }
     }
+
+    pub fn parse(&mut self) -> Program {
+        parse_program(self).unwrap()
+    }
 }
 
+/// Trait for error and warning handling
 pub trait ErrorHandler {
     /// Reports errors that can be omited.
     /// They can be recovered after parsing is over.

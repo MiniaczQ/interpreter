@@ -1,5 +1,7 @@
 use crate::{
-    parser::{keywords::Keyword, token::TokenType, ExtScannable, Parser, ParserErrorVariant, ErrorHandler},
+    parser::{
+        keywords::Keyword, token::TokenType, ErrorHandler, ExtScannable, Parser, ParserErrorVariant,
+    },
     scannable::Scannable,
 };
 
@@ -24,10 +26,10 @@ pub fn parse_while_loop(p: &mut Parser) -> ParseResult<WhileLoop> {
             if let Some(body) = parse_code_block(p)? {
                 Ok(Some(WhileLoop { condition, body }))
             } else {
-                Err(p.error(ParserErrorVariant::MissingWhileLoopBody))
+                Err(p.error(ParserErrorVariant::WhileLoopMissingBody))
             }
         } else {
-            Err(p.error(ParserErrorVariant::MissingWhileLoopCondition))
+            Err(p.error(ParserErrorVariant::WhileLoopMissingCondition))
         }
     } else {
         Ok(None)
@@ -50,15 +52,19 @@ pub fn parse_for_loop(p: &mut Parser) -> ParseResult<ForLoop> {
             p.pop();
             if let Some(provider) = parse_expression(p)? {
                 if let Some(body) = parse_code_block(p)? {
-                    Ok(Some(ForLoop { variable, provider, body }))
+                    Ok(Some(ForLoop {
+                        variable,
+                        provider,
+                        body,
+                    }))
                 } else {
-                    Err(p.error(ParserErrorVariant::MissingForLoopBody))
+                    Err(p.error(ParserErrorVariant::ForLoopMissingBody))
                 }
             } else {
-                Err(p.error(ParserErrorVariant::MissingForLoopProvider))
+                Err(p.error(ParserErrorVariant::ForLoopMissingProvider))
             }
         } else {
-            Err(p.error(ParserErrorVariant::MissingForLoopVariable))
+            Err(p.error(ParserErrorVariant::ForLoopMissingVariable))
         }
     } else {
         Ok(None)

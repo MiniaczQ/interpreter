@@ -35,7 +35,7 @@ fn parse_list(p: &mut Parser) -> OptRes<Literal> {
 /// CONST_INT
 fn parse_integer(p: &mut Parser) -> OptRes<Literal> {
     if let Some(v) = p.integer()? {
-        return Ok(Some(Literal(Value::Integer(v))));
+        return Ok(Some(Literal(Value::Int(v))));
     }
     Ok(None)
 }
@@ -108,7 +108,7 @@ mod tests {
             ],
             parse_literal,
         );
-        assert_eq!(result.unwrap().unwrap(), Literal(Value::Integer(5)));
+        assert_eq!(result.unwrap().unwrap(), Literal(Value::Int(5)));
 
         assert!(warnings.is_empty());
     }
@@ -187,8 +187,8 @@ mod tests {
         assert_eq!(
             result.unwrap().unwrap(),
             Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Integer(5))),
-                Expression::Literal(Literal(Value::Integer(6)))
+                Expression::Literal(Literal(Value::Int(5))),
+                Expression::Literal(Literal(Value::Int(6)))
             ]))
         );
 
@@ -226,8 +226,8 @@ mod tests {
         assert_eq!(
             result.unwrap().unwrap(),
             Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Integer(5))),
-                Expression::Literal(Literal(Value::Integer(6)))
+                Expression::Literal(Literal(Value::Int(5))),
+                Expression::Literal(Literal(Value::Int(6)))
             ]))
         );
 
@@ -257,8 +257,8 @@ mod tests {
         assert_eq!(
             result.unwrap().unwrap(),
             Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Integer(5))),
-                Expression::Literal(Literal(Value::Integer(6)))
+                Expression::Literal(Literal(Value::Int(5))),
+                Expression::Literal(Literal(Value::Int(6)))
             ]))
         );
 

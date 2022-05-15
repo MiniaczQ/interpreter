@@ -56,14 +56,14 @@ pub enum IndexOrRange {
 }
 
 /// Algebraic negation and logical negation
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum UnaryOperator {
     AlgebraicNegation,
     LogicalNegation,
 }
 
 /// Binary operators
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq)]
 pub enum BinaryOperator {
     Multiplication,
     Division,
@@ -550,7 +550,7 @@ mod tests {
         loops::{ForLoop, WhileLoop},
     };
 
-    use super::super::test_utils::tests::*;
+    use super::{super::test_utils::tests::*, BinaryOperator, UnaryOperator};
 
     #[test]
     fn miss() {
@@ -576,7 +576,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            Expression::Literal(Literal(Value::Integer(5)))
+            Expression::Literal(Literal(Value::Int(5)))
         );
 
         assert!(warnings.is_empty());
@@ -594,7 +594,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            Expression::Literal(Literal(Value::Integer(5)))
+            Expression::Literal(Literal(Value::Int(5)))
         );
 
         assert_eq!(warnings.len(), 1);
@@ -640,7 +640,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            Expression::Literal(Literal(Value::Integer(7)))
+            Expression::Literal(Literal(Value::Int(7)))
         );
 
         assert!(warnings.is_empty());
@@ -680,7 +680,7 @@ mod tests {
             Expression::ListAccess {
                 list: Box::new(Expression::Identifier("a".to_owned())),
                 access: Box::new(IndexOrRange::Index(Expression::Literal(Literal(
-                    Value::Integer(1)
+                    Value::Int(1)
                 ))))
             }
         );
@@ -729,8 +729,8 @@ mod tests {
             Expression::ListAccess {
                 list: Box::new(Expression::Identifier("a".to_owned())),
                 access: Box::new(IndexOrRange::Range(
-                    Expression::Literal(Literal(Value::Integer(1))),
-                    Expression::Literal(Literal(Value::Integer(5)))
+                    Expression::Literal(Literal(Value::Int(1))),
+                    Expression::Literal(Literal(Value::Int(5)))
                 ))
             }
         );
@@ -756,8 +756,8 @@ mod tests {
             Expression::ListAccess {
                 list: Box::new(Expression::Identifier("a".to_owned())),
                 access: Box::new(IndexOrRange::Range(
-                    Expression::Literal(Literal(Value::Integer(1))),
-                    Expression::Literal(Literal(Value::Integer(5)))
+                    Expression::Literal(Literal(Value::Int(1))),
+                    Expression::Literal(Literal(Value::Int(5)))
                 ))
             }
         );
@@ -816,7 +816,7 @@ mod tests {
             Expression::FunctionCall {
                 identifier: Box::new(Expression::Identifier("a".to_owned())),
                 arguments: vec![
-                    Expression::Literal(Literal(Value::Integer(30))),
+                    Expression::Literal(Literal(Value::Int(30))),
                     Expression::Literal(Literal(Value::String("ccc".to_owned())))
                 ],
             }
@@ -867,7 +867,7 @@ mod tests {
             Expression::FunctionCall {
                 identifier: Box::new(Expression::Identifier("a".to_owned())),
                 arguments: vec![
-                    Expression::Literal(Literal(Value::Integer(30))),
+                    Expression::Literal(Literal(Value::Int(30))),
                     Expression::Literal(Literal(Value::String("ccc".to_owned())))
                 ],
             }
@@ -902,7 +902,7 @@ mod tests {
             Expression::FunctionCall {
                 identifier: Box::new(Expression::Identifier("a".to_owned())),
                 arguments: vec![
-                    Expression::Literal(Literal(Value::Integer(30))),
+                    Expression::Literal(Literal(Value::Int(30))),
                     Expression::Literal(Literal(Value::String("ccc".to_owned())))
                 ],
             }
@@ -919,80 +919,465 @@ mod tests {
         );
     }
 
-    #[test]
-    fn unary_algebraic_negation() {}
+    fn unary_op_helper(
+        t_operator: TokenType,
+        t_literal: TokenType,
+        operator: UnaryOperator,
+        literal: Literal,
+    ) {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(t_operator.clone()),
+                dummy_token(t_operator),
+                dummy_token(t_literal),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::UnaryOperation {
+                operator,
+                expression: Box::new(Expression::UnaryOperation {
+                    operator,
+                    expression: Box::new(Expression::Literal(literal))
+                })
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn unary_logical_negation() {}
+    fn unary_algebraic_negation() {
+        unary_op_helper(
+            TokenType::Operator(Op::Minus),
+            TokenType::Float(5.37),
+            UnaryOperator::AlgebraicNegation,
+            Literal(Value::Float(5.37)),
+        )
+    }
 
     #[test]
-    fn unary_operation_missing_expression() {}
+    fn unary_logical_negation() {
+        unary_op_helper(
+            TokenType::Operator(Op::ExclamationMark),
+            TokenType::Keyword(Kw::True),
+            UnaryOperator::LogicalNegation,
+            Literal(Value::Bool(true)),
+        )
+    }
 
     #[test]
-    fn binary_multiplication() {}
+    fn unary_operation_missing_expression() {
+        let (result, warnings) = partial_parse(
+            vec![
+                token(TokenType::Operator(Op::ExclamationMark), (5, 7), (5, 8)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::UnaryOperatorMissingExpression,
+                pos: Position::new(5, 8),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
+
+    fn binary_op_helper(
+        t_operator: TokenType,
+        t_literal: TokenType,
+        operator: BinaryOperator,
+        literal: Literal,
+    ) {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(t_literal.clone()),
+                dummy_token(t_operator.clone()),
+                dummy_token(t_literal.clone()),
+                dummy_token(t_operator),
+                dummy_token(t_literal),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::BinaryOperation {
+                operator,
+                lhs: Box::new(Expression::BinaryOperation {
+                    operator,
+                    lhs: Box::new(Expression::Literal(literal.clone())),
+                    rhs: Box::new(Expression::Literal(literal.clone()))
+                }),
+                rhs: Box::new(Expression::Literal(literal))
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn binary_division() {}
+    fn binary_multiplication() {
+        binary_op_helper(
+            TokenType::Operator(Op::Asterisk),
+            TokenType::Float(2.71),
+            BinaryOperator::Multiplication,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_modulo() {}
+    fn binary_division() {
+        binary_op_helper(
+            TokenType::Operator(Op::Slash),
+            TokenType::Float(2.71),
+            BinaryOperator::Division,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_addition() {}
+    fn binary_modulo() {
+        binary_op_helper(
+            TokenType::Operator(Op::Modulo),
+            TokenType::Int(5),
+            BinaryOperator::Modulo,
+            Literal(Value::Int(5)),
+        )
+    }
 
     #[test]
-    fn binary_subtraction() {}
+    fn binary_addition() {
+        binary_op_helper(
+            TokenType::Operator(Op::Plus),
+            TokenType::Float(2.71),
+            BinaryOperator::Addition,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_equal() {}
+    fn binary_subtraction() {
+        binary_op_helper(
+            TokenType::Operator(Op::Minus),
+            TokenType::Float(2.71),
+            BinaryOperator::Subtraction,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_unequal() {}
+    fn binary_equal() {
+        binary_op_helper(
+            TokenType::Operator(Op::DoubleEqual),
+            TokenType::String("a".to_owned()),
+            BinaryOperator::Equal,
+            Literal(Value::String("a".to_owned())),
+        )
+    }
 
     #[test]
-    fn binary_lesser() {}
+    fn binary_unequal() {
+        binary_op_helper(
+            TokenType::Operator(Op::Unequal),
+            TokenType::Float(2.71),
+            BinaryOperator::Unequal,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_lesser_equal() {}
+    fn binary_lesser() {
+        binary_op_helper(
+            TokenType::Operator(Op::Lesser),
+            TokenType::Float(2.71),
+            BinaryOperator::Lesser,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_greater() {}
+    fn binary_lesser_equal() {
+        binary_op_helper(
+            TokenType::Operator(Op::LesserEqual),
+            TokenType::Float(2.71),
+            BinaryOperator::LesserEqual,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_greater_equal() {}
+    fn binary_greater() {
+        binary_op_helper(
+            TokenType::Operator(Op::Greater),
+            TokenType::Float(2.71),
+            BinaryOperator::Greater,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_and() {}
+    fn binary_greater_equal() {
+        binary_op_helper(
+            TokenType::Operator(Op::GreaterEqual),
+            TokenType::Float(2.71),
+            BinaryOperator::GreaterEqual,
+            Literal(Value::Float(2.71)),
+        )
+    }
 
     #[test]
-    fn binary_or() {}
+    fn binary_and() {
+        binary_op_helper(
+            TokenType::Operator(Op::And),
+            TokenType::Keyword(Kw::True),
+            BinaryOperator::And,
+            Literal(Value::Bool(true)),
+        )
+    }
 
     #[test]
-    fn binary_operation_missing_rhs() {}
+    fn binary_or() {
+        binary_op_helper(
+            TokenType::Operator(Op::Or),
+            TokenType::Keyword(Kw::False),
+            BinaryOperator::Or,
+            Literal(Value::Bool(false)),
+        )
+    }
 
     #[test]
-    fn assignment() {}
+    fn binary_operation_missing_rhs() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Int(45)),
+                token(TokenType::Operator(Op::Plus), (5, 9), (5, 10)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::BinaryOperatorMissingRHS,
+                pos: Position::new(5, 10),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn assignment_missing_expression() {}
+    fn assignment() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Equal)),
+                dummy_token(TokenType::Int(69)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Assignment {
+                identifier: Box::new(Expression::Identifier("a".to_owned())),
+                expression: Box::new(Expression::Literal(Literal(Value::Int(69))))
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn declaration() {}
+    fn assignment_missing_expression() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                token(TokenType::Operator(Op::Equal), (2, 6), (2, 7)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::AssignmentMissingExpression,
+                pos: Position::new(2, 7),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn declaration_missing_type_separator() {}
+    fn declaration() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Let)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::Equal)),
+                dummy_token(TokenType::Int(1337)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Declaration {
+                identifier: "a".to_owned(),
+                data_type: grammar::DataType::Integer,
+                expression: Box::new(Expression::Literal(Literal(Value::Int(1337))))
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn declaration_missing_equals_sign() {}
+    fn declaration_missing_type_separator() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Let)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                token(TokenType::Keyword(Kw::Int), (2, 2), (2, 5)),
+                dummy_token(TokenType::Operator(Op::Equal)),
+                dummy_token(TokenType::Int(42)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Declaration {
+                identifier: "a".to_owned(),
+                data_type: grammar::DataType::Integer,
+                expression: Box::new(Expression::Literal(Literal(Value::Int(42))))
+            }
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::VariableDeclarationMissingTypeSeparator,
+                start: Position::new(2, 2),
+                stop: Position::new(2, 5)
+            }
+        );
+    }
 
     #[test]
-    fn declaration_missing_type() {}
+    fn declaration_missing_equals_sign() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Let)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                token(TokenType::Int(2137), (4, 13), (4, 17)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap().unwrap(),
+            Expression::Declaration {
+                identifier: "a".to_owned(),
+                data_type: grammar::DataType::Integer,
+                expression: Box::new(Expression::Literal(Literal(Value::Int(2137))))
+            }
+        );
+
+        assert_eq!(warnings.len(), 1);
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::VariableDeclarationMissingEqualsSign,
+                start: Position::new(4, 13),
+                stop: Position::new(4, 17)
+            }
+        );
+    }
 
     #[test]
-    fn declaration_missing_identifier() {}
+    fn declaration_missing_type() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Let)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                token(TokenType::Operator(Op::Colon), (5, 7), (5, 8)),
+                dummy_token(TokenType::Operator(Op::Equal)),
+                dummy_token(TokenType::Int(1337)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::VariableDeclarationMissingType,
+                pos: Position::new(5, 8),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
-    fn declaration_missing_expression() {}
+    fn declaration_missing_identifier() {
+        let (result, warnings) = partial_parse(
+            vec![
+                token(TokenType::Keyword(Kw::Let), (2, 2), (2, 5)),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::Equal)),
+                dummy_token(TokenType::Int(1337)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::VariableDeclarationMissingIdentifier,
+                pos: Position::new(2, 5),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn declaration_missing_expression() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Let)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                token(TokenType::Operator(Op::Equal), (5, 17), (5, 18)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+            ],
+            parse_expression,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::VariableDeclarationMissingExpression,
+                pos: Position::new(5, 18),
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
 
     #[test]
     fn for_loop() {
@@ -1086,7 +1471,7 @@ mod tests {
                 statements: vec![
                     Statement::Expression(Expression::Identifier("a".to_owned())),
                     Statement::Semicolon,
-                    Statement::Expression(Expression::Literal(Literal(Value::Integer(5)))),
+                    Statement::Expression(Expression::Literal(Literal(Value::Int(5)))),
                     Statement::Semicolon,
                 ]
             })
@@ -1107,7 +1492,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            Expression::Return(Box::new(Expression::Literal(Literal(Value::Integer(0)))))
+            Expression::Return(Box::new(Expression::Literal(Literal(Value::Int(0)))))
         );
 
         assert!(warnings.is_empty());

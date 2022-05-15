@@ -17,7 +17,7 @@ mod utility;
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Value {
     List(Vec<Expression>),
-    Integer(i64),
+    Int(i64),
     Float(f64),
     Bool(bool),
     String(String),

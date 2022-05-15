@@ -229,7 +229,7 @@ mod tests {
                         Statement::Expression(Expression::Declaration {
                             identifier: "a".to_owned(),
                             data_type: DataType::Integer,
-                            expression: Box::new(Expression::Literal(Literal(Value::Integer(5)))),
+                            expression: Box::new(Expression::Literal(Literal(Value::Int(5)))),
                         }),
                         Statement::Semicolon,
                     ],
@@ -273,7 +273,7 @@ mod tests {
                         Statement::Expression(Expression::Declaration {
                             identifier: "a".to_owned(),
                             data_type: DataType::Integer,
-                            expression: Box::new(Expression::Literal(Literal(Value::Integer(5)))),
+                            expression: Box::new(Expression::Literal(Literal(Value::Int(5)))),
                         }),
                         Statement::Semicolon,
                     ],

@@ -93,7 +93,7 @@ mod tests {
                 statements: vec![
                     Statement::Expression(Expression::Identifier("a".to_owned())),
                     Statement::Semicolon,
-                    Statement::Expression(Expression::Literal(Literal(Value::Integer(5)))),
+                    Statement::Expression(Expression::Literal(Literal(Value::Int(5)))),
                     Statement::Semicolon,
                 ]
             }

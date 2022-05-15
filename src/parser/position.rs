@@ -8,6 +8,7 @@ pub struct Position {
 }
 
 impl Position {
+    #[allow(dead_code)]
     pub fn new(row: usize, col: usize) -> Self {
         Self { row, col }
     }

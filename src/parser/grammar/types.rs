@@ -44,10 +44,8 @@ mod tests {
 
     #[test]
     fn miss() {
-        let (result, warnings) = partial_parse(
-            vec![token(TokenType::Keyword(Kw::Let), (2, 4), (2, 6))],
-            parse_type,
-        );
+        let (result, warnings) =
+            partial_parse(vec![dummy_token(TokenType::Keyword(Kw::Let))], parse_type);
         assert_eq!(result, Ok(None));
 
         assert!(warnings.is_empty());

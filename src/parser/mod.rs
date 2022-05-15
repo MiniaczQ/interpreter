@@ -23,15 +23,15 @@ pub enum ParserErrorVariant {
     OutOfTokens,
     FunctionParameterMissingType,
     FunctionMissingIdentifier,
-    FunctionMissingReturnType, // could default to `none`
+    FunctionMissingReturnType, // technically, could default to `none`
     FunctionMissingBody,
     IfMissingCondition, // unreachable (following code block is assumed to be the condition)
     IfMissingTrueBranch,
     IfMissingFalseBranch,
-    WhileLoopMissingCondition,
+    WhileLoopMissingCondition, // unreachable (following code block is assumed to be the provider)
     WhileLoopMissingBody,
     ForLoopMissingVariable,
-    ForLoopMissingProvider,
+    ForLoopMissingProvider, // unreachable (following code block is assumed to be the provider)
     ForLoopMissingBody,
     InvalidBracketExpression,
     ListRangeAccessIncomplete,

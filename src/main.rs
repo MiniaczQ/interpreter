@@ -62,20 +62,6 @@ fn parse_args() -> Result<ParsedArgs, AppError> {
     }
 }
 
-/// Consumes and prints all lexems
-fn print_lexems(lexer: &mut Lexer) {
-    for token in lexer.all() {
-        println!("{}", token);
-    }
-}
-
-/// Prints all errors
-fn print_errors(lexer: &Lexer) {
-    for e in &lexer.errors {
-        eprintln!("{}", e);
-    }
-}
-
 /// Application error containing message and process return code
 struct AppError {
     msg: String,
@@ -125,11 +111,13 @@ fn run(input: InputType) -> Result<(), AppError> {
             }
         }
     };
-    let lexer = Lexer::new(reader);
+    let mut lexer = Lexer::new(reader);
 
-    let mut parser = Parser::new(TokenScanner::new(lexer));
+    {
+        let mut parser = Parser::new(TokenScanner::new(&mut lexer));
 
-    println!("[RESULT] {:?}", parser.parse());
+        println!("[RESULT] {:?}", parser.parse());
+    }
 
     Ok(())
 }

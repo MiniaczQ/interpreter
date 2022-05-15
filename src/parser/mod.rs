@@ -74,18 +74,18 @@ pub struct ParserWarning {
 
 /// Language parser.
 ///
-pub struct Parser {
+pub struct Parser<'a> {
     warnings: Vec<ParserWarning>,
     pos: Position,
-    token_scanner: TokenScanner,
+    scanner: Box<dyn Scannable<Option<Token>> + 'a>,
 }
 
-impl Parser {
-    pub fn new(token_scanner: TokenScanner) -> Self {
+impl<'a> Parser<'a> {
+    pub fn new(token_scanner: impl Scannable<Option<Token>> + 'a) -> Self {
         Self {
             warnings: vec![],
             pos: Position { row: 1, col: 1 },
-            token_scanner,
+            scanner: Box::new(token_scanner),
         }
     }
 
@@ -104,7 +104,7 @@ pub trait ErrorHandler {
     fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError>;
 }
 
-impl ErrorHandler for Parser {
+impl<'a> ErrorHandler for Parser<'a> {
     fn warn(&mut self, err: ParserWarningVariant) {
         let err = ParserWarning {
             warn: err,
@@ -122,14 +122,14 @@ impl ErrorHandler for Parser {
     }
 }
 
-impl Scannable<Option<Token>> for Parser {
+impl<'a> Scannable<Option<Token>> for Parser<'a> {
     fn curr(&self) -> Option<Token> {
-        self.token_scanner.curr()
+        self.scanner.curr()
     }
 
     fn pop(&mut self) -> bool {
         self.pos = self.curr().unwrap().stop;
-        self.token_scanner.pop()
+        self.scanner.pop()
     }
 }
 

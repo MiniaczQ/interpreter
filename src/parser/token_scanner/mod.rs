@@ -11,20 +11,20 @@ mod map;
 
 /// Converts `Lexem`s into `Token`s.
 /// Skips comments.
-pub struct TokenScanner {
-    lexer: Lexer,
+pub struct TokenScanner<'a> {
+    lexer: &'a mut Lexer,
     curr: Option<Token>,
 }
 
-impl TokenScanner {
-    pub fn new(lexer: Lexer) -> Self {
+impl<'a> TokenScanner<'a> {
+    pub fn new(lexer: &'a mut Lexer) -> Self {
         let mut scanner = Self { lexer, curr: None };
         scanner.pop();
         scanner
     }
 }
 
-impl Scannable<Option<Token>> for TokenScanner {
+impl<'a> Scannable<Option<Token>> for TokenScanner<'a> {
     fn curr(&self) -> Option<Token> {
         self.curr.clone()
     }

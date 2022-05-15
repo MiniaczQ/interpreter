@@ -127,7 +127,7 @@ fn run(input: InputType) -> Result<(), AppError> {
     }
 
     for w in lexer.get_warnings() {
-        println!("[{}", w);
+        println!("{}", w);
     }
 
     Ok(())

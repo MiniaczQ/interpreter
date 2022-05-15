@@ -16,6 +16,14 @@ pub struct TokenScanner {
     curr: Option<Token>,
 }
 
+impl TokenScanner {
+    pub fn new(lexer: Lexer) -> Self {
+        let mut scanner = Self { lexer, curr: None };
+        scanner.pop();
+        scanner
+    }
+}
+
 impl Scannable<Option<Token>> for TokenScanner {
     fn curr(&self) -> Option<Token> {
         self.curr.clone()

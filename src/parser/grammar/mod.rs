@@ -12,7 +12,7 @@ pub mod types;
 pub trait Node {}
 
 /// A value
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Value {
     Integer(i64),
     IntegerList(Vec<i64>),

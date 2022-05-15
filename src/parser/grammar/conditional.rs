@@ -13,6 +13,7 @@ use super::{
 
 /// If expression.
 /// The else block is optional.
+#[derive(Debug)]
 pub struct IfElse {
     condition: Expression,
     true_case: CodeBlock,
@@ -29,6 +30,7 @@ pub fn parse_if_else(p: &mut Parser) -> ParseResult<IfElse> {
             if let Some(true_case) = parse_code_block(p)? {
                 let false_case = if let TokenType::Keyword(Keyword::Else) = p.token()?.token_type {
                     p.pop();
+                    #[allow(clippy::needless_match)]
                     if let Some(false_case) = parse_code_block(p)? {
                         Some(false_case)
                     } else {

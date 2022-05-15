@@ -5,12 +5,11 @@ use super::{
         keywords::Keyword, operators::Operator, token::TokenType, ExtScannable, Parser,
         ParserWarningVariant,
     },
-    expressions::Expression,
     ExtResult, ParseResult, Value,
 };
 
 /// A literal value
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Literal(Value);
 
 /// CONST_INT

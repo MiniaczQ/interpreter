@@ -2,6 +2,7 @@ use crate::parser::{Parser, ParserError};
 
 use super::function::{parse_function_def, FunctionDef};
 
+#[derive(Debug)]
 pub struct Program {
     functions: Vec<FunctionDef>,
 }

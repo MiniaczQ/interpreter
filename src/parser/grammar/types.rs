@@ -1,13 +1,15 @@
 use crate::{
     parser::{
-        keywords::Keyword, operators::Operator, token::TokenType, ExtScannable, Parser,
-        ParserWarningVariant, ErrorHandler,
+        keywords::Keyword, operators::Operator, token::TokenType, ErrorHandler, ExtScannable,
+        Parser, ParserWarningVariant,
     },
     scannable::Scannable,
 };
 
 use super::ParseResult;
 
+/// Possible data types
+#[derive(Debug)]
 pub enum DataType {
     Integer,
     Float,

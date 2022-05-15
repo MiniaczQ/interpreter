@@ -12,6 +12,7 @@ use super::{
 };
 
 /// Block of code that returns the last espression
+#[derive(Debug)]
 pub struct CodeBlock {
     statements: Vec<Statement>,
 }
@@ -34,6 +35,7 @@ pub fn parse_code_block(p: &mut Parser) -> ParseResult<CodeBlock> {
     }
 }
 
+#[derive(Debug)]
 pub enum Statement {
     Expression(Expression),
     Semicolon,

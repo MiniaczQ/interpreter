@@ -7,6 +7,7 @@ use std::{
 };
 
 use lexer::Lexer;
+use parser::{token_scanner::TokenScanner, Parser};
 
 mod lexer;
 mod parser;
@@ -124,11 +125,11 @@ fn run(input: InputType) -> Result<(), AppError> {
             }
         }
     };
-    let mut lexer = Lexer::new(reader);
+    let lexer = Lexer::new(reader);
 
-    print_lexems(&mut lexer); // TEMPORARY
+    let mut parser = Parser::new(TokenScanner::new(lexer));
 
-    print_errors(&lexer);
+    println!("{:?}", parser.parse());
 
     Ok(())
 }

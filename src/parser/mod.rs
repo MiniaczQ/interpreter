@@ -8,11 +8,11 @@ use self::{
 };
 
 pub mod grammar;
-mod keywords;
-mod operators;
-mod position;
-mod token;
-mod token_scanner;
+pub mod keywords;
+pub mod operators;
+pub mod position;
+pub mod token;
+pub mod token_scanner;
 
 /// Errors that prevent parser from working
 #[derive(Debug)]
@@ -136,6 +136,6 @@ pub trait ExtScannable: Scannable<Option<Token>> {
 impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
     fn token(&mut self) -> Result<Token, ParserError> {
         self.curr()
-            .ok_or(self.error(ParserErrorVariant::OutOfTokens))
+            .ok_or_else(|| self.error(ParserErrorVariant::OutOfTokens))
     }
 }

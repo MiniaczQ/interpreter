@@ -11,6 +11,8 @@ use super::{
     ParseResult,
 };
 
+/// While loop
+#[derive(Debug)]
 pub struct WhileLoop {
     condition: Expression,
     body: CodeBlock,
@@ -36,6 +38,8 @@ pub fn parse_while_loop(p: &mut Parser) -> ParseResult<WhileLoop> {
     }
 }
 
+/// For loop
+#[derive(Debug)]
 pub struct ForLoop {
     variable: String,
     provider: Expression,

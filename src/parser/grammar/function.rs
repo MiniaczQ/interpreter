@@ -13,6 +13,7 @@ use super::{
 };
 
 /// A single function parameter
+#[derive(Debug)]
 struct Parameter {
     name: String,
     data_type: DataType,
@@ -51,7 +52,9 @@ fn parse_parameters(p: &mut Parser) -> Result<Vec<Parameter>, ParserError> {
 }
 
 /// Definition of a function
+#[derive(Debug)]
 pub struct FunctionDef {
+    identifier: String,
     params: Vec<Parameter>,
     code_block: CodeBlock,
     result: DataType,
@@ -63,7 +66,7 @@ pub struct FunctionDef {
 pub fn parse_function_def(p: &mut Parser) -> ParseResult<FunctionDef> {
     if let TokenType::Keyword(Keyword::Fn) = p.token()?.token_type {
         p.pop();
-        if let TokenType::Identifier(name) = p.token()?.token_type {
+        if let TokenType::Identifier(identifier) = p.token()?.token_type {
             p.pop();
             if let TokenType::Operator(Operator::OpenRoundBracket) = p.token()?.token_type {
                 p.pop();
@@ -88,6 +91,7 @@ pub fn parse_function_def(p: &mut Parser) -> ParseResult<FunctionDef> {
             };
             if let Some(code_block) = parse_code_block(p)? {
                 Ok(Some(FunctionDef {
+                    identifier,
                     params,
                     code_block,
                     result,

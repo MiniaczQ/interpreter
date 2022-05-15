@@ -16,8 +16,8 @@ use super::{
 };
 
 /// All possible types of expression
+#[derive(Debug)]
 pub enum Expression {
-    Bracketed(Box<Expression>),
     Literal(Literal),
     Identifier(String),
     ListAccess {
@@ -98,6 +98,7 @@ fn parse_constant_or_identifier_or_bracket_expression(p: &mut Parser) -> ParseRe
 }
 
 /// Two ways of accessing list elements
+#[derive(Debug)]
 pub enum IndexOrRange {
     Index(Expression),
     Range(Expression, Expression),
@@ -205,6 +206,7 @@ fn parse_function_call_or_list_access_expression(p: &mut Parser) -> ParseResult<
 }
 
 /// Algebraic negation and logical negation
+#[derive(Debug)]
 pub enum UnaryOperator {
     AlgebraicNegation,
     LogicalNegation,
@@ -249,6 +251,7 @@ fn parse_unary_operator_expression(p: &mut Parser) -> ParseResult<Expression> {
 }
 
 /// Binary operators
+#[derive(Debug)]
 pub enum BinaryOperator {
     Multiplication,
     Division,
@@ -553,7 +556,7 @@ fn parse_if_else_expression(p: &mut Parser) -> ParseResult<Expression> {
 
 /// for_expression
 fn parse_code_block_expression(p: &mut Parser) -> ParseResult<Expression> {
-    parse_code_block(p).map(|v| v.map(|v| Expression::CodeBlock(v)))
+    parse_code_block(p).map(|v| v.map(Expression::CodeBlock))
 }
 
 /// expression

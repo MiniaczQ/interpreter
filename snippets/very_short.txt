@@ -1,0 +1,4 @@
+// do nothing
+fn main() {
+    let a: int = 5;
+}

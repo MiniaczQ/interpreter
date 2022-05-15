@@ -17,7 +17,7 @@ use matchers::{
 
 use self::{
     char_scanner::CharScanner,
-    lexem::{Lexem, LexemBuilder, LexemWarning, LexemWarningVariant},
+    lexem::{Lexem, LexemBuilder, LexerWarning, LexerWarningVariant},
 };
 
 pub struct Lexer {
@@ -25,7 +25,7 @@ pub struct Lexer {
     max_string_length: usize,
     max_comment_length: usize,
     pub scanner: CharScanner,
-    pub warnings: Vec<LexemWarning>,
+    pub warnings: Vec<LexerWarning>,
 }
 
 impl Lexer {
@@ -77,10 +77,10 @@ impl Lexer {
             loop {
                 if let Some(lexem) = self.skip_and_match() {
                     if !invalid_sequence.is_empty() {
-                        self.warnings.push(LexemWarning {
+                        self.warnings.push(LexerWarning {
                             start: sequence_start,
                             end: sequence_stop,
-                            variant: LexemWarningVariant::InvalidSequence(
+                            variant: LexerWarningVariant::InvalidSequence(
                                 invalid_sequence.iter().collect::<String>(),
                             ),
                         });
@@ -112,7 +112,7 @@ impl Lexer {
     }
 
     /// Consumes the lexer and returns the warning buffer.
-    pub fn get_warnings(self) -> Vec<LexemWarning> {
+    pub fn get_warnings(self) -> Vec<LexerWarning> {
         self.warnings
     }
 }
@@ -121,7 +121,7 @@ impl Lexer {
 mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
-    use crate::lexer::{keywords::Keyword, lexem::LexemWarningVariant, operators::Operator, Lexer};
+    use crate::lexer::{keywords::Keyword, lexem::LexerWarningVariant, operators::Operator, Lexer};
 
     use super::lexem::{Lexem, LexemType};
 
@@ -151,9 +151,11 @@ mod tests {
             ),
             Lexem::new(LexemType::Keyword(Keyword::Let), (3, 5), (3, 8)),
             Lexem::new(LexemType::Identifier("a".to_owned()), (3, 9), (3, 10)),
-            Lexem::new(LexemType::Operator(Operator::Equal), (3, 11), (3, 12)),
-            Lexem::new(LexemType::Int(5), (3, 13), (3, 14)),
-            Lexem::new(LexemType::Operator(Operator::Semicolon), (3, 14), (3, 15)),
+            Lexem::new(LexemType::Operator(Operator::Colon), (3, 10), (3, 11)),
+            Lexem::new(LexemType::Keyword(Keyword::Int), (3, 12), (3, 15)),
+            Lexem::new(LexemType::Operator(Operator::Equal), (3, 16), (3, 17)),
+            Lexem::new(LexemType::Int(5), (3, 18), (3, 19)),
+            Lexem::new(LexemType::Operator(Operator::Semicolon), (3, 19), (3, 20)),
             Lexem::new(
                 LexemType::Operator(Operator::CloseCurlyBracket),
                 (4, 1),
@@ -166,7 +168,7 @@ mod tests {
     fn test_file() {
         let file = OpenOptions::new()
             .read(true)
-            .open("snippets/short.txt")
+            .open("snippets/very_short.txt")
             .unwrap();
         let mut parser = Lexer::new(BufReader::new(file));
         let output = parser.all();
@@ -176,7 +178,7 @@ mod tests {
 
     #[test]
     fn test_string() {
-        let string = "// do nothing\nfn main() {\n    let a = 5;\n}";
+        let string = "// do nothing\nfn main() {\n    let a: int = 5;\n}";
         let mut parser = Lexer::new(BufReader::new(string.as_bytes()));
         let output = parser.all();
         assert_eq!(output, correct_output());
@@ -203,11 +205,11 @@ mod tests {
         assert_eq!(output, correct_output);
         assert!(
             parser.warnings[0].variant
-                == LexemWarningVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
+                == LexerWarningVariant::InvalidSequence("$@#@$#@$#$@".to_owned())
         );
-        assert!(parser.warnings[1].variant == LexemWarningVariant::InvalidSequence("$".to_owned()));
+        assert!(parser.warnings[1].variant == LexerWarningVariant::InvalidSequence("$".to_owned()));
         assert!(
-            parser.warnings[2].variant == LexemWarningVariant::InvalidSequence("#.".to_owned())
+            parser.warnings[2].variant == LexerWarningVariant::InvalidSequence("#.".to_owned())
         );
     }
 
@@ -241,7 +243,7 @@ mod tests {
         ];
         let output = parser.all();
         assert_eq!(output, correct_output);
-        assert!(parser.warnings[0].variant == LexemWarningVariant::StringNeverEnds);
+        assert!(parser.warnings[0].variant == LexerWarningVariant::StringNeverEnds);
     }
 
     #[test]
@@ -274,6 +276,6 @@ mod tests {
         ];
         let output = parser.all();
         assert_eq!(output, correct_output);
-        assert!(parser.warnings[0].variant == LexemWarningVariant::CommentNeverEnds);
+        assert!(parser.warnings[0].variant == LexerWarningVariant::CommentNeverEnds);
     }
 }

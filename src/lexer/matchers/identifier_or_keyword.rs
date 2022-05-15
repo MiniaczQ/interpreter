@@ -1,6 +1,6 @@
 use crate::{
     lexer::keywords::Keyword,
-    lexer::lexem::{Lexem, LexemBuilder, LexemType, LexemWarningVariant},
+    lexer::lexem::{Lexem, LexemBuilder, LexemType, LexerWarningVariant},
     scannable::Scannable,
 };
 
@@ -27,7 +27,7 @@ pub fn match_identifier_or_keyword(lb: &mut LexemBuilder, max: usize) -> Option<
         name.push(lb.curr());
         if name.len() > max {
             name.pop();
-            lb.error(LexemWarningVariant::IdentifierTooLong);
+            lb.error(LexerWarningVariant::IdentifierTooLong);
             break;
         }
         lb.pop();
@@ -61,7 +61,7 @@ fn match_keyword(lb: &mut LexemBuilder, name: &str) -> Option<Lexem> {
 mod tests {
     use crate::lexer::{
         keywords::Keyword,
-        lexem::{Lexem, LexemType, LexemWarning, LexemWarningVariant},
+        lexem::{Lexem, LexemType, LexerWarning, LexerWarningVariant},
         matchers::test_utils::{lexem_with, matcher_with},
     };
 
@@ -73,7 +73,7 @@ mod tests {
         r.0
     }
 
-    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexemWarning>) {
+    fn err_matcher(string: &'static str) -> (Option<Lexem>, Vec<LexerWarning>) {
         matcher_with(|lb| match_identifier_or_keyword(lb, 32), string)
     }
 
@@ -153,7 +153,7 @@ mod tests {
             result,
             id_lexem("___a___b___a___c___a___b___a___d", (1, 1), (1, 33))
         );
-        assert!(errors[0].variant == LexemWarningVariant::IdentifierTooLong);
+        assert!(errors[0].variant == LexerWarningVariant::IdentifierTooLong);
     }
 
     #[test]

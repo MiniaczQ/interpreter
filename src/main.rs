@@ -6,8 +6,10 @@ use std::{
     path::PathBuf,
 };
 
-use lexer::Lexer;
-use parser::{token_scanner::TokenScanner, Parser};
+use lexer::{lexem::LexerWarning, Lexer};
+use parser::{
+    grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
+};
 
 mod lexer;
 mod parser;
@@ -96,6 +98,25 @@ fn app() -> Result<(), AppError> {
     }
 }
 
+/// Run a lexer and parser on some arbitrary reader
+fn parse(
+    reader: Box<dyn BufRead>,
+) -> (
+    Result<Program, ParserError>,
+    Vec<ParserWarning>,
+    Vec<LexerWarning>,
+) {
+    let mut lexer = Lexer::new(reader);
+    let (result, parser_warnings) = {
+        let mut parser = Parser::new(TokenScanner::new(&mut lexer));
+        let result = parser.parse();
+        let warnings = parser.get_warnings();
+        (result, warnings)
+    };
+    let lexer_warnings = lexer.get_warnings();
+    (result, parser_warnings, lexer_warnings)
+}
+
 /// Run interpreter
 fn run(input: InputType) -> Result<(), AppError> {
     let reader: Box<dyn BufRead> = match input {
@@ -112,22 +133,18 @@ fn run(input: InputType) -> Result<(), AppError> {
         }
     };
 
-    let mut lexer = Lexer::new(reader);
+    let (result, parser_warnings, lexer_warnings) = parse(reader);
 
-    {
-        let mut parser = Parser::new(TokenScanner::new(&mut lexer));
-
-        match parser.parse() {
-            Ok(program) => println!("{}", program),
-            Err(error) => eprintln!("{}", error),
-        }
-
-        for w in parser.get_warnings() {
-            eprintln!("{}", w);
-        }
+    match result {
+        Ok(program) => println!("{}", program),
+        Err(error) => eprintln!("{}", error),
     }
 
-    for w in lexer.get_warnings() {
+    for w in parser_warnings {
+        eprintln!("{}", w);
+    }
+
+    for w in lexer_warnings {
         eprintln!("{}", w);
     }
 
@@ -137,5 +154,14 @@ fn run(input: InputType) -> Result<(), AppError> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn test() {}
+    fn short() {}
+
+    #[test]
+    fn long() {}
+
+    #[test]
+    fn parser_errors() {}
+
+    #[test]
+    fn parser_warnings() {}
 }

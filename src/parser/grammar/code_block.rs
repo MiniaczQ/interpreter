@@ -17,20 +17,6 @@ pub enum Statement {
     Semicolon,
 }
 
-/// code_block
-///     = OPEN_CODEBLOCK, statements, CLOSE_CODEBLOCK
-///     ;
-pub fn parse_code_block(p: &mut Parser) -> OptRes<CodeBlock> {
-    if !p.operator(Op::OpenCurlyBracket)? {
-        return Ok(None);
-    }
-    let statements = parse_statements(p)?;
-    if !p.operator(Op::CloseCurlyBracket)? {
-        p.warn(WarnVar::MissingClosingCurlyBracket);
-    }
-    Ok(Some(CodeBlock { statements }))
-}
-
 /// statements
 ///     = {statement}
 ///     ;
@@ -53,4 +39,18 @@ fn parse_statement(p: &mut Parser) -> OptRes<Statement> {
         return Ok(Some(Statement::Expression(expression)));
     }
     Ok(None)
+}
+
+/// code_block
+///     = OPEN_CODEBLOCK, statements, CLOSE_CODEBLOCK
+///     ;
+pub fn parse_code_block(p: &mut Parser) -> OptRes<CodeBlock> {
+    if !p.operator(Op::OpenCurlyBracket)? {
+        return Ok(None);
+    }
+    let statements = parse_statements(p)?;
+    if !p.operator(Op::CloseCurlyBracket)? {
+        p.warn(WarnVar::MissingClosingCurlyBracket);
+    }
+    Ok(Some(CodeBlock { statements }))
 }

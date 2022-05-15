@@ -8,6 +8,8 @@ pub use crate::{
     scannable::Scannable,
 };
 
+pub use super::ExtResult;
+
 // Re-export types with short aliases
 pub use crate::parser::{
     keywords::Keyword as Kw, operators::Operator as Op, token::TokenType as Type, Parser,

@@ -1,12 +1,7 @@
-use crate::{parser::ErrorHandler, scannable::Scannable};
-
 use super::{
-    super::{
-        keywords::Keyword, operators::Operator, token::TokenType, ExtScannable, Parser,
-        ParserWarningVariant,
-    },
     expressions::{parse_expression, Expression},
-    ExtResult, ParseResult, Value,
+    utility::*,
+    Value,
 };
 
 /// A literal value
@@ -16,77 +11,60 @@ pub struct Literal(Value);
 /// list_constant
 ///     = OPEN_LIST, [expression, {SPLIT, expression}], CLOSE_LIST
 ///     ;
-fn parse_list(p: &mut Parser) -> ParseResult<Literal> {
+fn parse_list(p: &mut Parser) -> OptRes<Literal> {
     let mut list: Vec<Expression> = vec![];
-    if let TokenType::Operator(Operator::OpenSquareBracket) = p.token()?.token_type {
-        p.pop();
-        if let Some(expression) = parse_expression(p)? {
-            list.push(expression);
-            while let TokenType::Operator(Operator::Split) = p.token()?.token_type {
-                p.pop();
-                if let Some(expression) = parse_expression(p)? {
-                    list.push(expression);
-                } else {
-                    p.warn(ParserWarningVariant::TrailingComma)
-                }
+    if !p.operator(Op::OpenSquareBracket)? {
+        return Ok(None);
+    }
+    if let Some(expression) = parse_expression(p)? {
+        list.push(expression);
+        while p.operator(Op::Split)? {
+            if let Some(expression) = parse_expression(p)? {
+                list.push(expression);
+            } else {
+                p.warn(WarnVar::TrailingComma)
             }
         }
-        if let TokenType::Operator(Operator::CloseSquareBracket) = p.token()?.token_type {
-            p.pop();
-        } else {
-            p.warn(ParserWarningVariant::MissingClosingSquareBracket)
-        }
-        Ok(Some(Literal(Value::List(list))))
-    } else {
-        Ok(None)
     }
+    if !p.operator(Op::CloseSquareBracket)? {
+        p.warn(WarnVar::MissingClosingSquareBracket);
+    }
+    Ok(Some(Literal(Value::List(list))))
 }
 
 /// CONST_INT
-fn parse_integer(p: &mut Parser) -> ParseResult<Literal> {
-    let t = p.token()?;
-    if let TokenType::Int(v) = t.token_type {
-        p.pop();
-        Ok(Some(Literal(Value::Integer(v))))
-    } else {
-        Ok(None)
+fn parse_integer(p: &mut Parser) -> OptRes<Literal> {
+    if let Some(v) = p.integer()? {
+        return Ok(Some(Literal(Value::Integer(v))));
     }
+    Ok(None)
 }
 
 /// CONST_FLOAT
-fn parse_float(p: &mut Parser) -> ParseResult<Literal> {
-    if let TokenType::Float(v) = p.token()?.token_type {
-        p.pop();
-        Ok(Some(Literal(Value::Float(v))))
-    } else {
-        Ok(None)
+fn parse_float(p: &mut Parser) -> OptRes<Literal> {
+    if let Some(v) = p.float()? {
+        return Ok(Some(Literal(Value::Float(v))));
     }
+    Ok(None)
 }
 
 /// Same as `parse_bool_raw` but returns a `Literal`
-fn parse_bool(p: &mut Parser) -> ParseResult<Literal> {
-    match p.token()?.token_type {
-        TokenType::Keyword(Keyword::True) => {
-            p.pop();
-            Ok(Some(Literal(Value::Bool(true))))
-        }
-        TokenType::Keyword(Keyword::False) => {
-            p.pop();
-            Ok(Some(Literal(Value::Bool(false))))
-        }
-        _ => Ok(None),
+fn parse_bool(p: &mut Parser) -> OptRes<Literal> {
+    if p.keyword(Kw::True)? {
+        return Ok(Some(Literal(Value::Bool(true))));
     }
+    if p.keyword(Kw::False)? {
+        return Ok(Some(Literal(Value::Bool(false))));
+    }
+    Ok(None)
 }
 
 /// CONST_STRING
-fn parse_string(p: &mut Parser) -> ParseResult<Literal> {
-    let t = p.token()?;
-    if let TokenType::String(v) = t.token_type {
-        p.pop();
-        Ok(Some(Literal(Value::String(v))))
-    } else {
-        Ok(None)
+fn parse_string(p: &mut Parser) -> OptRes<Literal> {
+    if let Some(v) = p.string()? {
+        return Ok(Some(Literal(Value::String(v))));
     }
+    Ok(None)
 }
 
 /// constant
@@ -96,7 +74,7 @@ fn parse_string(p: &mut Parser) -> ParseResult<Literal> {
 ///     | CONST_BOOL
 ///     | CONST_STRING
 ///     ;
-pub fn parse_literal(p: &mut Parser) -> ParseResult<Literal> {
+pub fn parse_literal(p: &mut Parser) -> OptRes<Literal> {
     parse_list(p)
         .alt(|| parse_integer(p))
         .alt(|| parse_float(p))

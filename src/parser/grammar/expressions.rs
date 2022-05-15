@@ -448,39 +448,6 @@ fn parse_variable_assignment_expression(p: &mut Parser) -> OptRes<Expression> {
     }
 }
 
-/// Declaration of a variable
-struct VariableDeclaration {
-    identifier: String,
-    data_type: DataType,
-}
-
-/// variable_declaration
-///     = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
-///     ;
-fn parse_variable_declaration(p: &mut Parser) -> OptRes<VariableDeclaration> {
-    if !p.keyword(Kw::Let)? {
-        return Ok(None);
-    }
-    if let Some(identifier) = p.identifier()? {
-        if !p.operator(Op::Colon)? {
-            p.warn(WarnVar::VariableDeclarationMissingTypeSeparator);
-        }
-        if let Some(data_type) = parse_type(p)? {
-            if !p.operator(Op::Equal)? {
-                p.warn(WarnVar::VariableDeclarationMissingEqualsSign);
-            }
-            Ok(Some(VariableDeclaration {
-                identifier,
-                data_type,
-            }))
-        } else {
-            p.error(ErroVar::VariableDeclarationMissingType)
-        }
-    } else {
-        p.error(ErroVar::VariableDeclarationMissingIdentifier)
-    }
-}
-
 /// for_expression
 fn parse_for_expression(p: &mut Parser) -> OptRes<Expression> {
     parse_for_loop(p).map(|v| v.map(|v| Expression::For(Box::new(v))))
@@ -514,6 +481,39 @@ fn parse_control_flow_expression(p: &mut Parser) -> OptRes<Expression> {
         .alt(|| parse_while_expression(p))
         .alt(|| parse_if_else_expression(p))
         .alt(|| parse_code_block_expression(p))
+}
+
+/// Declaration of a variable
+struct VariableDeclaration {
+    identifier: String,
+    data_type: DataType,
+}
+
+/// variable_declaration
+///     = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
+///     ;
+fn parse_variable_declaration(p: &mut Parser) -> OptRes<VariableDeclaration> {
+    if !p.keyword(Kw::Let)? {
+        return Ok(None);
+    }
+    if let Some(identifier) = p.identifier()? {
+        if !p.operator(Op::Colon)? {
+            p.warn(WarnVar::VariableDeclarationMissingTypeSeparator);
+        }
+        if let Some(data_type) = parse_type(p)? {
+            if !p.operator(Op::Equal)? {
+                p.warn(WarnVar::VariableDeclarationMissingEqualsSign);
+            }
+            Ok(Some(VariableDeclaration {
+                identifier,
+                data_type,
+            }))
+        } else {
+            p.error(ErroVar::VariableDeclarationMissingType)
+        }
+    } else {
+        p.error(ErroVar::VariableDeclarationMissingIdentifier)
+    }
 }
 
 /// expression

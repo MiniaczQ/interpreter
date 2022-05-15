@@ -30,7 +30,6 @@ fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> Opt
     if !p.operator(Op::OpenSquareBracket)? {
         return Ok(Some(non_list));
     }
-    p.pop();
     if !p.operator(Op::CloseSquareBracket)? {
         p.warn(WarnVar::MissingClosingSquareBracket);
     }

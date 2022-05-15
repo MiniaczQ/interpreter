@@ -85,30 +85,24 @@ pub enum BinaryOp {
 ///     ;
 fn parse_bracket_expression(p: &mut Parser) -> OptRes<Expression> {
     if p.operator(Op::OpenRoundBracket)? {
-        p.pop();
-        if let Some(expression) = parse_expression(p)? {
-            if p.operator(Op::OpenRoundBracket)? {
-                p.pop();
-            } else {
-                p.warn(WarnVar::MissingClosingRoundBracket);
-            }
-            Ok(Some(expression))
-        } else {
-            p.error(ErroVar::InvalidBracketExpression)
+        return Ok(None);
+    }
+    if let Some(expression) = parse_expression(p)? {
+        if !p.operator(Op::OpenRoundBracket)? {
+            p.warn(WarnVar::MissingClosingRoundBracket);
         }
+        Ok(Some(expression))
     } else {
-        Ok(None)
+        p.error(ErroVar::InvalidBracketExpression)
     }
 }
 
 /// IDENTIFIER
 fn parse_identifier_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(identifier) = p.identifier()? {
-        p.pop();
-        Ok(Some(Expression::Identifier(identifier)))
-    } else {
-        Ok(None)
+        return Ok(Some(Expression::Identifier(identifier)));
     }
+    Ok(None)
 }
 
 /// constant
@@ -130,8 +124,7 @@ fn parse_constant_or_identifier_or_bracket_expression(p: &mut Parser) -> OptRes<
 ///     ;
 fn parse_index_or_range_access(p: &mut Parser) -> OptRes<IndexOrRange> {
     if let Some(left_index) = parse_expression(p)? {
-        if p.operator(Op::DoubleColon)? {
-            p.pop();
+        return if p.operator(Op::DoubleColon)? {
             if let Some(right_index) = parse_expression(p)? {
                 Ok(Some(IndexOrRange::Range(left_index, right_index)))
             } else {
@@ -139,30 +132,25 @@ fn parse_index_or_range_access(p: &mut Parser) -> OptRes<IndexOrRange> {
             }
         } else {
             Ok(Some(IndexOrRange::Index(left_index)))
-        }
-    } else {
-        Ok(None)
+        };
     }
+    Ok(None)
 }
 
 /// list_access
 ///     = OPEN_LIST, index_or_range_access, CLOSE_LIST
 ///     ;
 fn parse_list_access(p: &mut Parser) -> OptRes<IndexOrRange> {
-    if p.operator(Op::OpenSquareBracket)? {
-        p.pop();
-        if let Some(index_or_range) = parse_index_or_range_access(p)? {
-            if p.operator(Op::CloseSquareBracket)? {
-                p.pop();
-            } else {
-                p.warn(WarnVar::MissingClosingSquareBracket);
-            }
-            Ok(Some(index_or_range))
-        } else {
-            p.error(ErroVar::ListAccessEmpty)
+    if !p.operator(Op::OpenSquareBracket)? {
+        return Ok(None);
+    }
+    if let Some(index_or_range) = parse_index_or_range_access(p)? {
+        if !p.operator(Op::CloseSquareBracket)? {
+            p.warn(WarnVar::MissingClosingSquareBracket);
         }
+        Ok(Some(index_or_range))
     } else {
-        Ok(None)
+        p.error(ErroVar::ListAccessEmpty)
     }
 }
 
@@ -174,7 +162,6 @@ fn parse_function_arguments(p: &mut Parser) -> Res<Vec<Expression>> {
     if let Some(argument) = parse_expression(p)? {
         arguments.push(argument);
         while p.operator(Op::Split)? {
-            p.pop();
             if let Some(argument) = parse_expression(p)? {
                 arguments.push(argument);
             } else {
@@ -189,18 +176,14 @@ fn parse_function_arguments(p: &mut Parser) -> Res<Vec<Expression>> {
 ///     = OPEN_BRACKET, function_arguments, CLOSE_BRACKET
 ///     ;
 fn parse_function_call(p: &mut Parser) -> OptRes<Vec<Expression>> {
-    if p.operator(Op::OpenRoundBracket)? {
-        p.pop();
-        let args = parse_function_arguments(p)?;
-        if p.operator(Op::CloseRoundBracket)? {
-            p.pop();
-        } else {
-            p.warn(WarnVar::MissingClosingRoundBracket);
-        }
-        Ok(Some(args))
-    } else {
-        Ok(None)
+    if !p.operator(Op::OpenRoundBracket)? {
+        return Ok(None);
     }
+    let args = parse_function_arguments(p)?;
+    if !p.operator(Op::CloseRoundBracket)? {
+        p.warn(WarnVar::MissingClosingRoundBracket);
+    }
+    Ok(Some(args))
 }
 
 /// function_call_or_list_access_expression
@@ -208,7 +191,7 @@ fn parse_function_call(p: &mut Parser) -> OptRes<Vec<Expression>> {
 ///     ;
 fn parse_function_call_or_list_access_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(expression) = parse_constant_or_identifier_or_bracket_expression(p)? {
-        if let Some(arguments) = parse_function_call(p)? {
+        return if let Some(arguments) = parse_function_call(p)? {
             Ok(Some(Expression::FunctionCall {
                 identifier: Box::new(expression),
                 arguments,
@@ -220,10 +203,9 @@ fn parse_function_call_or_list_access_expression(p: &mut Parser) -> OptRes<Expre
             }))
         } else {
             Ok(Some(expression))
-        }
-    } else {
-        Ok(None)
+        };
     }
+    Ok(None)
 }
 
 /// unary_operators
@@ -407,7 +389,6 @@ fn parse_comparison_expression(p: &mut Parser) -> OptRes<Expression> {
 fn parse_logical_conjunction_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_comparison_expression(p)? {
         while p.operator(Op::And)? {
-            p.pop();
             if let Some(rhs) = parse_comparison_expression(p)? {
                 lhs = Expression::BinaryOperation {
                     operator: BinaryOp::And,
@@ -430,7 +411,6 @@ fn parse_logical_conjunction_expression(p: &mut Parser) -> OptRes<Expression> {
 fn parse_logical_alternative_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_logical_conjunction_expression(p)? {
         while p.operator(Op::Or)? {
-            p.pop();
             if let Some(rhs) = parse_logical_conjunction_expression(p)? {
                 lhs = Expression::BinaryOperation {
                     operator: BinaryOp::Or,
@@ -453,7 +433,6 @@ fn parse_logical_alternative_expression(p: &mut Parser) -> OptRes<Expression> {
 fn parse_variable_assignment_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_logical_alternative_expression(p)? {
         if p.operator(Op::Equal)? {
-            p.pop();
             if let Some(rhs) = parse_logical_conjunction_expression(p)? {
                 lhs = Expression::Assignment {
                     identifier: Box::new(lhs),
@@ -479,33 +458,26 @@ struct VariableDeclaration {
 ///     = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
 ///     ;
 fn parse_variable_declaration(p: &mut Parser) -> OptRes<VariableDeclaration> {
-    if p.keyword(Kw::Let)? {
-        p.pop();
-        if let Some(identifier) = p.identifier()? {
-            p.pop();
-            if p.operator(Op::Colon)? {
-                p.pop();
-            } else {
-                p.warn(WarnVar::VariableDeclarationMissingTypeSeparator);
+    if !p.keyword(Kw::Let)? {
+        return Ok(None);
+    }
+    if let Some(identifier) = p.identifier()? {
+        if !p.operator(Op::Colon)? {
+            p.warn(WarnVar::VariableDeclarationMissingTypeSeparator);
+        }
+        if let Some(data_type) = parse_type(p)? {
+            if !p.operator(Op::Equal)? {
+                p.warn(WarnVar::VariableDeclarationMissingEqualsSign);
             }
-            if let Some(data_type) = parse_type(p)? {
-                if p.operator(Op::Equal)? {
-                    p.pop();
-                } else {
-                    p.warn(WarnVar::VariableDeclarationMissingEqualsSign);
-                }
-                Ok(Some(VariableDeclaration {
-                    identifier,
-                    data_type,
-                }))
-            } else {
-                p.error(ErroVar::VariableDeclarationMissingType)
-            }
+            Ok(Some(VariableDeclaration {
+                identifier,
+                data_type,
+            }))
         } else {
-            p.error(ErroVar::VariableDeclarationMissingIdentifier)
+            p.error(ErroVar::VariableDeclarationMissingType)
         }
     } else {
-        Ok(None)
+        p.error(ErroVar::VariableDeclarationMissingIdentifier)
     }
 }
 
@@ -549,7 +521,6 @@ fn parse_control_flow_expression(p: &mut Parser) -> OptRes<Expression> {
 ///     ;
 pub fn parse_expression(p: &mut Parser) -> OptRes<Expression> {
     if p.keyword(Kw::Return)? {
-        p.pop();
         if let Some(expression) = parse_control_flow_expression(p)? {
             Ok(Some(Expression::Return(Box::new(expression))))
         } else {

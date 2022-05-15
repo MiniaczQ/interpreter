@@ -8,8 +8,6 @@ pub use crate::{
     scannable::Scannable,
 };
 
-pub use super::ExtResult;
-
 // Re-export types with short aliases
 pub use crate::parser::{
     keywords::Keyword as Kw, operators::Operator as Op, Parser, ParserErrorVariant as ErroVar,
@@ -91,6 +89,33 @@ pub trait ParsingHelper: ExtScannable {
         }
         true
     }
+
+    fn dbg(&mut self) {
+        println!("{:?}", self.token());
+    }
 }
 
 impl<T: ExtScannable> ParsingHelper for T {}
+
+/// Result extension for simpler parser control flow.
+pub trait ExtResult<T> {
+    /// In simple terms, if self if:
+    /// - an error      - returns the error
+    /// - is none       - returns fallback result
+    /// - is a value    - returns the value
+    fn alt(self, fallback: impl FnOnce() -> OptRes<T>) -> OptRes<T>;
+}
+
+impl<T> ExtResult<T> for OptRes<T> {
+    fn alt(self, fallback: impl FnOnce() -> OptRes<T>) -> OptRes<T> {
+        if let Ok(opt) = self {
+            if opt.is_some() {
+                Ok(opt)
+            } else {
+                fallback()
+            }
+        } else {
+            self
+        }
+    }
+}

@@ -188,6 +188,8 @@ impl<'a> Scannable<Token> for Parser<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::parser::{
         grammar::{
             code_block::{CodeBlock, Statement},
@@ -225,8 +227,10 @@ mod tests {
 
         assert!(warnings.is_empty());
 
-        let program = Program {
-            functions: vec![FunctionDef {
+        let mut functions = HashMap::new();
+        functions.insert(
+            "main".to_owned(),
+            FunctionDef {
                 identifier: "main".to_owned(),
                 params: vec![],
                 code_block: CodeBlock {
@@ -240,8 +244,10 @@ mod tests {
                     ],
                 },
                 data_type: DataType::None,
-            }],
-        };
+            },
+        );
+
+        let program = Program { functions };
 
         assert_eq!(program, result.unwrap());
     }
@@ -269,8 +275,10 @@ mod tests {
             ParserWarningVariant::VariableDeclarationMissingTypeSeparator
         );
 
-        let program = Program {
-            functions: vec![FunctionDef {
+        let mut functions = HashMap::new();
+        functions.insert(
+            "main".to_owned(),
+            FunctionDef {
                 identifier: "main".to_owned(),
                 params: vec![],
                 code_block: CodeBlock {
@@ -284,8 +292,10 @@ mod tests {
                     ],
                 },
                 data_type: DataType::None,
-            }],
-        };
+            },
+        );
+
+        let program = Program { functions };
 
         assert_eq!(program, result.unwrap());
     }

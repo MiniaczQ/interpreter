@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use ron::ser::PrettyConfig;
 
@@ -10,7 +10,7 @@ use super::{
 /// Main program
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Program {
-    pub functions: Vec<FunctionDef>, // HashMap-a
+    pub functions: HashMap<String, FunctionDef>, // HashMap-a
 }
 
 impl Display for Program {
@@ -24,15 +24,17 @@ impl Display for Program {
 ///     = {function_definition}
 ///     ;
 pub fn parse_program(p: &mut Parser) -> Res<Program> {
-    let mut functions = vec![];
+    let mut functions = HashMap::new();
     while let Some(function) = parse_function_def(p)? {
-        functions.push(function);
+        functions.insert(function.identifier.clone(), function);
     }
     Ok(Program { functions })
 }
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+
     use crate::parser::grammar::{
         code_block::CodeBlock,
         function::FunctionDef,
@@ -54,17 +56,17 @@ mod tests {
             ],
             parse_program,
         );
-        assert_eq!(
-            result.unwrap(),
-            Program {
-                functions: vec![FunctionDef {
-                    identifier: "a".to_owned(),
-                    params: vec![],
-                    code_block: CodeBlock { statements: vec![] },
-                    data_type: grammar::DataType::None
-                }]
-            }
+        let mut functions = HashMap::new();
+        functions.insert(
+            "a".to_owned(),
+            FunctionDef {
+                identifier: "a".to_owned(),
+                params: vec![],
+                code_block: CodeBlock { statements: vec![] },
+                data_type: grammar::DataType::None,
+            },
         );
+        assert_eq!(result.unwrap(), Program { functions });
 
         assert!(warnings.is_empty());
     }
@@ -72,7 +74,8 @@ mod tests {
     #[test]
     fn non_empty() {
         let (result, warnings) = partial_parse_non_opt(vec![], parse_program);
-        assert_eq!(result.unwrap(), Program { functions: vec![] });
+        let functions = HashMap::new();
+        assert_eq!(result.unwrap(), Program { functions });
 
         assert!(warnings.is_empty());
     }
@@ -106,17 +109,17 @@ mod tests {
             ],
             parse_program,
         );
-        assert_eq!(
-            result.unwrap(),
-            Program {
-                functions: vec![FunctionDef {
-                    identifier: "a".to_owned(),
-                    params: vec![],
-                    code_block: CodeBlock { statements: vec![] },
-                    data_type: grammar::DataType::None
-                }]
-            }
+        let mut functions = HashMap::new();
+        functions.insert(
+            "a".to_owned(),
+            FunctionDef {
+                identifier: "a".to_owned(),
+                params: vec![],
+                code_block: CodeBlock { statements: vec![] },
+                data_type: grammar::DataType::None,
+            },
         );
+        assert_eq!(result.unwrap(), Program { functions });
 
         assert_eq!(warnings.len(), 1);
         assert_eq!(

@@ -20,7 +20,6 @@ pub mod token_scanner;
 /// Errors that prevent parser from working
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParserErrorVariant {
-    OutOfTokens,
     FunctionParameterMissingType,
     FunctionMissingIdentifier,
     FunctionMissingReturnType, // technically, could default to `none`
@@ -43,7 +42,7 @@ pub enum ParserErrorVariant {
     VariableDeclarationMissingIdentifier,
     VariableDeclarationMissingExpression,
     ReturnMissingExpression,
-    ExpectedFunctionDefinition,
+    TooManyWarnings,
 }
 
 /// Critical errors remember the last position before they happened
@@ -67,7 +66,7 @@ impl Error for ParserError {}
 /// Errors that the parser can work around
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParserWarningVariant {
-    TrailingComma,
+    ExpectedExpression,
     MissingOpeningRoundBracket,
     MissingClosingRoundBracket,
     MissingClosingSquareBracket,
@@ -76,6 +75,7 @@ pub enum ParserWarningVariant {
     VariableDeclarationMissingEqualsSign,
     VariableDeclarationMissingTypeSeparator,
     ForLoopMissingInKeyword,
+    ExpectedParameter,
 }
 
 /// Elusive errors remember the position where they were supposed to be
@@ -102,15 +102,28 @@ impl Error for ParserWarning {}
 pub struct Parser<'a> {
     warnings: Vec<ParserWarning>,
     pos: Position,
-    scanner: Box<dyn Scannable<Option<Token>> + 'a>,
+    scanner: Box<dyn Scannable<Token> + 'a>,
+    max_warnings: i32,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(token_scanner: impl Scannable<Option<Token>> + 'a) -> Self {
+    #[allow(dead_code)]
+    pub fn new_with_defaults(token_scanner: impl Scannable<Token> + 'a) -> Self {
         Self {
             warnings: vec![],
             pos: Position { row: 1, col: 1 },
             scanner: Box::new(token_scanner),
+            max_warnings: -1,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn new(token_scanner: impl Scannable<Token> + 'a, max_warnings: i32) -> Self {
+        Self {
+            warnings: vec![],
+            pos: Position { row: 1, col: 1 },
+            scanner: Box::new(token_scanner),
+            max_warnings,
         }
     }
 
@@ -130,54 +143,46 @@ impl<'a> Parser<'a> {
 pub trait ErrorHandler {
     /// Reports errors that can be omited.
     /// They can be recovered after parsing is over.
-    fn warn(&mut self, err: ParserWarningVariant);
+    fn warn(&mut self, err: ParserWarningVariant) -> Result<(), ParserError>;
 
     /// Creates a critical error which aborts parsing.
-    fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError>;
+    #[must_use]
+    fn error(&mut self, err: ParserErrorVariant) -> ParserError;
 }
 
 impl<'a> ErrorHandler for Parser<'a> {
-    fn warn(&mut self, err: ParserWarningVariant) {
+    fn warn(&mut self, err: ParserWarningVariant) -> Result<(), ParserError> {
         let err = ParserWarning {
             warning: err,
-            start: self.curr().unwrap().start,
-            stop: self.curr().unwrap().stop,
+            start: self.curr().start,
+            stop: self.curr().stop,
         };
         self.warnings.push(err);
+        if self.max_warnings > 0 && self.warnings.len() > self.max_warnings as usize {
+            return Err(ParserError {
+                error: ParserErrorVariant::TooManyWarnings,
+                pos: self.pos,
+            });
+        }
+        Ok(())
     }
 
-    fn error<T>(&mut self, err: ParserErrorVariant) -> Result<T, ParserError> {
-        Err(ParserError {
+    fn error(&mut self, err: ParserErrorVariant) -> ParserError {
+        ParserError {
             error: err,
             pos: self.pos,
-        })
+        }
     }
 }
 
-impl<'a> Scannable<Option<Token>> for Parser<'a> {
-    fn curr(&self) -> Option<Token> {
+impl<'a> Scannable<Token> for Parser<'a> {
+    fn curr(&self) -> Token {
         self.scanner.curr()
     }
 
     fn pop(&mut self) -> bool {
-        self.pos = self.curr().unwrap().stop;
+        self.pos = self.curr().stop;
         self.scanner.pop()
-    }
-}
-
-/// Scannable extension
-pub trait ExtScannable: Scannable<Option<Token>> {
-    /// Returns a token or parser error if no tokens are available
-    fn token(&mut self) -> Result<Token, ParserError>;
-}
-
-impl<T: Scannable<Option<Token>> + ErrorHandler> ExtScannable for T {
-    fn token(&mut self) -> Result<Token, ParserError> {
-        if let Some(t) = self.curr() {
-            Ok(t)
-        } else {
-            self.error(ParserErrorVariant::OutOfTokens)
-        }
     }
 }
 

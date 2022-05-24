@@ -1,0 +1,13 @@
+// Too big of an int
+234567890987654123123123
+
+// Too big of a float
+234567890987654123123123.234567890987654123123123
+
+// Invalid sequence of characters
+#@.$.#$@$.$.@#
+
+// Invalid escape character
+"abcd\efghi"
+
+"This string never ends

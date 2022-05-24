@@ -106,10 +106,10 @@ fn parse(
     Vec<ParserWarning>,
     Vec<LexerWarning>,
 ) {
-    let mut lexer = Lexer::new(reader);
+    let mut lexer = Lexer::new_with_defaults(reader);
 
     let (result, parser_warnings) = {
-        let mut parser = Parser::new(TokenScanner::new(&mut lexer));
+        let mut parser = Parser::new_with_defaults(TokenScanner::new(&mut lexer));
         let result = parser.parse();
         let warnings = parser.get_warnings();
         (result, warnings)

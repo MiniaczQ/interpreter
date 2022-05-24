@@ -1,12 +1,12 @@
 //! Collection of aliases and re-exports for parsing
 
-use crate::parser::{token::TokenType, ParserError};
+use crate::parser::{
+    token::{Token, TokenType},
+    ParserError,
+};
 
 // Re-export traits
-pub use crate::{
-    parser::{ErrorHandler, ExtScannable},
-    scannable::Scannable,
-};
+pub use crate::{parser::ErrorHandler, scannable::Scannable};
 
 // Re-export types with short aliases
 pub use crate::parser::{
@@ -22,10 +22,10 @@ pub type OptRes<T> = Result<Option<T>, ParserError>;
 pub type Res<T> = Result<T, ParserError>;
 
 // Helper methods
-pub trait ParsingHelper: ExtScannable {
+pub trait ParsingHelper: Scannable<Token> {
     /// Whether the current parser token is a specific keyword
     fn keyword(&mut self, kw: Kw) -> Res<bool> {
-        if let TokenType::Keyword(actual) = self.token()?.token_type {
+        if let TokenType::Keyword(actual) = self.curr().token_type {
             if kw == actual {
                 self.pop();
                 return Ok(true);
@@ -36,7 +36,7 @@ pub trait ParsingHelper: ExtScannable {
 
     /// Whether the current parser token is a specific operator
     fn operator(&mut self, op: Op) -> Res<bool> {
-        if let TokenType::Operator(actual) = self.token()?.token_type {
+        if let TokenType::Operator(actual) = self.curr().token_type {
             if op == actual {
                 self.pop();
                 return Ok(true);
@@ -47,7 +47,7 @@ pub trait ParsingHelper: ExtScannable {
 
     /// Whether the current parser token is an identifier
     fn identifier(&mut self) -> OptRes<String> {
-        if let TokenType::Identifier(id) = self.token()?.token_type {
+        if let TokenType::Identifier(id) = self.curr().token_type {
             self.pop();
             return Ok(Some(id));
         }
@@ -56,7 +56,7 @@ pub trait ParsingHelper: ExtScannable {
 
     /// Whether the current parser token is a string
     fn string(&mut self) -> OptRes<String> {
-        if let TokenType::String(s) = self.token()?.token_type {
+        if let TokenType::String(s) = self.curr().token_type {
             self.pop();
             return Ok(Some(s));
         }
@@ -65,7 +65,7 @@ pub trait ParsingHelper: ExtScannable {
 
     /// Whether the current parser token is an integer
     fn integer(&mut self) -> OptRes<i64> {
-        if let TokenType::Int(v) = self.token()?.token_type {
+        if let TokenType::Int(v) = self.curr().token_type {
             self.pop();
             return Ok(Some(v));
         }
@@ -74,20 +74,15 @@ pub trait ParsingHelper: ExtScannable {
 
     /// Whether the current parser token is a float
     fn float(&mut self) -> OptRes<f64> {
-        if let TokenType::Float(v) = self.token()?.token_type {
+        if let TokenType::Float(v) = self.curr().token_type {
             self.pop();
             return Ok(Some(v));
         }
         Ok(None)
     }
-
-    /// Whether parser ran out of tokens
-    fn has_tokens(&mut self) -> bool {
-        self.token().is_ok()
-    }
 }
 
-impl<T: ExtScannable> ParsingHelper for T {}
+impl<T: Scannable<Token>> ParsingHelper for T {}
 
 /// Result extension for simpler parser control flow.
 pub trait ExtResult<T> {

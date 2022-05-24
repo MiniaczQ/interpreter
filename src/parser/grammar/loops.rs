@@ -26,15 +26,10 @@ pub fn parse_while_loop(p: &mut Parser) -> OptRes<WhileLoop> {
     if !p.keyword(Kw::While)? {
         return Ok(None);
     }
-    if let Some(condition) = parse_expression(p)? {
-        if let Some(body) = parse_code_block(p)? {
-            Ok(Some(WhileLoop { condition, body }))
-        } else {
-            p.error(ErroVar::WhileLoopMissingBody)
-        }
-    } else {
-        p.error(ErroVar::WhileLoopMissingCondition)
-    }
+    let condition =
+        parse_expression(p)?.ok_or_else(|| p.error(ErroVar::WhileLoopMissingCondition))?;
+    let body = parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::WhileLoopMissingBody))?;
+    Ok(Some(WhileLoop { condition, body }))
 }
 
 /// for_expression
@@ -44,26 +39,19 @@ pub fn parse_for_loop(p: &mut Parser) -> OptRes<ForLoop> {
     if !p.keyword(Kw::For)? {
         return Ok(None);
     }
-    if let Some(variable) = p.identifier()? {
-        if !p.keyword(Kw::In)? {
-            p.warn(WarnVar::ForLoopMissingInKeyword);
-        }
-        if let Some(provider) = parse_expression(p)? {
-            if let Some(body) = parse_code_block(p)? {
-                Ok(Some(ForLoop {
-                    variable,
-                    provider,
-                    body,
-                }))
-            } else {
-                p.error(ErroVar::ForLoopMissingBody)
-            }
-        } else {
-            p.error(ErroVar::ForLoopMissingProvider)
-        }
-    } else {
-        p.error(ErroVar::ForLoopMissingVariable)
+    let variable = p
+        .identifier()?
+        .ok_or_else(|| p.error(ErroVar::ForLoopMissingVariable))?;
+    if !p.keyword(Kw::In)? {
+        p.warn(WarnVar::ForLoopMissingInKeyword)?;
     }
+    let provider = parse_expression(p)?.ok_or_else(|| p.error(ErroVar::ForLoopMissingProvider))?;
+    let body = parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::ForLoopMissingBody))?;
+    Ok(Some(ForLoop {
+        variable,
+        provider,
+        body,
+    }))
 }
 
 #[cfg(test)]
@@ -226,7 +214,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParserError {
-                error: ParserErrorVariant::OutOfTokens,
+                error: ParserErrorVariant::ForLoopMissingProvider,
                 pos: Position::new(2, 5),
             }
         );
@@ -322,7 +310,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParserError {
-                error: ParserErrorVariant::OutOfTokens,
+                error: ParserErrorVariant::WhileLoopMissingBody,
                 pos: Position::new(2, 7),
             }
         );

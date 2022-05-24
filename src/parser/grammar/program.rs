@@ -10,7 +10,7 @@ use super::{
 /// Main program
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Program {
-    pub functions: Vec<FunctionDef>,
+    pub functions: Vec<FunctionDef>, // HashMap-a
 }
 
 impl Display for Program {
@@ -25,12 +25,8 @@ impl Display for Program {
 ///     ;
 pub fn parse_program(p: &mut Parser) -> Res<Program> {
     let mut functions = vec![];
-    while p.has_tokens() {
-        if let Some(function) = parse_function_def(p)? {
-            functions.push(function);
-        } else {
-            return p.error(ErroVar::ExpectedFunctionDefinition);
-        }
+    while let Some(function) = parse_function_def(p)? {
+        functions.push(function);
     }
     Ok(Program { functions })
 }
@@ -90,7 +86,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParserError {
-                error: ParserErrorVariant::OutOfTokens,
+                error: ParserErrorVariant::FunctionMissingIdentifier,
                 pos: Position::new(3, 6)
             }
         );

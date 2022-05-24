@@ -27,16 +27,13 @@ pub struct FunctionDef {
 fn parse_parameter(p: &mut Parser) -> OptRes<Parameter> {
     if let Some(name) = p.identifier()? {
         if !p.operator(Op::Colon)? {
-            p.warn(WarnVar::MissingColon);
+            p.warn(WarnVar::MissingColon)?;
         }
-        if let Some(data_type) = parse_type(p)? {
-            Ok(Some(Parameter { name, data_type }))
-        } else {
-            p.error(ErroVar::FunctionParameterMissingType)
-        }
-    } else {
-        Ok(None)
+        let data_type =
+            parse_type(p)?.ok_or_else(|| p.error(ErroVar::FunctionParameterMissingType))?;
+        return Ok(Some(Parameter { name, data_type }));
     }
+    Ok(None)
 }
 
 /// parameters
@@ -44,8 +41,15 @@ fn parse_parameter(p: &mut Parser) -> OptRes<Parameter> {
 ///     ;
 fn parse_parameters(p: &mut Parser) -> Res<Vec<Parameter>> {
     let mut params = vec![];
-    while let Some(param) = parse_parameter(p)? {
+    if let Some(param) = parse_parameter(p)? {
         params.push(param);
+        while p.operator(Op::Split)? {
+            if let Some(param) = parse_parameter(p)? {
+                params.push(param);
+            } else {
+                p.warn(WarnVar::ExpectedParameter)?;
+            }
+        }
     }
     Ok(params)
 }
@@ -57,36 +61,28 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
     if !p.keyword(Kw::Fn)? {
         return Ok(None);
     }
-    if let Some(identifier) = p.identifier()? {
-        if !p.operator(Op::OpenRoundBracket)? {
-            p.warn(WarnVar::MissingOpeningRoundBracket);
-        }
-        let params = parse_parameters(p)?;
-        if !p.operator(Op::CloseRoundBracket)? {
-            p.warn(WarnVar::MissingClosingRoundBracket);
-        }
-        let data_type = if p.operator(Op::Arrow)? {
-            if let Some(data_type) = parse_type(p)? {
-                data_type
-            } else {
-                return p.error(ErroVar::FunctionMissingReturnType);
-            }
-        } else {
-            DataType::None
-        };
-        if let Some(code_block) = parse_code_block(p)? {
-            Ok(Some(FunctionDef {
-                identifier,
-                params,
-                code_block,
-                data_type,
-            }))
-        } else {
-            p.error(ErroVar::FunctionMissingBody)
-        }
-    } else {
-        p.error(ErroVar::FunctionMissingIdentifier)
+    let identifier = p
+        .identifier()?
+        .ok_or_else(|| p.error(ErroVar::FunctionMissingIdentifier))?;
+    if !p.operator(Op::OpenRoundBracket)? {
+        p.warn(WarnVar::MissingOpeningRoundBracket)?;
     }
+    let params = parse_parameters(p)?;
+    if !p.operator(Op::CloseRoundBracket)? {
+        p.warn(WarnVar::MissingClosingRoundBracket)?;
+    }
+    let data_type = if p.operator(Op::Arrow)? {
+        parse_type(p)?.ok_or_else(|| p.error(ErroVar::FunctionMissingReturnType))?
+    } else {
+        DataType::None
+    };
+    let code_block = parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::FunctionMissingBody))?;
+    Ok(Some(FunctionDef {
+        identifier,
+        params,
+        code_block,
+        data_type,
+    }))
 }
 
 #[cfg(test)]
@@ -119,11 +115,15 @@ mod tests {
                 dummy_token(TokenType::Identifier("b".to_owned())),
                 dummy_token(TokenType::Operator(Op::Colon)),
                 dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::Identifier("c".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
                 dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
                 dummy_token(TokenType::Operator(Op::Arrow)),
                 dummy_token(TokenType::Keyword(Kw::Int)),
                 dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
-                dummy_token(TokenType::Identifier("c".to_owned())),
+                dummy_token(TokenType::Identifier("d".to_owned())),
                 dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
                 dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
                 dummy_token(TokenType::Operator(Op::Semicolon)),
@@ -135,14 +135,20 @@ mod tests {
             result.unwrap().unwrap(),
             FunctionDef {
                 identifier: "a".to_owned(),
-                params: vec![Parameter {
-                    name: "b".to_owned(),
-                    data_type: grammar::DataType::Integer
-                }],
+                params: vec![
+                    Parameter {
+                        name: "b".to_owned(),
+                        data_type: grammar::DataType::Integer
+                    },
+                    Parameter {
+                        name: "c".to_owned(),
+                        data_type: grammar::DataType::Integer
+                    }
+                ],
                 code_block: CodeBlock {
                     statements: vec![
                         Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
+                            identifier: Box::new(Expression::Identifier("d".to_owned())),
                             arguments: vec![]
                         }),
                         Statement::Semicolon
@@ -248,7 +254,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParserError {
-                error: ParserErrorVariant::OutOfTokens,
+                error: ParserErrorVariant::FunctionMissingIdentifier,
                 pos: Position::new(2, 6),
             }
         );

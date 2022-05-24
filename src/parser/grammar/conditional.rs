@@ -20,28 +20,18 @@ pub fn parse_if_else(p: &mut Parser) -> OptRes<IfElse> {
     if !p.keyword(Kw::If)? {
         return Ok(None);
     }
-    if let Some(condition) = parse_expression(p)? {
-        if let Some(true_case) = parse_code_block(p)? {
-            let false_case = if p.keyword(Kw::Else)? {
-                if let Some(false_case) = parse_code_block(p)? {
-                    Some(false_case)
-                } else {
-                    return p.error(ErroVar::IfMissingFalseBranch);
-                }
-            } else {
-                None
-            };
-            Ok(Some(IfElse {
-                condition,
-                true_case,
-                false_case,
-            }))
-        } else {
-            p.error(ErroVar::IfMissingTrueBranch)
-        }
+    let condition = parse_expression(p)?.ok_or_else(|| p.error(ErroVar::IfMissingCondition))?;
+    let true_case = parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::IfMissingTrueBranch))?;
+    let false_case = if p.keyword(Kw::Else)? {
+        Some(parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::IfMissingFalseBranch))?)
     } else {
-        p.error(ErroVar::IfMissingCondition)
-    }
+        None
+    };
+    Ok(Some(IfElse {
+        condition,
+        true_case,
+        false_case,
+    }))
 }
 
 #[cfg(test)]
@@ -196,7 +186,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParserError {
-                error: ParserErrorVariant::OutOfTokens,
+                error: ParserErrorVariant::IfMissingCondition,
                 pos: Position::new(1, 4)
             }
         );

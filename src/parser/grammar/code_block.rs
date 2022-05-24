@@ -50,7 +50,7 @@ pub fn parse_code_block(p: &mut Parser) -> OptRes<CodeBlock> {
     }
     let statements = parse_statements(p)?;
     if !p.operator(Op::CloseCurlyBracket)? {
-        p.warn(WarnVar::MissingClosingCurlyBracket);
+        p.warn(WarnVar::MissingClosingCurlyBracket)?;
     }
     Ok(Some(CodeBlock { statements }))
 }
@@ -140,14 +140,20 @@ mod tests {
             parse_code_block,
         );
         assert_eq!(
-            result.unwrap_err(),
-            ParserError {
-                error: ParserErrorVariant::OutOfTokens,
-                pos: Position::new(2, 6),
+            result.unwrap().unwrap(),
+            CodeBlock {
+                statements: vec![Statement::Semicolon]
             }
         );
 
-        assert!(warnings.is_empty());
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingCurlyBracket,
+                start: Position::new(2, 6),
+                stop: Position::new(2, 6),
+            }
+        );
     }
 
     #[test]

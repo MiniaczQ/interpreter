@@ -21,19 +21,35 @@ use self::{
 };
 
 pub struct Lexer {
-    max_identifier_length: usize,
-    max_string_length: usize,
-    max_comment_length: usize,
+    pub max_identifier_length: usize,
+    pub max_string_length: usize,
+    pub max_comment_length: usize,
     pub scanner: CharScanner,
     pub warnings: Vec<LexerWarning>,
 }
 
 impl Lexer {
-    pub fn new(source: impl BufRead + 'static) -> Self {
+    pub fn new_with_defaults(source: impl BufRead + 'static) -> Self {
         Self {
             max_identifier_length: 256,
             max_string_length: 256,
             max_comment_length: 256,
+            scanner: CharScanner::new(source),
+            warnings: vec![],
+        }
+    }
+
+    #[allow(dead_code)]
+    pub fn new(
+        source: impl BufRead + 'static,
+        max_identifier_length: Option<usize>,
+        max_string_length: Option<usize>,
+        max_comment_length: Option<usize>,
+    ) -> Self {
+        Self {
+            max_identifier_length: max_identifier_length.unwrap_or(256),
+            max_string_length: max_string_length.unwrap_or(256),
+            max_comment_length: max_comment_length.unwrap_or(256),
             scanner: CharScanner::new(source),
             warnings: vec![],
         }
@@ -170,7 +186,7 @@ mod tests {
             .read(true)
             .open("snippets/very_short.txt")
             .unwrap();
-        let mut lexer = Lexer::new(BufReader::new(file));
+        let mut lexer = Lexer::new_with_defaults(BufReader::new(file));
         let output = lexer.all();
         assert_eq!(output, correct_output());
         assert!(lexer.warnings.is_empty());
@@ -179,7 +195,7 @@ mod tests {
     #[test]
     fn test_string() {
         let string = "// do nothing\nfn main() {\n    let a: int = 5;\n}";
-        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new_with_defaults(BufReader::new(string.as_bytes()));
         let output = lexer.all();
         assert_eq!(output, correct_output());
         assert!(lexer.warnings.is_empty());
@@ -188,7 +204,7 @@ mod tests {
     #[test]
     fn invalid_sequence() {
         let string = "invalid $@#@$#@$#$@ sequence breaks$stuff 0#.323";
-        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new_with_defaults(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(LexemType::Identifier("invalid".to_owned()), (1, 1), (1, 8)),
             Lexem::new(
@@ -214,7 +230,7 @@ mod tests {
     #[test]
     fn incomplete_string() {
         let string = "// do nothing\nfn main() \"{\n    let a = 5;\n}\n";
-        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new_with_defaults(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(
                 LexemType::Comment(" do nothing".to_owned()),
@@ -247,7 +263,7 @@ mod tests {
     #[test]
     fn incomplete_comment() {
         let string = "// do nothing\nfn main() /*{\n    let a = 5;\n}\n";
-        let mut lexer = Lexer::new(BufReader::new(string.as_bytes()));
+        let mut lexer = Lexer::new_with_defaults(BufReader::new(string.as_bytes()));
         let correct_output = vec![
             Lexem::new(
                 LexemType::Comment(" do nothing".to_owned()),

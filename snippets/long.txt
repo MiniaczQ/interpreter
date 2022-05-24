@@ -41,6 +41,8 @@ fn main() {
         }
     };
 
+    let a: int = 5 * my_list[0];
+
     print(my_list[0::2]);   // [0, 3]
 
     let new_list: int[] = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0, 6.0]);

@@ -22,12 +22,12 @@ fn parse_list(p: &mut Parser) -> OptRes<Literal> {
             if let Some(expression) = parse_expression(p)? {
                 list.push(expression);
             } else {
-                p.warn(WarnVar::TrailingComma)
+                p.warn(WarnVar::ExpectedExpression)?;
             }
         }
     }
     if !p.operator(Op::CloseSquareBracket)? {
-        p.warn(WarnVar::MissingClosingSquareBracket);
+        p.warn(WarnVar::MissingClosingSquareBracket)?;
     }
     Ok(Some(Literal(Value::List(list))))
 }
@@ -235,7 +235,7 @@ mod tests {
         assert_eq!(
             warnings[0],
             ParserWarning {
-                warning: ParserWarningVariant::TrailingComma,
+                warning: ParserWarningVariant::ExpectedExpression,
                 start: Position::new(5, 6),
                 stop: Position::new(5, 7)
             }
@@ -283,13 +283,19 @@ mod tests {
             parse_literal,
         );
         assert_eq!(
-            result.unwrap_err(),
-            ParserError {
-                error: ParserErrorVariant::OutOfTokens,
-                pos: Position::new(2, 4),
-            }
+            result.unwrap().unwrap(),
+            Literal(Value::List(vec![
+                Expression::Literal(Literal(Value::Int(5)))
+            ]))
         );
 
-        assert!(warnings.is_empty());
+        assert_eq!(
+            warnings[0],
+            ParserWarning {
+                warning: ParserWarningVariant::MissingClosingSquareBracket,
+                start: Position::new(2, 4),
+                stop: Position::new(2, 4)
+            }
+        );
     }
 }

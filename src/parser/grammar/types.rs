@@ -31,7 +31,7 @@ fn parse_list_variant(p: &mut Parser, non_list: DataType, list: DataType) -> Opt
         return Ok(Some(non_list));
     }
     if !p.operator(Op::CloseSquareBracket)? {
-        p.warn(WarnVar::MissingClosingSquareBracket);
+        p.warn(WarnVar::MissingClosingSquareBracket)?;
     }
     Ok(Some(list))
 }
@@ -200,13 +200,7 @@ mod tests {
             vec![token(TokenType::Keyword(Kw::Int), (2, 4), (2, 6))],
             parse_type,
         );
-        assert_eq!(
-            result.unwrap_err(),
-            ParserError {
-                error: ParserErrorVariant::OutOfTokens,
-                pos: Position::new(2, 6),
-            }
-        );
+        assert_eq!(result.unwrap().unwrap(), DataType::Integer);
 
         assert!(warnings.is_empty());
     }

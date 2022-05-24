@@ -21,7 +21,7 @@ pub mod tests {
         parse_func: fn(p: &mut Parser) -> Result<Option<T>, ParserError>,
     ) -> (Result<Option<T>, ParserError>, Vec<ParserWarning>) {
         let scanner = DummyScanner::new(tokens);
-        let mut parser = Parser::new(scanner);
+        let mut parser = Parser::new_with_defaults(scanner);
         (parse_func(&mut parser), parser.get_warnings())
     }
 
@@ -30,7 +30,7 @@ pub mod tests {
         parse_func: fn(p: &mut Parser) -> Result<T, ParserError>,
     ) -> (Result<T, ParserError>, Vec<ParserWarning>) {
         let scanner = DummyScanner::new(tokens);
-        let mut parser = Parser::new(scanner);
+        let mut parser = Parser::new_with_defaults(scanner);
         (parse_func(&mut parser), parser.get_warnings())
     }
 }

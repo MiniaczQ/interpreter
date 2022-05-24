@@ -1,36 +1,8 @@
-use super::{
-    expressions::{parse_expression, Expression},
-    utility::*,
-    Value,
-};
+use super::{utility::*, Value};
 
 /// A literal value
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Literal(pub Value);
-
-/// list_constant
-///     = OPEN_LIST, [expression, {SPLIT, expression}], CLOSE_LIST
-///     ;
-fn parse_list(p: &mut Parser) -> OptRes<Literal> {
-    let mut list: Vec<Expression> = vec![];
-    if !p.operator(Op::OpenSquareBracket)? {
-        return Ok(None);
-    }
-    if let Some(expression) = parse_expression(p)? {
-        list.push(expression);
-        while p.operator(Op::Split)? {
-            if let Some(expression) = parse_expression(p)? {
-                list.push(expression);
-            } else {
-                p.warn(WarnVar::ExpectedExpression)?;
-            }
-        }
-    }
-    if !p.operator(Op::CloseSquareBracket)? {
-        p.warn(WarnVar::MissingClosingSquareBracket)?;
-    }
-    Ok(Some(Literal(Value::List(list))))
-}
 
 /// CONST_INT
 fn parse_integer(p: &mut Parser) -> OptRes<Literal> {
@@ -48,7 +20,7 @@ fn parse_float(p: &mut Parser) -> OptRes<Literal> {
     Ok(None)
 }
 
-/// Same as `parse_bool_raw` but returns a `Literal`
+/// KW_TRUE | KW_FALSE
 fn parse_bool(p: &mut Parser) -> OptRes<Literal> {
     if p.keyword(Kw::True)? {
         return Ok(Some(Literal(Value::Bool(true))));
@@ -68,15 +40,13 @@ fn parse_string(p: &mut Parser) -> OptRes<Literal> {
 }
 
 /// constant
-///     = list_constant
-///     | CONST_INT
+///     = CONST_INT
 ///     | CONST_FLOAT
-///     | CONST_BOOL
+///     | KW_TRUE | KW_FALSE
 ///     | CONST_STRING
 ///     ;
 pub fn parse_literal(p: &mut Parser) -> OptRes<Literal> {
-    parse_list(p)
-        .alt(|| parse_integer(p))
+    parse_integer(p)
         .alt(|| parse_float(p))
         .alt(|| parse_bool(p))
         .alt(|| parse_string(p))
@@ -173,129 +143,10 @@ mod tests {
     }
 
     #[test]
-    fn list() {
-        let (result, warnings) = partial_parse(
-            vec![
-                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
-                dummy_token(TokenType::Int(5)),
-                dummy_token(TokenType::Operator(Op::Split)),
-                dummy_token(TokenType::Int(6)),
-                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
-            ],
-            parse_literal,
-        );
-        assert_eq!(
-            result.unwrap().unwrap(),
-            Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Int(5))),
-                Expression::Literal(Literal(Value::Int(6)))
-            ]))
-        );
-
-        assert!(warnings.is_empty());
-    }
-
-    #[test]
-    fn list_empty() {
-        let (result, warnings) = partial_parse(
-            vec![
-                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
-                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
-                token(TokenType::Int(5), (2, 3), (2, 4)),
-            ],
-            parse_literal,
-        );
-        assert_eq!(result.unwrap().unwrap(), Literal(Value::List(vec![])));
-
-        assert!(warnings.is_empty());
-    }
-
-    #[test]
-    fn list_trailing_comma() {
-        let (result, warnings) = partial_parse(
-            vec![
-                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
-                dummy_token(TokenType::Int(5)),
-                dummy_token(TokenType::Operator(Op::Split)),
-                dummy_token(TokenType::Int(6)),
-                dummy_token(TokenType::Operator(Op::Split)),
-                token(TokenType::Operator(Op::CloseSquareBracket), (5, 6), (5, 7)),
-            ],
-            parse_literal,
-        );
-        assert_eq!(
-            result.unwrap().unwrap(),
-            Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Int(5))),
-                Expression::Literal(Literal(Value::Int(6)))
-            ]))
-        );
-
-        assert_eq!(warnings.len(), 1);
-        assert_eq!(
-            warnings[0],
-            ParserWarning {
-                warning: ParserWarningVariant::ExpectedExpression,
-                start: Position::new(5, 6),
-                stop: Position::new(5, 7)
-            }
-        );
-    }
-
-    #[test]
-    fn list_missing_bracket() {
-        let (result, warnings) = partial_parse(
-            vec![
-                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
-                dummy_token(TokenType::Int(5)),
-                dummy_token(TokenType::Operator(Op::Split)),
-                dummy_token(TokenType::Int(6)),
-                token(TokenType::Keyword(Kw::Let), (7, 3), (7, 6)),
-            ],
-            parse_literal,
-        );
-        assert_eq!(
-            result.unwrap().unwrap(),
-            Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Int(5))),
-                Expression::Literal(Literal(Value::Int(6)))
-            ]))
-        );
-
-        assert_eq!(warnings.len(), 1);
-        assert_eq!(
-            warnings[0],
-            ParserWarning {
-                warning: ParserWarningVariant::MissingClosingSquareBracket,
-                start: Position::new(7, 3),
-                stop: Position::new(7, 6)
-            }
-        );
-    }
-
-    #[test]
     fn out_of_tokens() {
-        let (result, warnings) = partial_parse(
-            vec![
-                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
-                token(TokenType::Int(5), (2, 3), (2, 4)),
-            ],
-            parse_literal,
-        );
-        assert_eq!(
-            result.unwrap().unwrap(),
-            Literal(Value::List(vec![
-                Expression::Literal(Literal(Value::Int(5)))
-            ]))
-        );
+        let (result, warnings) = partial_parse(vec![], parse_literal);
+        assert_eq!(result.unwrap(), None);
 
-        assert_eq!(
-            warnings[0],
-            ParserWarning {
-                warning: ParserWarningVariant::MissingClosingSquareBracket,
-                start: Position::new(2, 4),
-                stop: Position::new(2, 4)
-            }
-        );
+        assert!(warnings.is_empty());
     }
 }

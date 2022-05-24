@@ -16,10 +16,12 @@ mod utility;
 /// A value
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub enum Value {
-    List(Vec<Expression>),
     Int(i64),
     Float(f64),
     Bool(bool),
+    IntegerList(Vec<i64>),
+    FloatList(Vec<f64>),
+    BoolList(Vec<bool>),
     String(String),
 }
 

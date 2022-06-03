@@ -14,6 +14,7 @@ use parser::{
 mod lexer;
 mod parser;
 mod scannable;
+mod interpreter;
 
 /// Source of code
 enum InputType {

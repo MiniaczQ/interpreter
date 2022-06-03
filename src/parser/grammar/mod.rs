@@ -23,6 +23,7 @@ pub enum Value {
     FloatList(Vec<f64>),
     BoolList(Vec<bool>),
     String(String),
+    None,
 }
 
 /// Possible data types

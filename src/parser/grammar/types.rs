@@ -141,22 +141,6 @@ mod tests {
     }
 
     #[test]
-    fn string_no_list() {
-        let (result, warnings) = partial_parse(
-            vec![
-                dummy_token(TokenType::Keyword(Kw::String)),
-                dummy_token(TokenType::Operator(Op::OpenSquareBracket)),
-                dummy_token(TokenType::Operator(Op::CloseSquareBracket)),
-                dummy_token(TokenType::Keyword(Kw::Let)),
-            ],
-            parse_type,
-        );
-        assert_eq!(result.unwrap().unwrap(), DataType::String);
-
-        assert!(warnings.is_empty());
-    }
-
-    #[test]
     fn out_of_tokens() {
         let (result, warnings) = partial_parse(
             vec![token(TokenType::Keyword(Kw::Int), (2, 4), (2, 6))],

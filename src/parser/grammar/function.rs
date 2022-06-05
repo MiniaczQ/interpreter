@@ -1,23 +1,23 @@
 use super::{
-    code_block::{parse_code_block, CodeBlock},
+    expressions::statement::{parse_code_block, Statement},
     types::parse_type,
     utility::*,
     DataType,
 };
 
 /// A single function parameter
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Parameter {
     pub name: String,
     pub data_type: DataType,
 }
 
 /// Definition of a function
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct FunctionDefinition {
     pub identifier: String,
     pub params: Vec<Parameter>,
-    pub code_block: CodeBlock,
+    pub statements: Vec<Statement>,
     pub data_type: DataType,
 }
 
@@ -80,7 +80,7 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDefinition> {
     Ok(Some(FunctionDefinition {
         identifier,
         params,
-        code_block,
+        statements: code_block,
         data_type,
     }))
 }
@@ -88,7 +88,9 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDefinition> {
 #[cfg(test)]
 mod tests {
     use crate::parser::grammar::{
-        code_block::{CodeBlock, Statement},
+        expressions::{
+            function_call::FunctionCallExpr, identifier::IdentifierExpr, statement::Statement,
+        },
         function::{parse_function_def, FunctionDefinition, Parameter},
     };
 
@@ -145,15 +147,11 @@ mod tests {
                         data_type: grammar::DataType::Integer
                     }
                 ],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("d".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("d".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::Integer
             }
         );
@@ -185,15 +183,11 @@ mod tests {
             FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::Integer
             }
         );
@@ -229,15 +223,11 @@ mod tests {
                     name: "b".to_owned(),
                     data_type: grammar::DataType::Integer
                 }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::None
             }
         );
@@ -289,15 +279,11 @@ mod tests {
                     name: "b".to_owned(),
                     data_type: grammar::DataType::Integer
                 }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::None
             }
         );
@@ -340,15 +326,11 @@ mod tests {
                     name: "b".to_owned(),
                     data_type: grammar::DataType::Integer
                 }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::None
             }
         );

@@ -14,7 +14,7 @@ pub mod tests {
         token::TokenType, ParserError, ParserErrorVariant, ParserWarning, ParserWarningVariant,
     };
 
-    pub use grammar::{expressions::Expression, literals::Literal, Value};
+    pub use grammar::{expressions::Evaluable, Value};
 
     pub fn partial_parse<T>(
         tokens: Vec<Token>,

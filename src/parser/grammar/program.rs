@@ -8,7 +8,7 @@ use super::{
 };
 
 /// Main program
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Program {
     pub functions: HashMap<String, FunctionDefinition>, // HashMap-a
 }
@@ -36,7 +36,6 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::parser::grammar::{
-        code_block::CodeBlock,
         function::FunctionDefinition,
         program::{parse_program, Program},
     };
@@ -62,7 +61,7 @@ mod tests {
             FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
-                code_block: CodeBlock { statements: vec![] },
+                statements: vec![],
                 data_type: grammar::DataType::None,
             },
         );
@@ -115,7 +114,7 @@ mod tests {
             FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
-                code_block: CodeBlock { statements: vec![] },
+                statements: vec![],
                 data_type: grammar::DataType::None,
             },
         );

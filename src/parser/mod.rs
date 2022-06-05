@@ -41,7 +41,6 @@ pub enum ParserErrorVariant {
     VariableDeclarationMissingType,
     VariableDeclarationMissingIdentifier,
     VariableDeclarationMissingExpression,
-    ReturnMissingExpression,
     TooManyWarnings,
 }
 
@@ -192,10 +191,8 @@ mod tests {
 
     use crate::parser::{
         grammar::{
-            code_block::{CodeBlock, Statement},
-            expressions::Expression,
+            expressions::{declaration::DeclarationExpr, statement::Statement},
             function::FunctionDefinition,
-            literals::Literal,
             program::Program,
             DataType, Value,
         },
@@ -233,16 +230,11 @@ mod tests {
             FunctionDefinition {
                 identifier: "main".to_owned(),
                 params: vec![],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::Declaration {
-                            identifier: "a".to_owned(),
-                            data_type: DataType::Integer,
-                            expression: Box::new(Expression::Literal(Literal(Value::Int(5)))),
-                        }),
-                        Statement::Semicolon,
-                    ],
-                },
+                statements: vec![
+                    DeclarationExpr::new("a".to_owned(), DataType::Integer, Value::Int(5).into())
+                        .into(),
+                    Statement::Semicolon,
+                ],
                 data_type: DataType::None,
             },
         );
@@ -281,16 +273,11 @@ mod tests {
             FunctionDefinition {
                 identifier: "main".to_owned(),
                 params: vec![],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::Declaration {
-                            identifier: "a".to_owned(),
-                            data_type: DataType::Integer,
-                            expression: Box::new(Expression::Literal(Literal(Value::Int(5)))),
-                        }),
-                        Statement::Semicolon,
-                    ],
-                },
+                statements: vec![
+                    DeclarationExpr::new("a".to_owned(), DataType::Integer, Value::Int(5).into())
+                        .into(),
+                    Statement::Semicolon,
+                ],
                 data_type: DataType::None,
             },
         );

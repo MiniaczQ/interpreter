@@ -15,7 +15,7 @@ pub use crate::parser::{
 };
 
 // Other re-exports
-pub use serde::{Deserialize, Serialize};
+pub use serde::Serialize;
 
 // Named types
 pub type OptRes<T> = Result<Option<T>, ParserError>;

@@ -1,9 +1,8 @@
-mod context;
-mod expression;
-mod function;
-mod standard_library;
-mod test_utils;
-mod types;
+pub mod context;
+pub mod function;
+pub mod standard_library;
+pub mod test_utils;
+pub mod types;
 
 use std::{error::Error, fmt::Display};
 

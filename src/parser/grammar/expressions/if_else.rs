@@ -1,22 +1,53 @@
-use super::{
-    code_block::{parse_code_block, CodeBlock},
-    expressions::{parse_expression, Expression},
-    utility::*,
+use crate::{
+    interpreter::{context::Context, ExecutionError},
+    parser::grammar::Value,
 };
 
-/// If expression.
-/// The else block is optional.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct IfElse {
-    pub condition: Expression,
-    pub true_case: CodeBlock,
-    pub false_case: Option<CodeBlock>,
+use super::{
+    super::utility::*,
+    parse_expression,
+    statement::{parse_code_block, Statement},
+    Evaluable, Expression,
+};
+
+/// If [else] expression
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct IfElseExpr {
+    condition: Box<Expression>,
+    true_case: Vec<Statement>,
+    false_case: Option<Vec<Statement>>,
+}
+
+impl IfElseExpr {
+    pub fn new(
+        condition: Expression,
+        true_case: Vec<Statement>,
+        false_case: Option<Vec<Statement>>,
+    ) -> Self {
+        Self {
+            condition: Box::new(condition),
+            true_case,
+            false_case,
+        }
+    }
+}
+
+impl From<IfElseExpr> for Expression {
+    fn from(e: IfElseExpr) -> Self {
+        Expression::IfElse(e)
+    }
+}
+
+impl Evaluable for IfElseExpr {
+    fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
+        todo!()
+    }
 }
 
 /// if_expression
 ///     = KW_IF, expression, code_block, [KW_ELSE, code_block]
 ///     ;
-pub fn parse_if_else(p: &mut Parser) -> OptRes<IfElse> {
+pub fn parse_if_else_expression(p: &mut Parser) -> OptRes<Expression> {
     if !p.keyword(Kw::If)? {
         return Ok(None);
     }
@@ -27,28 +58,22 @@ pub fn parse_if_else(p: &mut Parser) -> OptRes<IfElse> {
     } else {
         None
     };
-    Ok(Some(IfElse {
-        condition,
-        true_case,
-        false_case,
-    }))
+    Ok(Some(
+        IfElseExpr::new(condition, true_case, false_case).into(),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::{
-        code_block::CodeBlock,
-        conditional::{parse_if_else, IfElse},
-        expressions::Expression,
-    };
+    use crate::parser::grammar::expressions::{if_else::IfElseExpr, parse_expression};
 
-    use super::super::test_utils::tests::*;
+    use super::super::super::test_utils::tests::*;
 
     #[test]
     fn miss() {
         let (result, warnings) = partial_parse(
             vec![dummy_token(TokenType::Identifier("aaa".to_owned()))],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(result, Ok(None));
 
@@ -65,15 +90,11 @@ mod tests {
                 dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
                 dummy_token(TokenType::Keyword(Kw::If)),
             ],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            IfElse {
-                condition: Expression::Literal(Literal(Value::Bool(true))),
-                true_case: CodeBlock { statements: vec![] },
-                false_case: None,
-            }
+            IfElseExpr::new(Value::Bool(true).into(), vec![], None,).into()
         );
 
         assert!(warnings.is_empty());
@@ -91,15 +112,11 @@ mod tests {
                 dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
                 dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
             ],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            IfElse {
-                condition: Expression::Literal(Literal(Value::Bool(true))),
-                true_case: CodeBlock { statements: vec![] },
-                false_case: Some(CodeBlock { statements: vec![] }),
-            }
+            IfElseExpr::new(Value::Bool(true).into(), vec![], Some(vec![]),).into()
         );
 
         assert!(warnings.is_empty());
@@ -117,7 +134,7 @@ mod tests {
                 dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
                 dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
             ],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(
             result.unwrap_err(),
@@ -140,7 +157,7 @@ mod tests {
                 dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
                 dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
             ],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(
             result.unwrap_err(),
@@ -164,7 +181,7 @@ mod tests {
                 token(TokenType::Keyword(Kw::Else), (9, 6), (9, 10)),
                 dummy_token(TokenType::Keyword(Kw::If)),
             ],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(
             result.unwrap_err(),
@@ -181,7 +198,7 @@ mod tests {
     fn out_of_tokens() {
         let (result, warnings) = partial_parse(
             vec![token(TokenType::Keyword(Kw::If), (1, 2), (1, 4))],
-            parse_if_else,
+            parse_expression,
         );
         assert_eq!(
             result.unwrap_err(),

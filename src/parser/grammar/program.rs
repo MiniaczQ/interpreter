@@ -3,14 +3,14 @@ use std::{collections::HashMap, fmt::Display};
 use ron::ser::PrettyConfig;
 
 use super::{
-    function::{parse_function_def, FunctionDef},
+    function::{parse_function_def, FunctionDefinition},
     utility::*,
 };
 
 /// Main program
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct Program {
-    pub functions: HashMap<String, FunctionDef>, // HashMap-a
+    pub functions: HashMap<String, FunctionDefinition>, // HashMap-a
 }
 
 impl Display for Program {
@@ -37,7 +37,7 @@ mod tests {
 
     use crate::parser::grammar::{
         code_block::CodeBlock,
-        function::FunctionDef,
+        function::FunctionDefinition,
         program::{parse_program, Program},
     };
 
@@ -59,7 +59,7 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "a".to_owned(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
                 code_block: CodeBlock { statements: vec![] },
@@ -112,7 +112,7 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "a".to_owned(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
                 code_block: CodeBlock { statements: vec![] },

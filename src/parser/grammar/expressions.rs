@@ -11,7 +11,6 @@ use super::{
 };
 
 /// All possible types of expression
-/// W dokumentacji jest AST visit, visitor
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Expression {
     Literal(Literal),

@@ -194,7 +194,7 @@ mod tests {
         grammar::{
             code_block::{CodeBlock, Statement},
             expressions::Expression,
-            function::FunctionDef,
+            function::FunctionDefinition,
             literals::Literal,
             program::Program,
             DataType, Value,
@@ -230,7 +230,7 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "main".to_owned(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "main".to_owned(),
                 params: vec![],
                 code_block: CodeBlock {
@@ -278,7 +278,7 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "main".to_owned(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "main".to_owned(),
                 params: vec![],
                 code_block: CodeBlock {

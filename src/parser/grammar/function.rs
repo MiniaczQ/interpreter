@@ -14,7 +14,7 @@ pub struct Parameter {
 
 /// Definition of a function
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct FunctionDef {
+pub struct FunctionDefinition {
     pub identifier: String,
     pub params: Vec<Parameter>,
     pub code_block: CodeBlock,
@@ -57,7 +57,7 @@ fn parse_parameters(p: &mut Parser) -> Res<Vec<Parameter>> {
 /// function_definition
 ///     = KW_FN, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
 ///     ;
-pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
+pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDefinition> {
     if !p.keyword(Kw::Fn)? {
         return Ok(None);
     }
@@ -77,7 +77,7 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
         DataType::None
     };
     let code_block = parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::FunctionMissingBody))?;
-    Ok(Some(FunctionDef {
+    Ok(Some(FunctionDefinition {
         identifier,
         params,
         code_block,
@@ -89,7 +89,7 @@ pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
 mod tests {
     use crate::parser::grammar::{
         code_block::{CodeBlock, Statement},
-        function::{parse_function_def, FunctionDef, Parameter},
+        function::{parse_function_def, FunctionDefinition, Parameter},
     };
 
     use super::super::test_utils::tests::*;
@@ -133,7 +133,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![
                     Parameter {
@@ -182,7 +182,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
                 code_block: CodeBlock {
@@ -223,7 +223,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![Parameter {
                     name: "b".to_owned(),
@@ -283,7 +283,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![Parameter {
                     name: "b".to_owned(),
@@ -334,7 +334,7 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![Parameter {
                     name: "b".to_owned(),

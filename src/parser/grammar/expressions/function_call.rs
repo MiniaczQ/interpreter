@@ -1,5 +1,5 @@
 use crate::{
-    interpreter::{context::Context, ExecutionError},
+    interpreter::{context::Context, ExecutionError, ExecutionErrorVariant},
     parser::grammar::Value,
 };
 
@@ -32,7 +32,18 @@ impl From<FunctionCallExpr> for Expression {
 
 impl Evaluable for FunctionCallExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
-        todo!()
+        if let Expression::Identifier(identifier) = &*self.identifier {
+            let arguments: Vec<Value> = self
+                .arguments
+                .iter()
+                .map(|v| v.eval(ctx))
+                .collect::<Result<_, ExecutionError>>()?;
+            ctx.call_function(&identifier.0, arguments)
+        } else {
+            Err(ExecutionError::new(
+                ExecutionErrorVariant::ExpectedIdentifier,
+            ))
+        }
     }
 }
 

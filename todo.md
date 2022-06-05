@@ -29,5 +29,5 @@
 6.2. ~~Write the impl details~~
 
 7. Refactor  
-7.1. Tidy up expr enum  
+7.1. ~~Tidy up expr enum~~  
 7.2. ~~Tidy up operations~~

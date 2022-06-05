@@ -4,7 +4,7 @@ pub mod tests {
 
     use crate::{
         interpreter::{
-            context::Context, function::Callable, types::validate_types, ExecutionError,
+            callable::Callable, context::Context, types::validate_types, ExecutionError,
             ExecutionErrorVariant,
         },
         parser::grammar::Value,
@@ -66,6 +66,14 @@ pub mod tests {
                     ExecutionErrorVariant::FunctionDoesNotExist,
                 ))
             }
+        }
+
+        fn name(&self) -> String {
+            unreachable!()
+        }
+
+        fn run(self) -> Result<Value, ExecutionError> {
+            unreachable!()
         }
     }
 }

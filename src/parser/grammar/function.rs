@@ -1,8 +1,20 @@
+use std::{cell::RefCell, collections::HashMap};
+
+use crate::interpreter::{
+    callable::Callable,
+    context::Context,
+    types::{validate_type, validate_types},
+    ExecutionError, ExecutionErrorVariant,
+};
+
 use super::{
-    expressions::statement::{parse_code_block, Statement},
+    expressions::{
+        statement::{parse_code_block, Statement},
+        Evaluable,
+    },
     types::parse_type,
     utility::*,
-    DataType,
+    DataType, Value,
 };
 
 /// A single function parameter
@@ -19,6 +31,109 @@ pub struct FunctionDefinition {
     pub params: Vec<Parameter>,
     pub statements: Vec<Statement>,
     pub data_type: DataType,
+}
+
+pub struct FunctionCtx<'a> {
+    name: String,
+    parent: &'a dyn Context,
+    variables: RefCell<HashMap<String, Value>>,
+}
+
+impl Context for FunctionCtx<'_> {
+    fn get_variable(&self, id: &str) -> Result<Value, ExecutionError> {
+        if let Some(v) = self.variables.borrow().get(id) {
+            Ok(v.clone())
+        } else {
+            self.parent.get_variable(id)
+        }
+    }
+
+    fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+            validate_types(v, &value)?;
+            *v = value;
+            Ok(())
+        } else {
+            self.parent.set_variable(id, value)
+        }
+    }
+
+    fn new_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if self.variables.borrow().contains_key(id) {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::VariableAlreadyExists,
+            ));
+        }
+        self.variables.borrow_mut().insert(id.to_owned(), value);
+        Ok(())
+    }
+
+    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        self.parent.call_function(id, args)
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
+    }
+
+    fn run(self) -> Result<Value, ExecutionError> {
+        todo!()
+    }
+}
+
+impl<'a> FunctionCtx<'a> {
+    pub fn new(ctx: &'a dyn Context, name: String, variables: HashMap<String, Value>) -> Self {
+        Self {
+            name,
+            parent: ctx,
+            variables: RefCell::new(variables),
+        }
+    }
+}
+
+impl FunctionDefinition {
+    fn alternate_statements(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
+        let mut returning = Value::None;
+        let mut semicolon = false;
+
+        for statement in &self.statements {
+            match (statement, semicolon) {
+                (Statement::Expression(_), true) => {
+                    return Err(ExecutionError::new(
+                        ExecutionErrorVariant::ExpectedSemicolon,
+                    ))
+                }
+                (Statement::Expression(expression), false) => {
+                    returning = expression.eval(ctx)?;
+                }
+                (Statement::Semicolon, true) => {
+                    semicolon = false;
+                }
+                (Statement::Semicolon, false) => {}
+            }
+        }
+
+        Ok(returning)
+    }
+}
+
+impl Callable for FunctionDefinition {
+    fn call(&self, ctx: &dyn Context, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        if self.params.len() != args.len() {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::InvalidArgumentCount,
+            ));
+        }
+        let mut variables = HashMap::new();
+        for (parameter, argument) in self.params.iter().zip(args.into_iter()) {
+            validate_type(parameter.data_type, &argument)?;
+            variables.insert(parameter.name.clone(), argument);
+        }
+        let ctx = FunctionCtx::new(ctx, self.identifier.clone(), variables);
+        let returning = self.alternate_statements(&ctx)?;
+        validate_type(self.data_type, &returning)?;
+        Ok(returning)
+    }
 }
 
 /// parameter

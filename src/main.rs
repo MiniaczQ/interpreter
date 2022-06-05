@@ -8,13 +8,13 @@ use std::{
 
 use lexer::{lexem::LexerWarning, Lexer};
 use parser::{
-    grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
+    grammar::program::ProgramCtx, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
 };
 
+mod interpreter;
 mod lexer;
 mod parser;
 mod scannable;
-mod interpreter;
 
 /// Source of code
 enum InputType {
@@ -103,7 +103,7 @@ fn app() -> Result<(), AppError> {
 fn parse(
     reader: Box<dyn BufRead>,
 ) -> (
-    Result<Program, ParserError>,
+    Result<ProgramCtx, ParserError>,
     Vec<ParserWarning>,
     Vec<LexerWarning>,
 ) {
@@ -162,7 +162,7 @@ mod tests {
         lexer::lexem::{LexerWarning, LexerWarningVariant},
         parse,
         parser::{
-            grammar::program::Program, ParserError, ParserErrorVariant, ParserWarning,
+            grammar::program::ProgramCtx, ParserError, ParserErrorVariant, ParserWarning,
             ParserWarningVariant,
         },
     };
@@ -170,7 +170,7 @@ mod tests {
     fn read(
         path: &str,
     ) -> (
-        Result<Program, ParserError>,
+        Result<ProgramCtx, ParserError>,
         Vec<ParserWarning>,
         Vec<LexerWarning>,
     ) {

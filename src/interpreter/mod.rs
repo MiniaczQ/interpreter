@@ -1,16 +1,14 @@
+pub mod callable;
 pub mod context;
-pub mod function;
 pub mod standard_library;
 pub mod test_utils;
 pub mod types;
 
 use std::{error::Error, fmt::Display};
 
-use crate::parser::grammar::program::Program;
+use crate::parser::grammar::program::ProgramCtx;
 
-use self::context::ProgramCtx;
-
-pub fn run(p: Program) {
+pub fn run(p: ProgramCtx) {
     let ctx: ProgramCtx = p.into();
 }
 
@@ -33,6 +31,11 @@ pub enum ExecutionErrorVariant {
     CastFailed,
 
     DivisionByZero,
+
+    MissingMainFunction,
+    ExpectedIdentifier,
+
+    ExpectedSemicolon,
 }
 
 #[derive(Debug, PartialEq, Eq)]

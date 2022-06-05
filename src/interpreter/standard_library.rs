@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap, io::Write};
 
 use crate::parser::grammar::Value;
 
-use super::{context::Context, function::Callable, ExecutionError, ExecutionErrorVariant};
+use super::{callable::Callable, context::Context, ExecutionError, ExecutionErrorVariant};
 
 /// Prints all of the provided arguments to the generic `Write`r.
 /// Arguments can be of any type and count.
@@ -238,6 +238,14 @@ impl Context for StandardCtx {
         }
         self.std_functions.get(id).unwrap().call(self, args)
     }
+
+    fn name(&self) -> String {
+        unreachable!()
+    }
+
+    fn run(self) -> Result<Value, ExecutionError> {
+        unreachable!()
+    }
 }
 
 #[cfg(test)]
@@ -246,7 +254,7 @@ mod tests {
 
     use crate::{
         interpreter::{
-            function::Callable,
+            callable::Callable,
             standard_library::{CastFloat, CastInt, CastString, GetType, ListLength, ListPush},
             test_utils::tests::TestCtx,
             ExecutionErrorVariant,

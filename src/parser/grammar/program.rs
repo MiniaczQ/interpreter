@@ -1,19 +1,89 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::HashMap,
+    fmt::{Debug, Display},
+};
 
 use ron::ser::PrettyConfig;
+
+use crate::interpreter::{
+    callable::Callable, context::Context, standard_library::StandardCtx, ExecutionError,
+    ExecutionErrorVariant,
+};
 
 use super::{
     function::{parse_function_def, FunctionDefinition},
     utility::*,
+    DataType, Value,
 };
 
 /// Main program
-#[derive(Debug, Serialize, PartialEq)]
-pub struct Program {
-    pub functions: HashMap<String, FunctionDefinition>, // HashMap-a
+#[derive(Serialize)]
+pub struct ProgramCtx {
+    #[serde(skip_serializing)]
+    std_ctx: StandardCtx,
+    functions: HashMap<String, FunctionDefinition>,
 }
 
-impl Display for Program {
+impl Debug for ProgramCtx {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProgramCtx")
+            .field("functions", &self.functions)
+            .finish()
+    }
+}
+
+impl PartialEq for ProgramCtx {
+    fn eq(&self, other: &Self) -> bool {
+        self.functions == other.functions
+    }
+}
+
+impl ProgramCtx {
+    pub fn new(functions: HashMap<String, FunctionDefinition>) -> Self {
+        Self {
+            std_ctx: StandardCtx::new(),
+            functions,
+        }
+    }
+}
+
+impl Context for ProgramCtx {
+    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        if let Some(func) = self.functions.get(id) {
+            func.call(self, args)
+        } else {
+            self.std_ctx.call_function(id, args)
+        }
+    }
+
+    fn name(&self) -> String {
+        unreachable!()
+    }
+
+    fn escalate_error(&self, e: ExecutionError) -> ExecutionError {
+        e
+    }
+
+    fn run(self) -> Result<Value, ExecutionError> {
+        if let Some(main) = self.functions.get("main") {
+            if main.data_type != DataType::None {
+                return Err(ExecutionError::new(ExecutionErrorVariant::InvalidType));
+            }
+            if !main.params.is_empty() {
+                return Err(ExecutionError::new(
+                    ExecutionErrorVariant::InvalidArgumentCount,
+                ));
+            }
+            main.call(&self, vec![])
+        } else {
+            Err(ExecutionError::new(
+                ExecutionErrorVariant::MissingMainFunction,
+            ))
+        }
+    }
+}
+
+impl Display for ProgramCtx {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let config = PrettyConfig::new();
         f.write_str(&ron::ser::to_string_pretty(self, config).unwrap())
@@ -23,12 +93,12 @@ impl Display for Program {
 /// function_definitions
 ///     = {function_definition}
 ///     ;
-pub fn parse_program(p: &mut Parser) -> Res<Program> {
+pub fn parse_program(p: &mut Parser) -> Res<ProgramCtx> {
     let mut functions = HashMap::new();
     while let Some(function) = parse_function_def(p)? {
         functions.insert(function.identifier.clone(), function);
     }
-    Ok(Program { functions })
+    Ok(ProgramCtx::new(functions))
 }
 
 #[cfg(test)]
@@ -37,7 +107,7 @@ mod tests {
 
     use crate::parser::grammar::{
         function::FunctionDefinition,
-        program::{parse_program, Program},
+        program::{parse_program, ProgramCtx},
     };
 
     use super::super::test_utils::tests::*;
@@ -65,7 +135,7 @@ mod tests {
                 data_type: grammar::DataType::None,
             },
         );
-        assert_eq!(result.unwrap(), Program { functions });
+        assert_eq!(result.unwrap(), ProgramCtx::new(functions));
 
         assert!(warnings.is_empty());
     }
@@ -74,7 +144,7 @@ mod tests {
     fn non_empty() {
         let (result, warnings) = partial_parse_non_opt(vec![], parse_program);
         let functions = HashMap::new();
-        assert_eq!(result.unwrap(), Program { functions });
+        assert_eq!(result.unwrap(), ProgramCtx::new(functions));
 
         assert!(warnings.is_empty());
     }
@@ -118,7 +188,7 @@ mod tests {
                 data_type: grammar::DataType::None,
             },
         );
-        assert_eq!(result.unwrap(), Program { functions });
+        assert_eq!(result.unwrap(), ProgramCtx::new(functions));
 
         assert_eq!(warnings.len(), 1);
         assert_eq!(

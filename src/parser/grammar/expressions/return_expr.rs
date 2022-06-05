@@ -50,7 +50,10 @@ pub fn parse_return(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{parse_expression, return_expr::ReturnExpr};
+    use crate::{
+        interpreter::test_utils::tests::TestCtx,
+        parser::grammar::expressions::{parse_expression, return_expr::ReturnExpr},
+    };
 
     use super::super::super::test_utils::tests::*;
 
@@ -84,5 +87,25 @@ mod tests {
         assert_eq!(result.unwrap().unwrap(), ReturnExpr::empty().into());
 
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn eval_ok() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ReturnExpr::new(Value::Int(7).into()).eval(&ctx).unwrap(),
+            Value::None
+        );
+        assert_eq!(ctx.returning.take().unwrap(), Value::Int(7));
+    }
+
+    #[test]
+    fn eval_empty() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ReturnExpr::empty().eval(&ctx).unwrap(),
+            Value::None
+        );
+        assert_eq!(ctx.returning.take().unwrap(), Value::None);
     }
 }

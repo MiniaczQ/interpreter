@@ -13,6 +13,7 @@ pub mod tests {
     pub struct TestCtx {
         pub functions: HashMap<String, Box<dyn Callable>>,
         pub variables: RefCell<HashMap<String, Value>>,
+        pub returning: RefCell<Option<Value>>,
     }
 
     impl TestCtx {
@@ -20,6 +21,7 @@ pub mod tests {
             Self {
                 functions: HashMap::new(),
                 variables: RefCell::new(HashMap::new()),
+                returning: RefCell::new(None),
             }
         }
     }
@@ -59,7 +61,7 @@ pub mod tests {
         }
 
         fn ret(&self, value: Value) {
-            unreachable!()
+            *self.returning.borrow_mut() = Some(value);
         }
 
         fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {

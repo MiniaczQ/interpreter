@@ -36,6 +36,7 @@ pub struct FunctionDefinition {
 pub struct FunctionCtx<'a> {
     name: String,
     parent: &'a dyn Context,
+    returning: RefCell<Option<Value>>,
     variables: RefCell<HashMap<String, Value>>,
 }
 
@@ -68,16 +69,16 @@ impl Context for FunctionCtx<'_> {
         Ok(())
     }
 
+    fn ret(&self, value: Value) {
+        *self.returning.borrow_mut() = Some(value);
+    }
+
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
         self.parent.call_function(id, args)
     }
 
     fn name(&self) -> String {
         self.name.clone()
-    }
-
-    fn run(self) -> Result<Value, ExecutionError> {
-        todo!()
     }
 }
 
@@ -86,13 +87,14 @@ impl<'a> FunctionCtx<'a> {
         Self {
             name,
             parent: ctx,
+            returning: RefCell::new(None),
             variables: RefCell::new(variables),
         }
     }
 }
 
 impl FunctionDefinition {
-    fn alternate_statements(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
+    fn alternate_statements(&self, ctx: &FunctionCtx) -> Result<(), ExecutionError> {
         let mut returning = Value::None;
         let mut semicolon = false;
 
@@ -111,9 +113,16 @@ impl FunctionDefinition {
                 }
                 (Statement::Semicolon, false) => {}
             }
+            if ctx.returning.borrow().is_some() {
+                break;
+            }
         }
 
-        Ok(returning)
+        if ctx.returning.borrow().is_none() {
+            *ctx.returning.borrow_mut() = Some(returning);
+        }
+
+        Ok(())
     }
 }
 
@@ -130,7 +139,8 @@ impl Callable for FunctionDefinition {
             variables.insert(parameter.name.clone(), argument);
         }
         let ctx = FunctionCtx::new(ctx, self.identifier.clone(), variables);
-        let returning = self.alternate_statements(&ctx)?;
+        self.alternate_statements(&ctx)?;
+        let returning = ctx.returning.replace(None).unwrap();
         validate_type(self.data_type, &returning)?;
         Ok(returning)
     }

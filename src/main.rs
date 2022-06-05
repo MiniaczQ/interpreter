@@ -8,7 +8,7 @@ use std::{
 
 use lexer::{lexem::LexerWarning, Lexer};
 use parser::{
-    grammar::program::ProgramCtx, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
+    grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
 };
 
 mod interpreter;
@@ -103,7 +103,7 @@ fn app() -> Result<(), AppError> {
 fn parse(
     reader: Box<dyn BufRead>,
 ) -> (
-    Result<ProgramCtx, ParserError>,
+    Result<Program, ParserError>,
     Vec<ParserWarning>,
     Vec<LexerWarning>,
 ) {
@@ -162,7 +162,7 @@ mod tests {
         lexer::lexem::{LexerWarning, LexerWarningVariant},
         parse,
         parser::{
-            grammar::program::ProgramCtx, ParserError, ParserErrorVariant, ParserWarning,
+            grammar::program::Program, ParserError, ParserErrorVariant, ParserWarning,
             ParserWarningVariant,
         },
     };
@@ -170,7 +170,7 @@ mod tests {
     fn read(
         path: &str,
     ) -> (
-        Result<ProgramCtx, ParserError>,
+        Result<Program, ParserError>,
         Vec<ParserWarning>,
         Vec<LexerWarning>,
     ) {

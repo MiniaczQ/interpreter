@@ -26,7 +26,13 @@ impl From<ReturnExpr> for Expression {
 
 impl Evaluable for ReturnExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
-        todo!()
+        if let Some(value) = &self.0 {
+            let value = value.eval(ctx)?;
+            ctx.ret(value);
+        } else {
+            ctx.ret(Value::None);
+        }
+        Ok(Value::None)
     }
 }
 

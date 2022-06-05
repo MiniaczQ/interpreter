@@ -14,6 +14,7 @@ use super::{
 pub struct CodeBlockExpr(Vec<Statement>);
 
 impl CodeBlockExpr {
+    #[allow(dead_code)]
     pub fn new(statements: Vec<Statement>) -> Self {
         Self(statements)
     }

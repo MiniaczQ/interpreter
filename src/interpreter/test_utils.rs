@@ -58,6 +58,10 @@ pub mod tests {
             }
         }
 
+        fn ret(&self, value: Value) {
+            unreachable!()
+        }
+
         fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
             if let Some(func) = self.functions.get(id) {
                 func.call(self, args)
@@ -69,10 +73,6 @@ pub mod tests {
         }
 
         fn name(&self) -> String {
-            unreachable!()
-        }
-
-        fn run(self) -> Result<Value, ExecutionError> {
             unreachable!()
         }
     }

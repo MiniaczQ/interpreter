@@ -2,7 +2,7 @@
 
 2. Move context impls to respective parser obj  
 2.1. ~~Standard ctx~~  
-2.2. Program ctx  
+2.2. ~~Program ctx~~  
 2.3. Function ctx  
 2.4. For, While, IfElse, Block ctx
 
@@ -18,11 +18,10 @@
 4.5. ~~append~~
 
 5. Write tests  
-5.1. Evaluate expression  
-5.1.1. ~~Basic~~  
-5.1.2. Context based  
-5.2. Whole program  
-5.3. ~~Std lib~~
+5.1. ~~Basic expressions~~  
+5.2. Context based expressions  
+5.3. Whole program  
+5.4. ~~Std lib~~
 
 6. Write documentation  
 6.1. Fix grammar  

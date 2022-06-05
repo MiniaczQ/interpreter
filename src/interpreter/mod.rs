@@ -6,10 +6,10 @@ pub mod types;
 
 use std::{error::Error, fmt::Display};
 
-use crate::parser::grammar::program::ProgramCtx;
+use crate::parser::grammar::program::Program;
 
-pub fn run(p: ProgramCtx) {
-    let ctx: ProgramCtx = p.into();
+pub fn run(p: Program) {
+    let ctx: Program = p.into();
 }
 
 #[derive(Debug, PartialEq, Eq)]

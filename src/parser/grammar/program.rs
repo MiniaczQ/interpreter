@@ -18,13 +18,13 @@ use super::{
 
 /// Main program
 #[derive(Serialize)]
-pub struct ProgramCtx {
+pub struct Program {
     #[serde(skip_serializing)]
     std_ctx: StandardCtx,
     functions: HashMap<String, FunctionDefinition>,
 }
 
-impl Debug for ProgramCtx {
+impl Debug for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ProgramCtx")
             .field("functions", &self.functions)
@@ -32,36 +32,18 @@ impl Debug for ProgramCtx {
     }
 }
 
-impl PartialEq for ProgramCtx {
+impl PartialEq for Program {
     fn eq(&self, other: &Self) -> bool {
         self.functions == other.functions
     }
 }
 
-impl ProgramCtx {
+impl Program {
     pub fn new(functions: HashMap<String, FunctionDefinition>) -> Self {
         Self {
             std_ctx: StandardCtx::new(),
             functions,
         }
-    }
-}
-
-impl Context for ProgramCtx {
-    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
-        if let Some(func) = self.functions.get(id) {
-            func.call(self, args)
-        } else {
-            self.std_ctx.call_function(id, args)
-        }
-    }
-
-    fn name(&self) -> String {
-        unreachable!()
-    }
-
-    fn escalate_error(&self, e: ExecutionError) -> ExecutionError {
-        e
     }
 
     fn run(self) -> Result<Value, ExecutionError> {
@@ -83,7 +65,29 @@ impl Context for ProgramCtx {
     }
 }
 
-impl Display for ProgramCtx {
+impl Context for Program {
+    fn escalate_error(&self, r: Result<Value, ExecutionError>) -> Result<Value, ExecutionError> {
+        r
+    }
+
+    fn ret(&self, _value: Value) {
+        unreachable!()
+    }
+
+    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        if let Some(func) = self.functions.get(id) {
+            func.call(self, args)
+        } else {
+            self.std_ctx.call_function(id, args)
+        }
+    }
+
+    fn name(&self) -> String {
+        unreachable!()
+    }
+}
+
+impl Display for Program {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let config = PrettyConfig::new();
         f.write_str(&ron::ser::to_string_pretty(self, config).unwrap())
@@ -93,12 +97,12 @@ impl Display for ProgramCtx {
 /// function_definitions
 ///     = {function_definition}
 ///     ;
-pub fn parse_program(p: &mut Parser) -> Res<ProgramCtx> {
+pub fn parse_program(p: &mut Parser) -> Res<Program> {
     let mut functions = HashMap::new();
     while let Some(function) = parse_function_def(p)? {
         functions.insert(function.identifier.clone(), function);
     }
-    Ok(ProgramCtx::new(functions))
+    Ok(Program::new(functions))
 }
 
 #[cfg(test)]
@@ -107,7 +111,7 @@ mod tests {
 
     use crate::parser::grammar::{
         function::FunctionDefinition,
-        program::{parse_program, ProgramCtx},
+        program::{parse_program, Program},
     };
 
     use super::super::test_utils::tests::*;
@@ -135,7 +139,7 @@ mod tests {
                 data_type: grammar::DataType::None,
             },
         );
-        assert_eq!(result.unwrap(), ProgramCtx::new(functions));
+        assert_eq!(result.unwrap(), Program::new(functions));
 
         assert!(warnings.is_empty());
     }
@@ -144,7 +148,7 @@ mod tests {
     fn non_empty() {
         let (result, warnings) = partial_parse_non_opt(vec![], parse_program);
         let functions = HashMap::new();
-        assert_eq!(result.unwrap(), ProgramCtx::new(functions));
+        assert_eq!(result.unwrap(), Program::new(functions));
 
         assert!(warnings.is_empty());
     }
@@ -188,7 +192,7 @@ mod tests {
                 data_type: grammar::DataType::None,
             },
         );
-        assert_eq!(result.unwrap(), ProgramCtx::new(functions));
+        assert_eq!(result.unwrap(), Program::new(functions));
 
         assert_eq!(warnings.len(), 1);
         assert_eq!(

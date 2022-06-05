@@ -1,6 +1,6 @@
 #[allow(dead_code)]
 pub mod tests {
-    use crate::{parser::grammar::program::ProgramCtx, scannable::Scannable};
+    use crate::{parser::grammar::program::Program, scannable::Scannable};
 
     use super::super::{
         position::Position,
@@ -64,7 +64,7 @@ pub mod tests {
         }
     }
 
-    pub fn parse(tokens: Vec<Token>) -> (Result<ProgramCtx, ParserError>, Vec<ParserWarning>) {
+    pub fn parse(tokens: Vec<Token>) -> (Result<Program, ParserError>, Vec<ParserWarning>) {
         let scanner = DummyScanner::new(tokens);
         let mut parser = Parser::new_with_defaults(scanner);
         (parser.parse(), parser.get_warnings())

@@ -230,6 +230,10 @@ impl Context for StandardCtx {
         ))
     }
 
+    fn ret(&self, value: Value) {
+        unreachable!()
+    }
+
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
         if !self.std_functions.contains_key(id) {
             return Err(ExecutionError::new(
@@ -240,10 +244,6 @@ impl Context for StandardCtx {
     }
 
     fn name(&self) -> String {
-        unreachable!()
-    }
-
-    fn run(self) -> Result<Value, ExecutionError> {
         unreachable!()
     }
 }

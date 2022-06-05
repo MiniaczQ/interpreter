@@ -4,7 +4,7 @@ use std::fmt::Display;
 use crate::scannable::Scannable;
 
 use self::{
-    grammar::program::{parse_program, ProgramCtx},
+    grammar::program::{parse_program, Program},
     position::Position,
     token::Token,
 };
@@ -128,7 +128,7 @@ impl<'a> Parser<'a> {
 
     /// Attempts to parse.
     /// Returns either a `Program` or critical parsing error.
-    pub fn parse(&mut self) -> Result<ProgramCtx, ParserError> {
+    pub fn parse(&mut self) -> Result<Program, ParserError> {
         parse_program(self)
     }
 
@@ -193,7 +193,7 @@ mod tests {
         grammar::{
             expressions::{declaration::DeclarationExpr, statement::Statement},
             function::FunctionDefinition,
-            program::ProgramCtx,
+            program::Program,
             DataType, Value,
         },
         test_utils::tests::{dummy_token, parse, token},
@@ -239,7 +239,7 @@ mod tests {
             },
         );
 
-        let program = ProgramCtx::new(functions);
+        let program = Program::new(functions);
 
         assert_eq!(program, result.unwrap());
     }
@@ -282,7 +282,7 @@ mod tests {
             },
         );
 
-        let program = ProgramCtx::new(functions);
+        let program = Program::new(functions);
 
         assert_eq!(program, result.unwrap());
     }

@@ -39,7 +39,7 @@ impl Evaluable for DeclarationExpr {
 }
 
 /// variable_declaration
-///     = KW_LET, IDENTIFIER, COLON, TYPE_SIGNATURE, type, ASSIGN
+///     = KW_LET, IDENTIFIER, COLON, TYPE_SIGNATURE, type, ASSIGN, control_flow_expression
 ///     ;
 pub fn parse_variable_declaration(p: &mut Parser) -> OptRes<Expression> {
     if !p.keyword(Kw::Let)? {
@@ -250,7 +250,7 @@ mod tests {
             expr("a", DataType::Integer, Value::Int(8))
                 .eval(&ctx)
                 .unwrap(),
-            Value::None
+            Value::Int(8)
         );
         assert_eq!(ctx.variables.borrow_mut().get("a").unwrap(), &Value::Int(8));
     }

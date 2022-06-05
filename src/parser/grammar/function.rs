@@ -9,7 +9,7 @@ use crate::interpreter::{
 
 use super::{
     expressions::{
-        statement::{parse_code_block, Statement},
+        statement::{alternate_statements, parse_code_block, Statement},
         Evaluable,
     },
     types::parse_type,
@@ -24,13 +24,55 @@ pub struct Parameter {
     pub data_type: DataType,
 }
 
+impl Parameter {
+    pub fn new(name: String, data_type: DataType) -> Self {
+        Self { name, data_type }
+    }
+}
+
 /// Definition of a function
 #[derive(Debug, Serialize, PartialEq)]
 pub struct FunctionDefinition {
     pub identifier: String,
     pub params: Vec<Parameter>,
-    pub statements: Vec<Statement>,
+    statements: Vec<Statement>,
     pub data_type: DataType,
+}
+
+impl FunctionDefinition {
+    pub fn new(
+        identifier: String,
+        params: Vec<Parameter>,
+        statements: Vec<Statement>,
+        data_type: DataType,
+    ) -> Self {
+        Self {
+            identifier,
+            params,
+            statements,
+            data_type,
+        }
+    }
+}
+
+impl Callable for FunctionDefinition {
+    fn call(&self, ctx: &dyn Context, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        if self.params.len() != args.len() {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::InvalidArgumentCount,
+            ));
+        }
+        let mut variables = HashMap::new();
+        for (parameter, argument) in self.params.iter().zip(args.into_iter()) {
+            validate_type(parameter.data_type, &argument)?;
+            variables.insert(parameter.name.clone(), argument);
+        }
+        let ctx = FunctionCtx::new(ctx, self.identifier.clone(), variables);
+        let returning = alternate_statements(&self.statements, &ctx)?;
+        let returning = ctx.returning.replace(None).unwrap_or(returning);
+        validate_type(self.data_type, &returning)?;
+        Ok(returning)
+    }
 }
 
 pub struct FunctionCtx<'a> {
@@ -73,6 +115,10 @@ impl Context for FunctionCtx<'_> {
         *self.returning.borrow_mut() = Some(value);
     }
 
+    fn is_ret(&self) -> bool {
+        self.returning.borrow().is_some()
+    }
+
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
         self.parent.call_function(id, args)
     }
@@ -90,59 +136,6 @@ impl<'a> FunctionCtx<'a> {
             returning: RefCell::new(None),
             variables: RefCell::new(variables),
         }
-    }
-}
-
-impl FunctionDefinition {
-    fn alternate_statements(&self, ctx: &FunctionCtx) -> Result<(), ExecutionError> {
-        let mut returning = Value::None;
-        let mut semicolon = false;
-
-        for statement in &self.statements {
-            match (statement, semicolon) {
-                (Statement::Expression(_), true) => {
-                    return Err(ExecutionError::new(
-                        ExecutionErrorVariant::ExpectedSemicolon,
-                    ))
-                }
-                (Statement::Expression(expression), false) => {
-                    returning = expression.eval(ctx)?;
-                }
-                (Statement::Semicolon, true) => {
-                    semicolon = false;
-                }
-                (Statement::Semicolon, false) => {}
-            }
-            if ctx.returning.borrow().is_some() {
-                break;
-            }
-        }
-
-        if ctx.returning.borrow().is_none() {
-            *ctx.returning.borrow_mut() = Some(returning);
-        }
-
-        Ok(())
-    }
-}
-
-impl Callable for FunctionDefinition {
-    fn call(&self, ctx: &dyn Context, args: Vec<Value>) -> Result<Value, ExecutionError> {
-        if self.params.len() != args.len() {
-            return Err(ExecutionError::new(
-                ExecutionErrorVariant::InvalidArgumentCount,
-            ));
-        }
-        let mut variables = HashMap::new();
-        for (parameter, argument) in self.params.iter().zip(args.into_iter()) {
-            validate_type(parameter.data_type, &argument)?;
-            variables.insert(parameter.name.clone(), argument);
-        }
-        let ctx = FunctionCtx::new(ctx, self.identifier.clone(), variables);
-        self.alternate_statements(&ctx)?;
-        let returning = ctx.returning.replace(None).unwrap();
-        validate_type(self.data_type, &returning)?;
-        Ok(returning)
     }
 }
 

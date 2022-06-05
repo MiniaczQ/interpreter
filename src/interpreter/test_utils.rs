@@ -64,6 +64,10 @@ pub mod tests {
             *self.returning.borrow_mut() = Some(value);
         }
 
+        fn is_ret(&self) -> bool {
+            self.returning.borrow().is_some()
+        }
+
         fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
             if let Some(func) = self.functions.get(id) {
                 func.call(self, args)

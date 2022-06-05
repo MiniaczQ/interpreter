@@ -227,16 +227,16 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "main".to_owned(),
-            FunctionDefinition {
-                identifier: "main".to_owned(),
-                params: vec![],
-                statements: vec![
+            FunctionDefinition::new(
+                "main".to_owned(),
+                vec![],
+                vec![
                     DeclarationExpr::new("a".to_owned(), DataType::Integer, Value::Int(5).into())
                         .into(),
                     Statement::Semicolon,
                 ],
-                data_type: DataType::None,
-            },
+                DataType::None,
+            ),
         );
 
         let program = Program::new(functions);
@@ -270,16 +270,16 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "main".to_owned(),
-            FunctionDefinition {
-                identifier: "main".to_owned(),
-                params: vec![],
-                statements: vec![
+            FunctionDefinition::new(
+                "main".to_owned(),
+                vec![],
+                vec![
                     DeclarationExpr::new("a".to_owned(), DataType::Integer, Value::Int(5).into())
                         .into(),
                     Statement::Semicolon,
                 ],
-                data_type: DataType::None,
-            },
+                DataType::None,
+            ),
         );
 
         let program = Program::new(functions);

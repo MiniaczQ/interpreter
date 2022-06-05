@@ -74,6 +74,10 @@ impl Context for Program {
         unreachable!()
     }
 
+    fn is_ret(&self) -> bool {
+        unreachable!()
+    }
+
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
         if let Some(func) = self.functions.get(id) {
             func.call(self, args)
@@ -112,6 +116,7 @@ mod tests {
     use crate::parser::grammar::{
         function::FunctionDefinition,
         program::{parse_program, Program},
+        DataType,
     };
 
     use super::super::test_utils::tests::*;
@@ -132,12 +137,7 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "a".to_owned(),
-            FunctionDefinition {
-                identifier: "a".to_owned(),
-                params: vec![],
-                statements: vec![],
-                data_type: grammar::DataType::None,
-            },
+            FunctionDefinition::new("a".to_owned(), vec![], vec![], DataType::None),
         );
         assert_eq!(result.unwrap(), Program::new(functions));
 
@@ -185,12 +185,7 @@ mod tests {
         let mut functions = HashMap::new();
         functions.insert(
             "a".to_owned(),
-            FunctionDefinition {
-                identifier: "a".to_owned(),
-                params: vec![],
-                statements: vec![],
-                data_type: grammar::DataType::None,
-            },
+            FunctionDefinition::new("a".to_owned(), vec![], vec![], DataType::None),
         );
         assert_eq!(result.unwrap(), Program::new(functions));
 

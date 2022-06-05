@@ -94,8 +94,20 @@ pub fn parse_identifier_or_function_call_expression(p: &mut Parser) -> OptRes<Ex
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{
-        function_call::FunctionCallExpr, identifier::IdentifierExpr, parse_expression,
+    use crate::{
+        interpreter::{test_utils::tests::TestCtx, ExecutionErrorVariant},
+        parser::grammar::{
+            expressions::{
+                binary::{BinaryExpr, BinaryOperator},
+                function_call::FunctionCallExpr,
+                identifier::IdentifierExpr,
+                parse_expression,
+                return_expr::ReturnExpr,
+                statement::Statement,
+            },
+            function::{FunctionDefinition, Parameter},
+            DataType,
+        },
     };
 
     use super::super::super::test_utils::tests::*;
@@ -219,6 +231,300 @@ mod tests {
                 start: Position::new(13, 20),
                 stop: Position::new(13, 21)
             }
+        );
+    }
+
+    #[test]
+    fn eval_nothing() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![],
+                vec![],
+                DataType::None,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(IdentifierExpr::new("a".to_owned()).into(), vec![])
+                .eval(&ctx)
+                .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_identity_ending_expr() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![Parameter::new("b".to_owned(), DataType::Integer)],
+                vec![
+                    Value::Int(7).into(),
+                    Statement::Semicolon,
+                    IdentifierExpr::new("b".to_owned()).into(),
+                ],
+                DataType::Integer,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Int(10).into()]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::Int(10)
+        );
+    }
+
+    #[test]
+    fn eval_many_args() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![
+                    Parameter::new("b".to_owned(), DataType::Integer),
+                    Parameter::new("c".to_owned(), DataType::Integer),
+                ],
+                vec![BinaryExpr::new(
+                    IdentifierExpr::new("b".to_owned()).into(),
+                    BinaryOperator::Addition,
+                    IdentifierExpr::new("c".to_owned()).into(),
+                )
+                .into()],
+                DataType::Integer,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Int(10).into(), Value::Int(10).into()]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::Int(20)
+        );
+    }
+
+    #[test]
+    fn eval_wrong_param_type() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![Parameter::new("b".to_owned(), DataType::Integer)],
+                vec![],
+                DataType::Integer,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Float(10.0).into()]
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::InvalidType
+        );
+    }
+
+    #[test]
+    fn eval_wrong_param_count() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![
+                    Parameter::new("b".to_owned(), DataType::Integer),
+                    Parameter::new("c".to_owned(), DataType::Integer),
+                ],
+                vec![],
+                DataType::Integer,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Int(10).into()]
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::InvalidArgumentCount
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![
+                    Value::Int(10).into(),
+                    Value::Int(10).into(),
+                    Value::Int(10).into()
+                ]
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::InvalidArgumentCount
+        );
+    }
+
+    #[test]
+    fn eval_identity_return() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![Parameter::new("b".to_owned(), DataType::Integer)],
+                vec![
+                    Value::Int(7).into(),
+                    Statement::Semicolon,
+                    ReturnExpr::new(IdentifierExpr::new("b".to_owned()).into()).into(),
+                    Statement::Semicolon,
+                    Value::Int(7).into(),
+                ],
+                DataType::Integer,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Int(10).into()]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::Int(10)
+        );
+    }
+
+    #[test]
+    fn eval_return_nothing() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![Parameter::new("b".to_owned(), DataType::Integer)],
+                vec![
+                    Value::Int(7).into(),
+                    Statement::Semicolon,
+                    ReturnExpr::empty().into(),
+                    Statement::Semicolon,
+                    Value::Int(7).into(),
+                ],
+                DataType::None,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Int(10).into()]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_too_many_semicolons() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![],
+                vec![
+                    Statement::Semicolon,
+                    Statement::Semicolon,
+                    Statement::Semicolon,
+                ],
+                DataType::None,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(IdentifierExpr::new("a".to_owned()).into(), vec![])
+                .eval(&ctx)
+                .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_too_many_expressions() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![],
+                vec![Value::Int(8).into(), Value::Int(8).into()],
+                DataType::None,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(IdentifierExpr::new("a".to_owned()).into(), vec![])
+                .eval(&ctx)
+                .unwrap_err()
+                .variant,
+            ExecutionErrorVariant::ExpectedSemicolon
+        );
+    }
+
+    #[test]
+    fn eval_invalid_type() {
+        let mut ctx = TestCtx::new();
+        ctx.functions.insert(
+            "a".to_owned(),
+            Box::new(FunctionDefinition::new(
+                "a".to_owned(),
+                vec![Parameter::new("b".to_owned(), DataType::Integer)],
+                vec![IdentifierExpr::new("b".to_owned()).into()],
+                DataType::Float,
+            )),
+        );
+        assert_eq!(
+            FunctionCallExpr::new(
+                IdentifierExpr::new("a".to_owned()).into(),
+                vec![Value::Int(10).into()]
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::InvalidType
+        );
+    }
+
+    #[test]
+    fn eval_missing() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            FunctionCallExpr::new(IdentifierExpr::new("a".to_owned()).into(), vec![])
+                .eval(&ctx)
+                .unwrap_err()
+                .variant,
+            ExecutionErrorVariant::FunctionDoesNotExist
+        );
+    }
+
+    #[test]
+    fn eval_wrong_expression() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            FunctionCallExpr::new(Value::Int(8).into(), vec![])
+                .eval(&ctx)
+                .unwrap_err()
+                .variant,
+            ExecutionErrorVariant::ExpectedIdentifier
         );
     }
 }

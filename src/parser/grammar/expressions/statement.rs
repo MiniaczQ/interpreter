@@ -1,4 +1,9 @@
-use super::{parse_expression, Expression};
+use crate::{
+    interpreter::{context::Context, ExecutionError, ExecutionErrorVariant},
+    parser::grammar::{function::FunctionCtx, Value},
+};
+
+use super::{parse_expression, Evaluable, Expression};
 
 use super::super::utility::*;
 
@@ -52,4 +57,36 @@ pub fn parse_code_block(p: &mut Parser) -> OptRes<Vec<Statement>> {
         p.warn(WarnVar::MissingClosingCurlyBracket)?;
     }
     Ok(Some(statements))
+}
+
+pub fn alternate_statements(
+    statements: &Vec<Statement>,
+    ctx: &dyn Context,
+) -> Result<Value, ExecutionError> {
+    let mut returning = Value::None;
+    let mut semicolon = false;
+
+    for statement in statements {
+        match (statement, semicolon) {
+            (Statement::Expression(_), true) => {
+                return Err(ExecutionError::new(
+                    ExecutionErrorVariant::ExpectedSemicolon,
+                ))
+            }
+            (Statement::Expression(expression), false) => {
+                returning = expression.eval(ctx)?;
+                semicolon = true;
+            }
+            (Statement::Semicolon, true) => {
+                returning = Value::None;
+                semicolon = false;
+            }
+            (Statement::Semicolon, false) => {}
+        }
+        if ctx.is_ret() {
+            break;
+        }
+    }
+
+    Ok(returning)
 }

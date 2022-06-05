@@ -36,7 +36,7 @@ impl Evaluable for ReturnExpr {
     }
 }
 
-/// KW_RETURN
+/// return = KW_RETURN, [control_flow_expression]
 pub fn parse_return(p: &mut Parser) -> OptRes<Expression> {
     if !p.keyword(Kw::Return)? {
         return Ok(None);
@@ -102,10 +102,7 @@ mod tests {
     #[test]
     fn eval_empty() {
         let ctx = TestCtx::new();
-        assert_eq!(
-            ReturnExpr::empty().eval(&ctx).unwrap(),
-            Value::None
-        );
+        assert_eq!(ReturnExpr::empty().eval(&ctx).unwrap(), Value::None);
         assert_eq!(ctx.returning.take().unwrap(), Value::None);
     }
 }

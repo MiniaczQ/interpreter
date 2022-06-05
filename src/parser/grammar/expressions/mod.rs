@@ -124,8 +124,8 @@ fn parse_control_flow_expression(p: &mut Parser) -> OptRes<Expression> {
 }
 
 /// expression
-///     = KW_RETURN, control_flow_expression
-///     | variable_declaration, control_flow_expression
+///     = return
+///     | variable_declaration,
 ///     | control_flow_expression
 ///     ;
 pub fn parse_expression(p: &mut Parser) -> OptRes<Expression> {

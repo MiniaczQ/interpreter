@@ -22,16 +22,14 @@ pub trait Context {
             ExecutionErrorVariant::VariableDoesNotExist,
         ))
     }
-    fn escalate_error(
-        &self,
-        r: Result<Value, ExecutionError>,
-    ) -> Result<Value, ExecutionError> {
+    fn escalate_error(&self, r: Result<Value, ExecutionError>) -> Result<Value, ExecutionError> {
         r.map_err(|mut e| {
             e.contexts.push(self.name());
             e
         })
     }
     fn ret(&self, value: Value);
+    fn is_ret(&self) -> bool;
     fn call_function(&self, identifier: &str, args: Vec<Value>) -> Result<Value, ExecutionError>;
     fn name(&self) -> String;
 }
@@ -72,6 +70,10 @@ impl Context for BlockCtx<'_> {
 
     fn ret(&self, value: Value) {
         self.parent.ret(value);
+    }
+
+    fn is_ret(&self) -> bool {
+        self.parent.is_ret()
     }
 
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {

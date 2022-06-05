@@ -234,6 +234,10 @@ impl Context for StandardCtx {
         unreachable!()
     }
 
+    fn is_ret(&self) -> bool {
+        unreachable!()
+    }
+
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
         if !self.std_functions.contains_key(id) {
             return Err(ExecutionError::new(

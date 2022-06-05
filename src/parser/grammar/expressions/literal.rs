@@ -10,6 +10,7 @@ use super::{super::utility::*, Evaluable, Expression};
 pub struct LiteralExpr(Value);
 
 impl LiteralExpr {
+    #[allow(dead_code)]
     pub fn new(v: Value) -> Self {
         Self(v)
     }
@@ -28,7 +29,7 @@ impl From<Value> for Expression {
 }
 
 impl Evaluable for LiteralExpr {
-    fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
+    fn eval(&self, _ctx: &dyn Context) -> Result<Value, ExecutionError> {
         Ok(self.0.clone())
     }
 }
@@ -85,7 +86,8 @@ pub fn parse_literal_expression(p: &mut Parser) -> OptRes<Expression> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        interpreter::test_utils::tests::TestCtx, parser::grammar::expressions::parse_expression,
+        interpreter::test_utils::tests::TestCtx,
+        parser::grammar::expressions::{literal::parse_literal_expression, parse_expression},
     };
 
     use super::{super::super::test_utils::tests::*, LiteralExpr};
@@ -94,7 +96,7 @@ mod tests {
     fn parse_miss() {
         let (result, warnings) = partial_parse(
             vec![dummy_token(TokenType::Keyword(Kw::Let))],
-            parse_expression,
+            parse_literal_expression,
         );
         assert_eq!(result, Ok(None));
 

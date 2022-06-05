@@ -33,8 +33,8 @@ impl Evaluable for DeclarationExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
         let value = self.expression.eval(ctx)?;
         validate_type(self.data_type, &value)?;
-        ctx.new_variable(&self.identifier, value)?;
-        Ok(Value::None)
+        ctx.new_variable(&self.identifier, value.clone())?;
+        Ok(value)
     }
 }
 

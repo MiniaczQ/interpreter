@@ -61,7 +61,9 @@ pub fn parse_for_expression(p: &mut Parser) -> OptRes<Expression> {
 #[cfg(test)]
 mod tests {
     use crate::parser::grammar::expressions::{
-        for_expr::ForExpr, identifier::IdentifierExpr, parse_expression,
+        for_expr::{parse_for_expression, ForExpr},
+        identifier::IdentifierExpr,
+        parse_expression,
     };
 
     use super::super::super::test_utils::tests::*;
@@ -70,7 +72,7 @@ mod tests {
     fn parse_miss() {
         let (result, warnings) = partial_parse(
             vec![dummy_token(TokenType::Keyword(Kw::Let))],
-            parse_expression,
+            parse_for_expression,
         );
         assert_eq!(result, Ok(None));
 

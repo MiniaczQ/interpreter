@@ -52,7 +52,10 @@ impl Evaluable for WhileExpr {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{parse_expression, while_expr::WhileExpr};
+    use crate::parser::grammar::expressions::{
+        parse_expression,
+        while_expr::{parse_while_expression, WhileExpr},
+    };
 
     use super::super::super::test_utils::tests::*;
 
@@ -60,7 +63,7 @@ mod tests {
     fn miss_while_loop() {
         let (result, warnings) = partial_parse(
             vec![dummy_token(TokenType::Keyword(Kw::Let))],
-            parse_expression,
+            parse_while_expression,
         );
         assert_eq!(result, Ok(None));
 

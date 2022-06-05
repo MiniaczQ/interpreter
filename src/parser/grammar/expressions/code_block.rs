@@ -39,7 +39,7 @@ pub fn parse_code_block_expression(p: &mut Parser) -> OptRes<Expression> {
 #[cfg(test)]
 mod tests {
     use crate::parser::grammar::expressions::{
-        code_block::{CodeBlockExpr, Statement},
+        code_block::{parse_code_block_expression, CodeBlockExpr, Statement},
         identifier::IdentifierExpr,
         parse_expression,
     };
@@ -50,7 +50,7 @@ mod tests {
     fn parse_miss() {
         let (result, warnings) = partial_parse(
             vec![dummy_token(TokenType::Operator(Op::CloseCurlyBracket))],
-            parse_expression,
+            parse_code_block_expression,
         );
         assert_eq!(result, Ok(None));
 

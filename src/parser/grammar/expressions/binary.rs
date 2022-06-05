@@ -317,7 +317,7 @@ mod tests {
             BinaryExpr::new(
                 BinaryExpr::new(literal.clone().into(), operator, literal.clone().into()).into(),
                 operator,
-                literal.clone().into()
+                literal.into()
             )
             .into()
         );

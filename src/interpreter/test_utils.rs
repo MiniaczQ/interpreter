@@ -4,7 +4,8 @@ pub mod tests {
 
     use crate::{
         interpreter::{
-            context::Context, function::Callable, ExecutionError, ExecutionErrorVariant,
+            context::Context, function::Callable, types::validate_types, ExecutionError,
+            ExecutionErrorVariant,
         },
         parser::grammar::Value,
     };
@@ -36,6 +37,7 @@ pub mod tests {
 
         fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
             if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+                validate_types(v, &value)?;
                 *v = value;
                 Ok(())
             } else {

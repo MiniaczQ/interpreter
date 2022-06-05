@@ -65,7 +65,10 @@ pub fn parse_if_else_expression(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{if_else::IfElseExpr, parse_expression};
+    use crate::parser::grammar::expressions::{
+        if_else::{parse_if_else_expression, IfElseExpr},
+        parse_expression,
+    };
 
     use super::super::super::test_utils::tests::*;
 
@@ -73,7 +76,7 @@ mod tests {
     fn miss() {
         let (result, warnings) = partial_parse(
             vec![dummy_token(TokenType::Identifier("aaa".to_owned()))],
-            parse_expression,
+            parse_if_else_expression,
         );
         assert_eq!(result, Ok(None));
 

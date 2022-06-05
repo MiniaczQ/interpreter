@@ -7,7 +7,7 @@ use super::{super::utility::*, Evaluable, Expression};
 
 /// Identifier expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct IdentifierExpr(String);
+pub struct IdentifierExpr(pub String);
 
 impl IdentifierExpr {
     pub fn new(identifier: String) -> Self {

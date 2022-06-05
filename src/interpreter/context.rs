@@ -2,7 +2,7 @@ use std::{cell::RefCell, collections::HashMap};
 
 use crate::parser::grammar::{function::FunctionDefinition, program::Program, Value};
 
-use super::{ExecutionError, ExecutionErrorVariant};
+use super::{ExecutionError, ExecutionErrorVariant, types::validate_types};
 
 pub trait Context {
     fn get_variable(&self, id: &str) -> Result<Value, ExecutionError>;
@@ -65,6 +65,7 @@ impl Context for FunctionCtx<'_> {
 
     fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
         if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+            validate_types(v, &value)?;
             *v = value;
             Ok(())
         } else {
@@ -103,6 +104,7 @@ impl Context for BlockCtx<'_> {
 
     fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
         if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+            validate_types(v, &value)?;
             *v = value;
             Ok(())
         } else {

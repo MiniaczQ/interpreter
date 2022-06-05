@@ -1,5 +1,5 @@
 use crate::{
-    interpreter::{context::Context, ExecutionError},
+    interpreter::{context::Context, ExecutionError, ExecutionErrorVariant},
     parser::grammar::Value,
 };
 
@@ -31,7 +31,15 @@ impl From<AssignmentExpr> for Expression {
 
 impl Evaluable for AssignmentExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
-        todo!()
+        let value = self.expression.eval(ctx)?;
+        if let Expression::Identifier(identifier_expr) = &*self.identifier {
+            ctx.set_variable(&identifier_expr.0, value.clone())?;
+            Ok(value)
+        } else {
+            Err(ExecutionError::new(
+                ExecutionErrorVariant::VariableDoesNotExist,
+            ))
+        }
     }
 }
 
@@ -52,8 +60,11 @@ pub fn parse_variable_assignment_expression(p: &mut Parser) -> OptRes<Expression
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{
-        assignment::AssignmentExpr, identifier::IdentifierExpr, parse_expression,
+    use crate::{
+        interpreter::{test_utils::tests::TestCtx, ExecutionErrorVariant},
+        parser::grammar::expressions::{
+            assignment::AssignmentExpr, identifier::IdentifierExpr, parse_expression,
+        },
     };
 
     use super::super::super::test_utils::tests::*;
@@ -100,5 +111,37 @@ mod tests {
         );
 
         assert!(warnings.is_empty());
+    }
+
+    fn expr(identifier: &str, value: Value) -> AssignmentExpr {
+        AssignmentExpr::new(
+            IdentifierExpr::new(identifier.to_owned()).into(),
+            value.into(),
+        )
+    }
+
+    #[test]
+    fn eval_ok() {
+        let ctx = TestCtx::new();
+        ctx.variables
+            .borrow_mut()
+            .insert("a".to_owned(), Value::Int(8));
+        assert_eq!(
+            expr("a", Value::Int(10)).eval(&ctx).unwrap(),
+            Value::Int(10)
+        );
+        assert_eq!(
+            ctx.variables.borrow_mut().get("a").unwrap(),
+            &Value::Int(10)
+        );
+    }
+
+    #[test]
+    fn eval_fail() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            expr("a", Value::Int(8)).eval(&ctx).unwrap_err().variant,
+            ExecutionErrorVariant::VariableDoesNotExist
+        );
     }
 }

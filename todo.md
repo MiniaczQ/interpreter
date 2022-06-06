@@ -4,7 +4,7 @@
 2.1. ~~Standard ctx~~  
 2.2. ~~Program ctx~~  
 2.3. ~~Function ctx~~  
-2.4. For, While, IfElse, Block
+2.4. For, While, IfElse, ~~Block~~
 
 3. Evaluable expressions
 3.1. ~~Basic ones~~  

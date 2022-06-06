@@ -102,11 +102,11 @@ pub fn parse_code_block_expression(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{
+    use crate::{parser::grammar::expressions::{
         code_block::{parse_code_block_expression, CodeBlockExpr, Statement},
         identifier::IdentifierExpr,
-        parse_expression,
-    };
+        parse_expression, return_expr::ReturnExpr,
+    }, interpreter::test_utils::tests::TestCtx};
 
     use super::super::super::test_utils::tests::*;
 
@@ -237,5 +237,50 @@ mod tests {
         );
 
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn eval_empty() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            CodeBlockExpr::new(vec![])
+            .eval(&ctx)
+            .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_return_last() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            CodeBlockExpr::new(vec![Value::Int(8).into()])
+            .eval(&ctx)
+            .unwrap(),
+            Value::Int(8)
+        );
+    }
+
+    #[test]
+    fn eval_last_semicolon() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            CodeBlockExpr::new(vec![Value::Int(8).into(), Statement::Semicolon])
+            .eval(&ctx)
+            .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_forward_return() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            CodeBlockExpr::new(vec![ReturnExpr::new(Value::Int(5).into()).into(), Statement::Semicolon, Value::Int(8).into()])
+            .eval(&ctx)
+            .unwrap(),
+            Value::None
+        );
+        assert_eq!(ctx.returning.take().unwrap(), Value::Int(5));
     }
 }

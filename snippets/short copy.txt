@@ -1,0 +1,10 @@
+fn test(c: int) -> int {
+    {
+        return c
+    }
+}
+
+// do nothing
+fn main() {
+    print(test(3))
+}

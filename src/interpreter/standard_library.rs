@@ -7,6 +7,7 @@ use crate::parser::grammar::Value;
 
 use super::{callable::Callable, context::Context, ExecutionError, ExecutionErrorVariant};
 
+#[allow(dead_code)]
 pub enum PrintOuts {
     Std(Stdout),
     Vec(Vec<u8>),

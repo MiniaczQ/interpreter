@@ -163,6 +163,9 @@ fn parse_parameters(p: &mut Parser) -> Res<Vec<Parameter>> {
         params.push(param);
         while p.operator(Op::Split)? {
             if let Some(param) = parse_parameter(p)? {
+                if params.iter().any(|par: &Parameter| par.name == param.name) {
+                    return Err(p.error(ErroVar::DuplicateParameter));
+                }
                 params.push(param);
             } else {
                 p.warn(WarnVar::ExpectedParameter)?;
@@ -271,6 +274,43 @@ mod tests {
                     Statement::Semicolon
                 ],
                 data_type: grammar::DataType::Integer
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn duplicate_parameters() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Fn)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Identifier("b".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::Identifier("b".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                token(TokenType::Keyword(Kw::Int), (10 ,5), (10, 6)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::Arrow)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Identifier("d".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_function_def,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::DuplicateParameter,
+                pos: Position::new(10, 6),
             }
         );
 

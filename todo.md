@@ -4,7 +4,7 @@
 2.1. ~~Standard ctx~~  
 2.2. ~~Program ctx~~  
 2.3. ~~Function ctx~~  
-2.4. For, While, IfElse, Block ctx
+2.4. For, While, IfElse, Block
 
 3. Evaluable expressions
 3.1. ~~Basic ones~~  
@@ -27,6 +27,6 @@
 6.1. Fix grammar  
 6.2. ~~Write the impl details~~
 
-7. Refactor  
+7. ~~Refactor~~  
 7.1. ~~Tidy up expr enum~~  
 7.2. ~~Tidy up operations~~

@@ -8,10 +8,7 @@ use crate::interpreter::{
 };
 
 use super::{
-    expressions::{
-        statement::{alternate_statements, parse_code_block, Statement},
-        Evaluable,
-    },
+    expressions::statement::{alternate_statements, parse_code_block, Statement},
     types::parse_type,
     utility::*,
     DataType, Value,
@@ -25,6 +22,7 @@ pub struct Parameter {
 }
 
 impl Parameter {
+    #[allow(dead_code)]
     pub fn new(name: String, data_type: DataType) -> Self {
         Self { name, data_type }
     }
@@ -40,6 +38,7 @@ pub struct FunctionDefinition {
 }
 
 impl FunctionDefinition {
+    #[allow(dead_code)]
     pub fn new(
         identifier: String,
         params: Vec<Parameter>,
@@ -293,7 +292,7 @@ mod tests {
                 dummy_token(TokenType::Operator(Op::Split)),
                 dummy_token(TokenType::Identifier("b".to_owned())),
                 dummy_token(TokenType::Operator(Op::Colon)),
-                token(TokenType::Keyword(Kw::Int), (10 ,5), (10, 6)),
+                token(TokenType::Keyword(Kw::Int), (10, 5), (10, 6)),
                 dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
                 dummy_token(TokenType::Operator(Op::Arrow)),
                 dummy_token(TokenType::Keyword(Kw::Int)),

@@ -1,6 +1,6 @@
 use crate::{
     interpreter::{context::Context, ExecutionError, ExecutionErrorVariant},
-    parser::grammar::{function::FunctionCtx, Value},
+    parser::grammar::Value,
 };
 
 use super::{parse_expression, Evaluable, Expression};

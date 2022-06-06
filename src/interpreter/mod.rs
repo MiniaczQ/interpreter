@@ -6,12 +6,6 @@ pub mod types;
 
 use std::{error::Error, fmt::Display};
 
-use crate::parser::grammar::program::Program;
-
-pub fn run(p: Program) {
-    let ctx: Program = p.into();
-}
-
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionErrorVariant {
     VariableDoesNotExist,
@@ -20,7 +14,6 @@ pub enum ExecutionErrorVariant {
 
     UnsupportedBinaryOperation,
     UnsupportedUnaryOperation,
-    ExpectedVariable,
     UnsupportedListAccess,
     NonIntegerIndex,
     IndexOutOfBounds,

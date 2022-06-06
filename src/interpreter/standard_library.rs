@@ -1,16 +1,40 @@
-use std::{cell::RefCell, collections::HashMap, io::Write};
+use std::{
+    cell::RefCell,
+    io::{Stdout, Write},
+};
 
 use crate::parser::grammar::Value;
 
 use super::{callable::Callable, context::Context, ExecutionError, ExecutionErrorVariant};
 
+pub enum PrintOuts {
+    Std(Stdout),
+    Vec(Vec<u8>),
+}
+
+impl Write for PrintOuts {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        match self {
+            PrintOuts::Std(s) => s.write(buf),
+            PrintOuts::Vec(s) => s.write(buf),
+        }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        match self {
+            PrintOuts::Std(s) => s.flush(),
+            PrintOuts::Vec(s) => s.flush(),
+        }
+    }
+}
+
 /// Prints all of the provided arguments to the generic `Write`r.
 /// Arguments can be of any type and count.
 ///
 /// Never fails.
-pub struct Print<T: Write>(pub RefCell<T>);
+pub struct Print(pub RefCell<PrintOuts>);
 
-impl<T: Write> Callable for Print<T> {
+impl Callable for Print {
     fn call(&self, _ctx: &dyn Context, args: Vec<Value>) -> Result<Value, ExecutionError> {
         if !args.is_empty() {
             for arg in args {
@@ -190,24 +214,28 @@ impl Callable for ListPush {
 }
 
 pub struct StandardCtx {
-    std_functions: HashMap<String, Box<dyn Callable>>,
+    pub std_print: Print,
+    pub std_cast_int: CastInt,
+    pub std_cast_float: CastFloat,
+    pub std_cast_string: CastString,
+    pub std_cast_bool: CastBool,
+    pub std_type: GetType,
+    pub std_length: ListLength,
+    pub std_push: ListPush,
 }
 
 impl StandardCtx {
-    pub fn new() -> Self {
-        let mut std_functions: HashMap<String, Box<dyn Callable>> = HashMap::new();
-        std_functions.insert(
-            "print".to_owned(),
-            Box::new(Print(RefCell::new(std::io::stdout()))),
-        );
-        std_functions.insert("cast_int".to_owned(), Box::new(CastInt));
-        std_functions.insert("cast_float".to_owned(), Box::new(CastFloat));
-        std_functions.insert("cast_string".to_owned(), Box::new(CastString));
-        std_functions.insert("cast_bool".to_owned(), Box::new(CastBool));
-        std_functions.insert("type".to_owned(), Box::new(GetType));
-        std_functions.insert("length".to_owned(), Box::new(ListLength));
-        std_functions.insert("push".to_owned(), Box::new(ListPush));
-        Self { std_functions }
+    pub fn new(writeable: PrintOuts) -> Self {
+        Self {
+            std_print: Print(RefCell::new(writeable)),
+            std_cast_int: CastInt,
+            std_cast_float: CastFloat,
+            std_cast_string: CastString,
+            std_cast_bool: CastBool,
+            std_type: GetType,
+            std_length: ListLength,
+            std_push: ListPush,
+        }
     }
 }
 
@@ -230,7 +258,7 @@ impl Context for StandardCtx {
         ))
     }
 
-    fn ret(&self, value: Value) {
+    fn ret(&self, _value: Value) {
         unreachable!()
     }
 
@@ -239,12 +267,19 @@ impl Context for StandardCtx {
     }
 
     fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
-        if !self.std_functions.contains_key(id) {
-            return Err(ExecutionError::new(
+        match id {
+            "print" => self.std_print.call(self, args),
+            "cast_int" => self.std_cast_int.call(self, args),
+            "cast_float" => self.std_cast_float.call(self, args),
+            "cast_string" => self.std_cast_string.call(self, args),
+            "cast_bool" => self.std_cast_bool.call(self, args),
+            "type" => self.std_type.call(self, args),
+            "length" => self.std_length.call(self, args),
+            "append" => self.std_push.call(self, args),
+            _ => Err(ExecutionError::new(
                 ExecutionErrorVariant::FunctionDoesNotExist,
-            ));
+            )),
         }
-        self.std_functions.get(id).unwrap().call(self, args)
     }
 
     fn name(&self) -> String {
@@ -259,7 +294,9 @@ mod tests {
     use crate::{
         interpreter::{
             callable::Callable,
-            standard_library::{CastFloat, CastInt, CastString, GetType, ListLength, ListPush},
+            standard_library::{
+                CastFloat, CastInt, CastString, GetType, ListLength, ListPush, PrintOuts,
+            },
             test_utils::tests::TestCtx,
             ExecutionErrorVariant,
         },
@@ -270,7 +307,7 @@ mod tests {
 
     #[test]
     fn print_ok() {
-        let print_func = Print(RefCell::new(Vec::<u8>::new()));
+        let print_func = Print(RefCell::new(PrintOuts::Vec(Vec::new())));
         let ctx = TestCtx::new();
         print_func
             .call(
@@ -279,8 +316,9 @@ mod tests {
             )
             .unwrap();
         print_func.call(&ctx, vec![]).unwrap();
-        let buffer = print_func.0.take();
-        assert_eq!(std::str::from_utf8(&buffer).unwrap(), "3\nabc\nNone\n\n");
+        if let PrintOuts::Vec(buffer) = print_func.0.replace(PrintOuts::Vec(vec![])) {
+            assert_eq!(std::str::from_utf8(&buffer).unwrap(), "3\nabc\nNone\n\n");
+        }
     }
 
     #[test]

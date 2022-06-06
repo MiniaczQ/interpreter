@@ -139,7 +139,10 @@ fn run(input: InputType) -> Result<(), AppError> {
     let (result, parser_warnings, lexer_warnings) = parse(reader);
 
     match result {
-        Ok(program) => println!("{}", program),
+        Ok(program) => match program.run() {
+            Ok(_) => println!("Program ended."),
+            Err(error) => eprintln!("{}", error),
+        },
         Err(error) => eprintln!("{}", error),
     }
 
@@ -159,6 +162,7 @@ mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
     use crate::{
+        interpreter::standard_library::PrintOuts,
         lexer::lexem::{LexerWarning, LexerWarningVariant},
         parse,
         parser::{
@@ -238,5 +242,17 @@ mod tests {
             lex_warns[0].warning,
             LexerWarningVariant::InvalidSequence("#$@".to_owned())
         );
+    }
+
+    #[test]
+    fn run_short() {
+        let (res, _, _) = read("snippets/short.txt");
+        let program = res.unwrap();
+        program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]));
+        program.run().unwrap();
+        if let PrintOuts::Vec(buffer) = program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]))
+        {
+            assert_eq!(&buffer, b"17\n")
+        }
     }
 }

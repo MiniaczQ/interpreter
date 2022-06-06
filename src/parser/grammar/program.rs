@@ -1,12 +1,12 @@
 use std::{
     collections::HashMap,
-    fmt::{Debug, Display},
+    fmt::{Debug, Display}, io::stdout,
 };
 
 use ron::ser::PrettyConfig;
 
 use crate::interpreter::{
-    callable::Callable, context::Context, standard_library::StandardCtx, ExecutionError,
+    callable::Callable, context::Context, standard_library::{StandardCtx, PrintOuts}, ExecutionError,
     ExecutionErrorVariant,
 };
 
@@ -20,7 +20,7 @@ use super::{
 #[derive(Serialize)]
 pub struct Program {
     #[serde(skip_serializing)]
-    std_ctx: StandardCtx,
+    pub std_ctx: StandardCtx,
     functions: HashMap<String, FunctionDefinition>,
 }
 
@@ -41,12 +41,12 @@ impl PartialEq for Program {
 impl Program {
     pub fn new(functions: HashMap<String, FunctionDefinition>) -> Self {
         Self {
-            std_ctx: StandardCtx::new(),
+            std_ctx: StandardCtx::new(PrintOuts::Std(stdout())),
             functions,
         }
     }
 
-    fn run(self) -> Result<Value, ExecutionError> {
+    pub fn run(&self) -> Result<(), ExecutionError> {
         if let Some(main) = self.functions.get("main") {
             if main.data_type != DataType::None {
                 return Err(ExecutionError::new(ExecutionErrorVariant::InvalidType));
@@ -56,7 +56,8 @@ impl Program {
                     ExecutionErrorVariant::InvalidArgumentCount,
                 ));
             }
-            main.call(&self, vec![])
+            main.call(self, vec![])?;
+            Ok(())
         } else {
             Err(ExecutionError::new(
                 ExecutionErrorVariant::MissingMainFunction,

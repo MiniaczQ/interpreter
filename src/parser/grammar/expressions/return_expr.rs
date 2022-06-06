@@ -37,7 +37,9 @@ impl Evaluable for ReturnExpr {
     }
 }
 
-/// return = KW_RETURN, [control_flow_expression]
+/// return_expression =
+///     KW_RETURN, [control_flow_expression]
+///     ;
 pub fn parse_return(p: &mut Parser) -> OptRes<Expression> {
     if !p.keyword(Kw::Return)? {
         return Ok(None);

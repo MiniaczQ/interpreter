@@ -139,10 +139,13 @@ fn run(input: InputType) -> Result<(), AppError> {
     let (result, parser_warnings, lexer_warnings) = parse(reader);
 
     match result {
-        Ok(program) => match program.run() {
-            Ok(_) => println!("Program ended."),
-            Err(error) => eprintln!("{}", error),
-        },
+        Ok(program) => {
+            println!("{}", program);
+            match program.run() {
+                Ok(_) => println!("Program ended."),
+                Err(error) => eprintln!("{}", error),
+            }
+        }
         Err(error) => eprintln!("{}", error),
     }
 

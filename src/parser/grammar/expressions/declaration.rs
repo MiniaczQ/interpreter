@@ -3,7 +3,7 @@ use crate::{
     parser::grammar::{types::parse_type, DataType, Value},
 };
 
-use super::{super::utility::*, parse_control_flow_expression, Evaluable, Expression};
+use super::{super::utility::*, parse_expression, Evaluable, Expression};
 
 /// Variable declaration expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
@@ -56,7 +56,7 @@ pub fn parse_variable_declaration(p: &mut Parser) -> OptRes<Expression> {
     if !p.operator(Op::Equal)? {
         p.warn(WarnVar::VariableDeclarationMissingEqualsSign)?;
     }
-    let expression = parse_control_flow_expression(p)?
+    let expression = parse_expression(p)?
         .ok_or_else(|| p.error(ErroVar::VariableDeclarationMissingExpression))?;
     Ok(Some(
         DeclarationExpr::new(identifier, data_type, expression).into(),

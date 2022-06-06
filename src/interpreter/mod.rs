@@ -25,6 +25,7 @@ pub enum ExecutionErrorVariant {
     CastFailed,
 
     DivisionByZero,
+    Overflow,
 
     MissingMainFunction,
     ExpectedIdentifier,

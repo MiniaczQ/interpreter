@@ -50,7 +50,7 @@ fn parse_float(p: &mut Parser) -> OptRes<Value> {
     Ok(None)
 }
 
-/// KW_TRUE | KW_FALSE
+/// CONST_BOOL = true | false
 fn parse_bool(p: &mut Parser) -> OptRes<Value> {
     if p.keyword(Kw::True)? {
         return Ok(Some(Value::Bool(true)));
@@ -72,7 +72,7 @@ fn parse_string(p: &mut Parser) -> OptRes<Value> {
 /// constant
 ///     = CONST_INT
 ///     | CONST_FLOAT
-///     | KW_TRUE | KW_FALSE
+///     | CONST_BOOL
 ///     | CONST_STRING
 ///     ;
 pub fn parse_literal_expression(p: &mut Parser) -> OptRes<Expression> {

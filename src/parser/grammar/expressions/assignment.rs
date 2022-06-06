@@ -4,7 +4,7 @@ use crate::{
 };
 
 use super::{
-    super::utility::*, binary::parse_logical_alternative_expression, Evaluable, Expression,
+    super::utility::*, binary::parse_logical_alternative_expression, Evaluable, Expression, parse_expression,
 };
 
 /// Variable assignment expression
@@ -49,7 +49,7 @@ impl Evaluable for AssignmentExpr {
 pub fn parse_variable_assignment_expression(p: &mut Parser) -> OptRes<Expression> {
     if let Some(mut lhs) = parse_logical_alternative_expression(p)? {
         while p.operator(Op::Equal)? {
-            let rhs = parse_logical_alternative_expression(p)?
+            let rhs = parse_expression(p)?
                 .ok_or_else(|| p.error(ErroVar::AssignmentMissingExpression))?;
             lhs = AssignmentExpr::new(lhs, rhs).into();
         }

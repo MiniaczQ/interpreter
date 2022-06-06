@@ -1,8 +1,9 @@
 use super::{utility::*, DataType};
 
-//primitive_type
+// type
 //    = TYPE_INT
 //    | TYPE_FLOAT
+//    | TYPE_BOOL
 //    | TYPE_BOOL
 //    | OPEN_LIST, CLOSE_LIST
 //    ;

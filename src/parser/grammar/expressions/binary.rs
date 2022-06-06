@@ -213,20 +213,33 @@ pub fn parse_logical_alternative_expression(p: &mut Parser) -> OptRes<Expression
 
 fn int_op(lhs: i64, rhs: i64, op: BinaryOperator) -> Result<Value, ExecutionError> {
     match op {
-        BinaryOperator::Addition => Ok(Value::Int(lhs + rhs)),
-        BinaryOperator::Subtraction => Ok(Value::Int(lhs - rhs)),
-        BinaryOperator::Multiplication => Ok(Value::Int(lhs * rhs)),
+        BinaryOperator::Addition => lhs
+            .checked_add(rhs)
+            .map(Value::Int)
+            .ok_or_else(|| ExecutionError::new(ExecutionErrorVariant::Overflow)),
+        BinaryOperator::Subtraction => lhs
+            .checked_sub(rhs)
+            .map(Value::Int)
+            .ok_or_else(|| ExecutionError::new(ExecutionErrorVariant::Overflow)),
+        BinaryOperator::Multiplication => lhs
+            .checked_mul(rhs)
+            .map(Value::Int)
+            .ok_or_else(|| ExecutionError::new(ExecutionErrorVariant::Overflow)),
         BinaryOperator::Division => {
             if rhs == 0 {
                 return Err(ExecutionError::new(ExecutionErrorVariant::DivisionByZero));
             }
-            Ok(Value::Int(lhs / rhs))
+            lhs.checked_div(rhs)
+                .map(Value::Int)
+                .ok_or_else(|| ExecutionError::new(ExecutionErrorVariant::Overflow))
         }
         BinaryOperator::Modulo => {
             if rhs == 0 {
                 return Err(ExecutionError::new(ExecutionErrorVariant::DivisionByZero));
             }
-            Ok(Value::Int(lhs % rhs))
+            lhs.checked_rem(rhs)
+                .map(Value::Int)
+                .ok_or_else(|| ExecutionError::new(ExecutionErrorVariant::Overflow))
         }
         BinaryOperator::Equal => Ok(Value::Bool(lhs == rhs)),
         BinaryOperator::Unequal => Ok(Value::Bool(lhs != rhs)),
@@ -531,6 +544,39 @@ mod tests {
                 .unwrap_err()
                 .variant,
             ExecutionErrorVariant::DivisionByZero
+        );
+        assert_eq!(
+            expr(
+                Value::Int(i64::MAX),
+                BinaryOperator::Addition,
+                Value::Int(1)
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::Overflow
+        );
+        assert_eq!(
+            expr(
+                Value::Int(i64::MAX),
+                BinaryOperator::Subtraction,
+                Value::Int(-1)
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::Overflow
+        );
+        assert_eq!(
+            expr(
+                Value::Int(i64::MAX),
+                BinaryOperator::Multiplication,
+                Value::Int(2)
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::Overflow
         );
     }
 

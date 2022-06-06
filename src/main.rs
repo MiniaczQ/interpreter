@@ -255,4 +255,16 @@ mod tests {
             assert_eq!(&buffer, b"17\n")
         }
     }
+
+    #[test]
+    fn run_long() {
+        let (res, _, _) = read("snippets/long.txt");
+        let program = res.unwrap();
+        program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]));
+        program.run().unwrap();
+        if let PrintOuts::Vec(buffer) = program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]))
+        {
+            assert_eq!(&buffer, b"Hello world!\n[3, 2]\n3\n")
+        }
+    }
 }

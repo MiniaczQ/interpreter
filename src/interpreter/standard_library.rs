@@ -276,7 +276,7 @@ impl Context for StandardCtx {
             "cast_bool" => self.std_cast_bool.call(self, args),
             "type" => self.std_type.call(self, args),
             "length" => self.std_length.call(self, args),
-            "append" => self.std_push.call(self, args),
+            "push" => self.std_push.call(self, args),
             _ => Err(ExecutionError::new(
                 ExecutionErrorVariant::FunctionDoesNotExist,
             )),

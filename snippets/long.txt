@@ -19,11 +19,11 @@ fn filter_positive(in_list: []) -> [] {
 
     for x in in_list {
         if x > 0.0 {
-            append(out_list, x);
+            out_list = push(out_list, x);
         };
     };
 
-    return out_list;
+    out_list
 }
 
 
@@ -41,11 +41,15 @@ fn main() {
         }
     };
 
+    {
+        let a: int = 8;
+    };
+
     let a: int = 5 * my_list[0];
 
-    print(my_list[0::2]);   // [0, 3]
+    print(my_list[0::2]);   // [3, 2]
 
     let new_list: [] = filter_positive([-6.0, -3.0, 0.0, 2.0, 4.0, 6.0]);
 
-    print(len(new_list));   // 3
+    print(length(new_list));   // 3
 }

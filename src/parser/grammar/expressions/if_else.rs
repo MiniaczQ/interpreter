@@ -1,12 +1,15 @@
 use crate::{
-    interpreter::{context::Context, ExecutionError},
+    interpreter::{
+        context::{BlockCtx, Context},
+        ExecutionError, ExecutionErrorVariant,
+    },
     parser::grammar::Value,
 };
 
 use super::{
     super::utility::*,
     parse_expression,
-    statement::{parse_code_block, Statement},
+    statement::{alternate_statements, parse_code_block, Statement},
     Evaluable, Expression,
 };
 
@@ -40,7 +43,22 @@ impl From<IfElseExpr> for Expression {
 
 impl Evaluable for IfElseExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
-        todo!()
+        let cond = self.condition.eval(ctx)?;
+        match cond {
+            Value::Bool(true) => {
+                let ctx = BlockCtx::new(ctx, "if branch".to_owned());
+                alternate_statements(&self.true_case, &ctx)
+            }
+            Value::Bool(false) => {
+                if let Some(statements) = &self.false_case {
+                    let ctx = BlockCtx::new(ctx, "else branch".to_owned());
+                    alternate_statements(statements, &ctx)
+                } else {
+                    Ok(Value::None)
+                }
+            }
+            _ => Err(ExecutionError::new(ExecutionErrorVariant::InvalidType)),
+        }
     }
 }
 
@@ -65,9 +83,12 @@ pub fn parse_if_else_expression(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{
-        if_else::{parse_if_else_expression, IfElseExpr},
-        parse_expression,
+    use crate::{
+        interpreter::{test_utils::tests::TestCtx, ExecutionErrorVariant},
+        parser::grammar::expressions::{
+            if_else::{parse_if_else_expression, IfElseExpr},
+            parse_expression, return_expr::ReturnExpr, statement::Statement,
+        },
     };
 
     use super::super::super::test_utils::tests::*;
@@ -212,5 +233,128 @@ mod tests {
         );
 
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn eval_only_if_true() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(Value::Bool(true).into(), vec![Value::Int(8).into()], None)
+                .eval(&ctx)
+                .unwrap(),
+            Value::Int(8)
+        );
+    }
+
+    #[test]
+    fn eval_no_value() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(Value::Bool(true).into(), vec![Value::Int(8).into(), Statement::Semicolon], None)
+                .eval(&ctx)
+                .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_only_if_false() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(Value::Bool(false).into(), vec![Value::Int(8).into()], None)
+                .eval(&ctx)
+                .unwrap(),
+            Value::None
+        );
+    }
+
+    #[test]
+    fn eval_if_else_true() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(
+                Value::Bool(true).into(),
+                vec![Value::Int(8).into()],
+                Some(vec![Value::Int(-8).into()])
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::Int(8)
+        );
+    }
+
+    #[test]
+    fn eval_if_else_false() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(
+                Value::Bool(false).into(),
+                vec![Value::Int(8).into()],
+                Some(vec![Value::Int(-8).into()])
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::Int(-8)
+        );
+    }
+
+    #[test]
+    fn eval_invalid_condition() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(
+                Value::Int(8).into(),
+                vec![Value::Int(8).into()],
+                Some(vec![Value::Int(-8).into()])
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::InvalidType
+        );
+    }
+
+    #[test]
+    fn eval_only_if_false_forward_return() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(Value::Bool(false).into(), vec![ReturnExpr::new(Value::Int(5).into()).into()], None)
+                .eval(&ctx)
+                .unwrap(),
+            Value::None
+        );
+        assert_eq!(ctx.returning.take(), None);
+    }
+
+    #[test]
+    fn eval_if_else_true_forward_return() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(
+                Value::Bool(true).into(),
+                vec![ReturnExpr::new(Value::Int(5).into()).into()],
+                Some(vec![ReturnExpr::new(Value::Int(-5).into()).into()])
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::None
+        );
+        assert_eq!(ctx.returning.take().unwrap(), Value::Int(5));
+    }
+
+    #[test]
+    fn eval_if_else_false_forward_return() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            IfElseExpr::new(
+                Value::Bool(false).into(),
+                vec![ReturnExpr::new(Value::Int(5).into()).into()],
+                Some(vec![ReturnExpr::new(Value::Int(-5).into()).into()])
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::None
+        );
+        assert_eq!(ctx.returning.take().unwrap(), Value::Int(-5));
     }
 }

@@ -32,7 +32,7 @@ impl From<CodeBlockExpr> for Expression {
 impl Evaluable for CodeBlockExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
         let ctx = BlockCtx::new(ctx, "code block".to_owned());
-        alternate_statements(&self.0, &ctx)
+        ctx.escalate_error(alternate_statements(&self.0, &ctx))
     }
 }
 

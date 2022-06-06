@@ -45,7 +45,7 @@ impl Evaluable for ForExpr {
             let mut results = vec![];
             for v in list {
                 ctx.variables.borrow_mut().insert(self.variable.clone(), v);
-                results.push(alternate_statements(&self.body, &ctx)?);
+                results.push(ctx.escalate_error(alternate_statements(&self.body, &ctx))?);
                 if ctx.is_ret() {
                     break;
                 }

@@ -6,6 +6,7 @@ pub mod types;
 
 use std::{error::Error, fmt::Display};
 
+/// Different kinds of interpretation errors
 #[derive(Debug, PartialEq, Eq)]
 pub enum ExecutionErrorVariant {
     VariableDoesNotExist,
@@ -31,6 +32,7 @@ pub enum ExecutionErrorVariant {
     ExpectedSemicolon,
 }
 
+/// Interpretation error with stack trace
 #[derive(Debug, PartialEq, Eq)]
 pub struct ExecutionError {
     pub contexts: Vec<String>,
@@ -49,10 +51,10 @@ impl ExecutionError {
 impl Display for ExecutionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for context in &self.contexts {
-            f.write_fmt(format_args!("In `{context}` context."))?;
+            f.write_fmt(format_args!("In `{context}` context.\n"))?;
         }
         f.write_fmt(format_args!(
-            "Encountered runtime error {:?}.",
+            "Encountered runtime error {:?}.\n",
             self.variant
         ))
     }

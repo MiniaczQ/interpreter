@@ -162,7 +162,7 @@ mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
     use crate::{
-        interpreter::standard_library::PrintOuts,
+        interpreter::{standard_library::PrintOuts, ExecutionError, ExecutionErrorVariant},
         lexer::lexem::{LexerWarning, LexerWarningVariant},
         parse,
         parser::{
@@ -266,5 +266,24 @@ mod tests {
         {
             assert_eq!(&buffer, b"Hello world!\n[3, 2]\n3\n")
         }
+    }
+
+    #[test]
+    fn stack_trace() {
+        let (res, _, _) = read("snippets/stack_trace.txt");
+        let program = res.unwrap();
+        program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]));
+        assert_eq!(
+            program.run().unwrap_err(),
+            ExecutionError {
+                contexts: vec![
+                    "code block".to_owned(),
+                    "if branch".to_owned(),
+                    "while loop".to_owned(),
+                    "for loop".to_owned()
+                ],
+                variant: ExecutionErrorVariant::ExpectedSemicolon
+            }
+        )
     }
 }

@@ -38,7 +38,7 @@ impl Evaluable for FunctionCallExpr {
                 .iter()
                 .map(|v| v.eval(ctx))
                 .collect::<Result<_, ExecutionError>>()?;
-            ctx.call_function(&identifier.0, arguments)
+            ctx.escalate_error(ctx.call_function(&identifier.0, arguments))
         } else {
             Err(ExecutionError::new(
                 ExecutionErrorVariant::ExpectedIdentifier,

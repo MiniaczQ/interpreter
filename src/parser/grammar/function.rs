@@ -74,6 +74,7 @@ impl Callable for FunctionDefinition {
     }
 }
 
+/// Function context
 pub struct FunctionCtx<'a> {
     name: String,
     parent: &'a dyn Context,

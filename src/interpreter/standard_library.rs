@@ -7,6 +7,7 @@ use crate::parser::grammar::Value;
 
 use super::{callable::Callable, context::Context, ExecutionError, ExecutionErrorVariant};
 
+/// Possible write buffers for print function
 #[allow(dead_code)]
 pub enum PrintOuts {
     Std(Stdout),
@@ -214,6 +215,9 @@ impl Callable for ListPush {
     }
 }
 
+/// Standard library context.
+///
+/// Provides standard functions without the ability to store variables
 pub struct StandardCtx {
     pub std_print: Print,
     pub std_cast_int: CastInt,

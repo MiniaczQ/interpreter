@@ -16,6 +16,7 @@ pub mod tests {
         pub returning: RefCell<Option<Value>>,
     }
 
+    /// Open context for testing
     impl TestCtx {
         pub fn new() -> Self {
             Self {
@@ -79,7 +80,7 @@ pub mod tests {
         }
 
         fn name(&self) -> String {
-            unreachable!()
+            "test ctx".to_owned()
         }
     }
 }

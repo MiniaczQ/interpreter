@@ -43,6 +43,7 @@ pub enum ParserErrorVariant {
     VariableDeclarationMissingExpression,
     TooManyWarnings,
     DuplicateParameter,
+    FunctionAlredayExists,
 }
 
 /// Critical errors remember the last position before they happened

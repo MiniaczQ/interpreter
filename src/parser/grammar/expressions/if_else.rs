@@ -47,12 +47,12 @@ impl Evaluable for IfElseExpr {
         match cond {
             Value::Bool(true) => {
                 let ctx = BlockCtx::new(ctx, "if branch".to_owned());
-                alternate_statements(&self.true_case, &ctx)
+                ctx.escalate_error(alternate_statements(&self.true_case, &ctx))
             }
             Value::Bool(false) => {
                 if let Some(statements) = &self.false_case {
                     let ctx = BlockCtx::new(ctx, "else branch".to_owned());
-                    alternate_statements(statements, &ctx)
+                    ctx.escalate_error(alternate_statements(statements, &ctx))
                 } else {
                     Ok(Value::None)
                 }

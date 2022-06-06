@@ -2,6 +2,7 @@ use crate::parser::grammar::{DataType, Value};
 
 use super::{ExecutionError, ExecutionErrorVariant};
 
+/// Validates a value against a data type
 pub fn validate_type(t: DataType, v: &Value) -> Result<(), ExecutionError> {
     match (t, v) {
         (DataType::Integer, Value::Int(_)) => Ok(()),
@@ -14,6 +15,7 @@ pub fn validate_type(t: DataType, v: &Value) -> Result<(), ExecutionError> {
     }
 }
 
+/// Validates 2 values against each other
 pub fn validate_types(l: &Value, r: &Value) -> Result<(), ExecutionError> {
     match (r, l) {
         (Value::Int(_), Value::Int(_)) => Ok(()),

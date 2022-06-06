@@ -1,13 +1,16 @@
 use std::{
     collections::HashMap,
-    fmt::{Debug, Display}, io::stdout,
+    fmt::{Debug, Display},
+    io::stdout,
 };
 
 use ron::ser::PrettyConfig;
 
 use crate::interpreter::{
-    callable::Callable, context::Context, standard_library::{StandardCtx, PrintOuts}, ExecutionError,
-    ExecutionErrorVariant,
+    callable::Callable,
+    context::Context,
+    standard_library::{PrintOuts, StandardCtx},
+    ExecutionError, ExecutionErrorVariant,
 };
 
 use super::{
@@ -16,7 +19,7 @@ use super::{
     DataType, Value,
 };
 
-/// Main program
+/// Main program (also a context :) )
 #[derive(Serialize)]
 pub struct Program {
     #[serde(skip_serializing)]
@@ -105,6 +108,9 @@ impl Display for Program {
 pub fn parse_program(p: &mut Parser) -> Res<Program> {
     let mut functions = HashMap::new();
     while let Some(function) = parse_function_def(p)? {
+        if functions.contains_key(&function.identifier) {
+            return Err(p.error(ErroVar::FunctionAlredayExists));
+        }
         functions.insert(function.identifier.clone(), function);
     }
     Ok(Program::new(functions))
@@ -141,6 +147,41 @@ mod tests {
             FunctionDefinition::new("a".to_owned(), vec![], vec![], DataType::None),
         );
         assert_eq!(result.unwrap(), Program::new(functions));
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn double_defined() {
+        let (result, warnings) = partial_parse_non_opt(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Fn)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+                dummy_token(TokenType::Keyword(Kw::Fn)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_program,
+        );
+        let mut functions = HashMap::new();
+        functions.insert(
+            "a".to_owned(),
+            FunctionDefinition::new("a".to_owned(), vec![], vec![], DataType::None),
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ErroVar::FunctionAlredayExists,
+                pos: Position::new(0, 0)
+            }
+        );
 
         assert!(warnings.is_empty());
     }

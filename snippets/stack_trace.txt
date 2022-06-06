@@ -1,0 +1,18 @@
+// do nothing
+fn main() {
+    let a: int = 5;
+    let b: float = 6.0;
+    for i in [0, 1] {
+        while i > -1 {
+            if i == 0 {
+                {
+                    print("Oh no")
+                    print("our semicolon")
+                    print("It's broken")
+                }
+            }
+        }
+    }
+    a = a + cast_int(b * 2.0);
+    print(a);
+}

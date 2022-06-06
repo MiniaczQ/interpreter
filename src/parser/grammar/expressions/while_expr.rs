@@ -43,7 +43,7 @@ impl Evaluable for WhileExpr {
             Value::Bool(b) => b,
             _ => return Err(ExecutionError::new(ExecutionErrorVariant::InvalidType)),
         } {
-            results.push(alternate_statements(&self.body, &ctx)?);
+            results.push(ctx.escalate_error(alternate_statements(&self.body, &ctx))?);
             if ctx.is_ret() {
                 break;
             }

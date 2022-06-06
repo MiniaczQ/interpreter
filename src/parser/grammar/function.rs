@@ -1,24 +1,142 @@
+use std::{cell::RefCell, collections::HashMap};
+
+use crate::interpreter::{
+    callable::Callable,
+    context::Context,
+    types::{validate_type, validate_types},
+    ExecutionError, ExecutionErrorVariant,
+};
+
 use super::{
-    code_block::{parse_code_block, CodeBlock},
+    expressions::statement::{alternate_statements, parse_code_block, Statement},
     types::parse_type,
     utility::*,
-    DataType,
+    DataType, Value,
 };
 
 /// A single function parameter
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
 pub struct Parameter {
     pub name: String,
     pub data_type: DataType,
 }
 
+impl Parameter {
+    #[allow(dead_code)]
+    pub fn new(name: String, data_type: DataType) -> Self {
+        Self { name, data_type }
+    }
+}
+
 /// Definition of a function
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct FunctionDef {
+#[derive(Debug, Serialize, PartialEq)]
+pub struct FunctionDefinition {
     pub identifier: String,
     pub params: Vec<Parameter>,
-    pub code_block: CodeBlock,
+    statements: Vec<Statement>,
     pub data_type: DataType,
+}
+
+impl FunctionDefinition {
+    #[allow(dead_code)]
+    pub fn new(
+        identifier: String,
+        params: Vec<Parameter>,
+        statements: Vec<Statement>,
+        data_type: DataType,
+    ) -> Self {
+        Self {
+            identifier,
+            params,
+            statements,
+            data_type,
+        }
+    }
+}
+
+impl Callable for FunctionDefinition {
+    fn call(&self, ctx: &dyn Context, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        if self.params.len() != args.len() {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::InvalidArgumentCount,
+            ));
+        }
+        let mut variables = HashMap::new();
+        for (parameter, argument) in self.params.iter().zip(args.into_iter()) {
+            validate_type(parameter.data_type, &argument)?;
+            variables.insert(parameter.name.clone(), argument);
+        }
+        let ctx = FunctionCtx::new(ctx, self.identifier.clone(), variables);
+        let returning = alternate_statements(&self.statements, &ctx)?;
+        let returning = ctx.returning.replace(None).unwrap_or(returning);
+        validate_type(self.data_type, &returning)?;
+        Ok(returning)
+    }
+}
+
+/// Function context
+pub struct FunctionCtx<'a> {
+    name: String,
+    parent: &'a dyn Context,
+    returning: RefCell<Option<Value>>,
+    variables: RefCell<HashMap<String, Value>>,
+}
+
+impl Context for FunctionCtx<'_> {
+    fn get_variable(&self, id: &str) -> Result<Value, ExecutionError> {
+        if let Some(v) = self.variables.borrow().get(id) {
+            Ok(v.clone())
+        } else {
+            self.parent.get_variable(id)
+        }
+    }
+
+    fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+            validate_types(v, &value)?;
+            *v = value;
+            Ok(())
+        } else {
+            self.parent.set_variable(id, value)
+        }
+    }
+
+    fn new_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if self.variables.borrow().contains_key(id) {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::VariableAlreadyExists,
+            ));
+        }
+        self.variables.borrow_mut().insert(id.to_owned(), value);
+        Ok(())
+    }
+
+    fn ret(&self, value: Value) {
+        *self.returning.borrow_mut() = Some(value);
+    }
+
+    fn is_ret(&self) -> bool {
+        self.returning.borrow().is_some()
+    }
+
+    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        self.parent.call_function(id, args)
+    }
+
+    fn name(&self) -> String {
+        format!("`{}` function", self.name)
+    }
+}
+
+impl<'a> FunctionCtx<'a> {
+    pub fn new(ctx: &'a dyn Context, name: String, variables: HashMap<String, Value>) -> Self {
+        Self {
+            name,
+            parent: ctx,
+            returning: RefCell::new(None),
+            variables: RefCell::new(variables),
+        }
+    }
 }
 
 /// parameter
@@ -27,16 +145,13 @@ pub struct FunctionDef {
 fn parse_parameter(p: &mut Parser) -> OptRes<Parameter> {
     if let Some(name) = p.identifier()? {
         if !p.operator(Op::Colon)? {
-            p.warn(WarnVar::MissingColon);
+            p.warn(WarnVar::MissingColon)?;
         }
-        if let Some(data_type) = parse_type(p)? {
-            Ok(Some(Parameter { name, data_type }))
-        } else {
-            p.error(ErroVar::FunctionParameterMissingType)
-        }
-    } else {
-        Ok(None)
+        let data_type =
+            parse_type(p)?.ok_or_else(|| p.error(ErroVar::FunctionParameterMissingType))?;
+        return Ok(Some(Parameter { name, data_type }));
     }
+    Ok(None)
 }
 
 /// parameters
@@ -44,8 +159,18 @@ fn parse_parameter(p: &mut Parser) -> OptRes<Parameter> {
 ///     ;
 fn parse_parameters(p: &mut Parser) -> Res<Vec<Parameter>> {
     let mut params = vec![];
-    while let Some(param) = parse_parameter(p)? {
+    if let Some(param) = parse_parameter(p)? {
         params.push(param);
+        while p.operator(Op::Split)? {
+            if let Some(param) = parse_parameter(p)? {
+                if params.iter().any(|par: &Parameter| par.name == param.name) {
+                    return Err(p.error(ErroVar::DuplicateParameter));
+                }
+                params.push(param);
+            } else {
+                p.warn(WarnVar::ExpectedParameter)?;
+            }
+        }
     }
     Ok(params)
 }
@@ -53,47 +178,41 @@ fn parse_parameters(p: &mut Parser) -> Res<Vec<Parameter>> {
 /// function_definition
 ///     = KW_FN, OPEN_BRACKET, parameters, CLOSE_BRACKET, [RETURN_SIGNATURE, type], code_block
 ///     ;
-pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDef> {
+pub fn parse_function_def(p: &mut Parser) -> OptRes<FunctionDefinition> {
     if !p.keyword(Kw::Fn)? {
         return Ok(None);
     }
-    if let Some(identifier) = p.identifier()? {
-        if !p.operator(Op::OpenRoundBracket)? {
-            p.warn(WarnVar::MissingOpeningRoundBracket);
-        }
-        let params = parse_parameters(p)?;
-        if !p.operator(Op::CloseRoundBracket)? {
-            p.warn(WarnVar::MissingClosingRoundBracket);
-        }
-        let data_type = if p.operator(Op::Arrow)? {
-            if let Some(data_type) = parse_type(p)? {
-                data_type
-            } else {
-                return p.error(ErroVar::FunctionMissingReturnType);
-            }
-        } else {
-            DataType::None
-        };
-        if let Some(code_block) = parse_code_block(p)? {
-            Ok(Some(FunctionDef {
-                identifier,
-                params,
-                code_block,
-                data_type,
-            }))
-        } else {
-            p.error(ErroVar::FunctionMissingBody)
-        }
-    } else {
-        p.error(ErroVar::FunctionMissingIdentifier)
+    let identifier = p
+        .identifier()?
+        .ok_or_else(|| p.error(ErroVar::FunctionMissingIdentifier))?;
+    if !p.operator(Op::OpenRoundBracket)? {
+        p.warn(WarnVar::MissingOpeningRoundBracket)?;
     }
+    let params = parse_parameters(p)?;
+    if !p.operator(Op::CloseRoundBracket)? {
+        p.warn(WarnVar::MissingClosingRoundBracket)?;
+    }
+    let data_type = if p.operator(Op::Arrow)? {
+        parse_type(p)?.ok_or_else(|| p.error(ErroVar::FunctionMissingReturnType))?
+    } else {
+        DataType::None
+    };
+    let code_block = parse_code_block(p)?.ok_or_else(|| p.error(ErroVar::FunctionMissingBody))?;
+    Ok(Some(FunctionDefinition {
+        identifier,
+        params,
+        statements: code_block,
+        data_type,
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use crate::parser::grammar::{
-        code_block::{CodeBlock, Statement},
-        function::{parse_function_def, FunctionDef, Parameter},
+        expressions::{
+            function_call::FunctionCallExpr, identifier::IdentifierExpr, statement::Statement,
+        },
+        function::{parse_function_def, FunctionDefinition, Parameter},
     };
 
     use super::super::test_utils::tests::*;
@@ -119,11 +238,15 @@ mod tests {
                 dummy_token(TokenType::Identifier("b".to_owned())),
                 dummy_token(TokenType::Operator(Op::Colon)),
                 dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::Identifier("c".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
                 dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
                 dummy_token(TokenType::Operator(Op::Arrow)),
                 dummy_token(TokenType::Keyword(Kw::Int)),
                 dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
-                dummy_token(TokenType::Identifier("c".to_owned())),
+                dummy_token(TokenType::Identifier("d".to_owned())),
                 dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
                 dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
                 dummy_token(TokenType::Operator(Op::Semicolon)),
@@ -133,22 +256,61 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
-                params: vec![Parameter {
-                    name: "b".to_owned(),
-                    data_type: grammar::DataType::Integer
-                }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                params: vec![
+                    Parameter {
+                        name: "b".to_owned(),
+                        data_type: grammar::DataType::Integer
+                    },
+                    Parameter {
+                        name: "c".to_owned(),
+                        data_type: grammar::DataType::Integer
+                    }
+                ],
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("d".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::Integer
+            }
+        );
+
+        assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn duplicate_parameters() {
+        let (result, warnings) = partial_parse(
+            vec![
+                dummy_token(TokenType::Keyword(Kw::Fn)),
+                dummy_token(TokenType::Identifier("a".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Identifier("b".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::Split)),
+                dummy_token(TokenType::Identifier("b".to_owned())),
+                dummy_token(TokenType::Operator(Op::Colon)),
+                token(TokenType::Keyword(Kw::Int), (10, 5), (10, 6)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::Arrow)),
+                dummy_token(TokenType::Keyword(Kw::Int)),
+                dummy_token(TokenType::Operator(Op::OpenCurlyBracket)),
+                dummy_token(TokenType::Identifier("d".to_owned())),
+                dummy_token(TokenType::Operator(Op::OpenRoundBracket)),
+                dummy_token(TokenType::Operator(Op::CloseRoundBracket)),
+                dummy_token(TokenType::Operator(Op::Semicolon)),
+                dummy_token(TokenType::Operator(Op::CloseCurlyBracket)),
+            ],
+            parse_function_def,
+        );
+        assert_eq!(
+            result.unwrap_err(),
+            ParserError {
+                error: ParserErrorVariant::DuplicateParameter,
+                pos: Position::new(10, 6),
             }
         );
 
@@ -176,18 +338,14 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::Integer
             }
         );
@@ -217,21 +375,17 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![Parameter {
                     name: "b".to_owned(),
                     data_type: grammar::DataType::Integer
                 }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::None
             }
         );
@@ -248,7 +402,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParserError {
-                error: ParserErrorVariant::OutOfTokens,
+                error: ParserErrorVariant::FunctionMissingIdentifier,
                 pos: Position::new(2, 6),
             }
         );
@@ -277,21 +431,17 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![Parameter {
                     name: "b".to_owned(),
                     data_type: grammar::DataType::Integer
                 }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::None
             }
         );
@@ -328,21 +478,17 @@ mod tests {
         );
         assert_eq!(
             result.unwrap().unwrap(),
-            FunctionDef {
+            FunctionDefinition {
                 identifier: "a".to_owned(),
                 params: vec![Parameter {
                     name: "b".to_owned(),
                     data_type: grammar::DataType::Integer
                 }],
-                code_block: CodeBlock {
-                    statements: vec![
-                        Statement::Expression(Expression::FunctionCall {
-                            identifier: Box::new(Expression::Identifier("c".to_owned())),
-                            arguments: vec![]
-                        }),
-                        Statement::Semicolon
-                    ]
-                },
+                statements: vec![
+                    FunctionCallExpr::new(IdentifierExpr::new("c".to_owned()).into(), vec![])
+                        .into(),
+                    Statement::Semicolon
+                ],
                 data_type: grammar::DataType::None
             }
         );

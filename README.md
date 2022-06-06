@@ -1,9 +1,8 @@
 # Interpreter
 of my own language in Rust.
 
-Name tbd.
-
-Described in `about.md`
+Described in `about.md` (polish, with examples)
+and in `documentation.md` (english, broader, but no examples)
 
 Grammar in `grammar.md`
 
@@ -12,7 +11,8 @@ Grammar in `grammar.md`
 - [x] Formalize language
 - [x] Implement lexer
 - [x] Implement parser
-- [ ] Implement interpreter (wip)
+- [x] Implement interpreter
+- [ ] ~~Party~~ nah, need to pass finals :')
 
 # How to use:
 1. [Download](https://github.com/MiniaczQ/interpreter/releases) distribution for your OS (Windows or Linux)

@@ -13,19 +13,22 @@ mod map;
 /// Skips comments.
 pub struct TokenScanner<'a> {
     lexer: &'a mut Lexer,
-    curr: Option<Token>,
+    curr: Token,
 }
 
 impl<'a> TokenScanner<'a> {
     pub fn new(lexer: &'a mut Lexer) -> Self {
-        let mut scanner = Self { lexer, curr: None };
+        let mut scanner = Self {
+            lexer,
+            curr: Token::empty(),
+        };
         scanner.pop();
         scanner
     }
 }
 
-impl<'a> Scannable<Option<Token>> for TokenScanner<'a> {
-    fn curr(&self) -> Option<Token> {
+impl<'a> Scannable<Token> for TokenScanner<'a> {
+    fn curr(&self) -> Token {
         self.curr.clone()
     }
 
@@ -39,28 +42,30 @@ impl<'a> Scannable<Option<Token>> for TokenScanner<'a> {
                         continue;
                     }
                     LexemType::Operator(v) => {
-                        break Some(from_lexem(lx.start, lx.stop, TokenType::Operator(v.into())))
+                        break from_lexem(lx.start, lx.stop, TokenType::Operator(v.into()))
                     }
                     LexemType::Keyword(v) => {
-                        break Some(from_lexem(lx.start, lx.stop, TokenType::Keyword(v.into())))
+                        break from_lexem(lx.start, lx.stop, TokenType::Keyword(v.into()))
                     }
                     LexemType::Identifier(v) => {
-                        break Some(from_lexem(lx.start, lx.stop, TokenType::Identifier(v)))
+                        break from_lexem(lx.start, lx.stop, TokenType::Identifier(v))
                     }
                     LexemType::String(v) => {
-                        break Some(from_lexem(lx.start, lx.stop, TokenType::String(v)))
+                        break from_lexem(lx.start, lx.stop, TokenType::String(v))
                     }
                     LexemType::Float(v) => {
-                        break Some(from_lexem(lx.start, lx.stop, TokenType::Float(v)))
+                        break from_lexem(lx.start, lx.stop, TokenType::Float(v))
                     }
-                    LexemType::Int(v) => {
-                        break Some(from_lexem(lx.start, lx.stop, TokenType::Int(v)))
-                    }
+                    LexemType::Int(v) => break from_lexem(lx.start, lx.stop, TokenType::Int(v)),
                 }
             } else {
-                break None;
+                break Token {
+                    token_type: TokenType::EndOfTokens,
+                    start: self.curr.stop,
+                    ..self.curr
+                };
             }
         };
-        self.curr.is_some()
+        self.curr.token_type == TokenType::EndOfTokens
     }
 }

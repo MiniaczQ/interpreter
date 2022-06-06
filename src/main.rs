@@ -11,6 +11,7 @@ use parser::{
     grammar::program::Program, token_scanner::TokenScanner, Parser, ParserError, ParserWarning,
 };
 
+mod interpreter;
 mod lexer;
 mod parser;
 mod scannable;
@@ -106,10 +107,10 @@ fn parse(
     Vec<ParserWarning>,
     Vec<LexerWarning>,
 ) {
-    let mut lexer = Lexer::new(reader);
+    let mut lexer = Lexer::new_with_defaults(reader);
 
     let (result, parser_warnings) = {
-        let mut parser = Parser::new(TokenScanner::new(&mut lexer));
+        let mut parser = Parser::new_with_defaults(TokenScanner::new(&mut lexer));
         let result = parser.parse();
         let warnings = parser.get_warnings();
         (result, warnings)
@@ -138,7 +139,13 @@ fn run(input: InputType) -> Result<(), AppError> {
     let (result, parser_warnings, lexer_warnings) = parse(reader);
 
     match result {
-        Ok(program) => println!("{}", program),
+        Ok(program) => {
+            //println!("{}", program);
+            match program.run() {
+                Ok(_) => println!("Program ended."),
+                Err(error) => eprintln!("{}", error),
+            }
+        }
         Err(error) => eprintln!("{}", error),
     }
 
@@ -158,6 +165,7 @@ mod tests {
     use std::{fs::OpenOptions, io::BufReader};
 
     use crate::{
+        interpreter::{standard_library::PrintOuts, ExecutionError, ExecutionErrorVariant},
         lexer::lexem::{LexerWarning, LexerWarningVariant},
         parse,
         parser::{
@@ -237,5 +245,48 @@ mod tests {
             lex_warns[0].warning,
             LexerWarningVariant::InvalidSequence("#$@".to_owned())
         );
+    }
+
+    #[test]
+    fn run_short() {
+        let (res, _, _) = read("snippets/short.txt");
+        let program = res.unwrap();
+        program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]));
+        program.run().unwrap();
+        if let PrintOuts::Vec(buffer) = program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]))
+        {
+            assert_eq!(&buffer, b"17\n")
+        }
+    }
+
+    #[test]
+    fn run_long() {
+        let (res, _, _) = read("snippets/long.txt");
+        let program = res.unwrap();
+        program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]));
+        program.run().unwrap();
+        if let PrintOuts::Vec(buffer) = program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]))
+        {
+            assert_eq!(&buffer, b"Hello world!\n[3, 2]\n3\n")
+        }
+    }
+
+    #[test]
+    fn stack_trace() {
+        let (res, _, _) = read("snippets/stack_trace.txt");
+        let program = res.unwrap();
+        program.std_ctx.std_print.0.replace(PrintOuts::Vec(vec![]));
+        assert_eq!(
+            program.run().unwrap_err(),
+            ExecutionError {
+                contexts: vec![
+                    "code block".to_owned(),
+                    "if branch".to_owned(),
+                    "while loop".to_owned(),
+                    "for loop".to_owned()
+                ],
+                variant: ExecutionErrorVariant::ExpectedSemicolon
+            }
+        )
     }
 }

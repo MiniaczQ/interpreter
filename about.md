@@ -6,9 +6,8 @@ Głównymi inspiracjami były języki
 
 ## Główne założenia
  - Silnie typowany
- - Statycznie typowany
+ - Dynamicznie typowany
  - Zmienne są mutowalne
- - Zmienne to (mutowalne) referencje
  - Jednowątkowy, synchroniczny
  - Zmienne widoczne tylko w blokach kodu i ich zagnieżdżeniach
  - Prawie wszystko jest wyrażeniem
@@ -19,15 +18,13 @@ i wieloliniowe `/* ... */`
 
 ## Typy
 Zawierać będzie 3 typy podstawowe: `bool`, `int`, `float`  
-oraz ich tablicowe warianty: `bool[]`, `int[]`, `float[]`.
+oraz typ listowy: `[]`.
 
 Dostępny będzie też typ `string` zachowujący się jak tablica znaków.
 
-W implementacji zaistnieją też typy `none` i `any`.  
+W implementacji zaistnieją też typy `none`.  
 Typ `none` posłuży do realizacji typów wyrażeń,
 których nie można przypisać do zmiennych.
-Z kolei `any` zostanie wykorzystywany w funkcjach
-standardowych do obsługi różnych typów argumentów.
 
 ## Wyrażenia
 Wszystko oprócz definicji funkcji jest wyrażeniem.
@@ -97,12 +94,11 @@ więc od razu następuje przypisanie wartości.
 let x: int = 10;
 ```
 
-Deklaracja jest wyrażeniem, które zawsze ma typ `none`,
-czyli nie da się go przypisać do zmiennej.
+Deklaracja jest wyrażeniem, które zwraca wartość prawej strony,
+czyli da się wykonać kilka deklaracji w następujący sposób:
 ```
 let y: int = let x: int = 10
 ```
-nie jest poprawne
 
 ### Przypisanie do zmiennych
 Zaczyna się od nazwy zmiennej,
@@ -119,7 +115,7 @@ let y: int = x = 10;
 ```
 to poprawne wyrażenie.
 
-Przykład przypisania stałej do typu listowego (nie `string`)
+Przykład przypisania stałej do typu listowego
 ```
 xs = [1, 2, 3, 4, 7];
 ```
@@ -135,7 +131,7 @@ world!";
 
 ### Wyrażenie warunkowe
 Zawiera słowo kluczowe `if`,
-wyrażenie o typie `bool`,
+predykat typu `bool`,
 następnie blok kodu.  
 Opcjonalnie po bloku kodu można użyć słowa kluczowego `else`
 oraz kolejnego bloku kodu.
@@ -148,7 +144,7 @@ let x: int = if y < 3 {
     20
 };
 ```
-W przypadku samego `if` wyrażenie ma typ `none`.
+W przypadku samego `if` jest podobnie, wyrażenie przyjmie tutaj typ `none`, bo blok kodu kończy się `;`.
 ```
 if y < 5 {
     foo();
@@ -172,21 +168,21 @@ if y < 5 {
     Operatory `==`, `<`, `<=`, `>`, `>=` zwracają typ `bool`.
 
  - `bool`  
-   Operatory `==`, `|`, `&` zwracają typ `bool`
+   Operatory `==`, `!=`, `|`, `&` zwracają typ `bool`
 
 ### Operatory na listach
- - `int[]`, `float[]`, `bool[]`  
+ - `[]`  
     Wykonują operacje na elementach list.  
     W przypadku operatorów binarnych wynikowa lista ma długośc większej listy wejściowej,
-    a elementy bez pary nie zmieniają wartości.   
-    Operator `[a]` zwraca pojedynczy element pod indeksem `a` (który jest wyrażeniem typu `int`).
+    a elementy bez pary nie zmieniają wartości.  
+    Operator `[i]` zwraca pojedynczy element pod indeksem `a` (który jest wyrażeniem typu `int`).
 
  - `string`
-    Operator `+`, który zwraca konkatenacje łańcuchów wejściowych.
-    Operator `==`, który zwraca `bool`
+    Operator `[i]`, który zwróci `string` z pojedynczym znakiem z danego indeksu.  
+    Operator `+`, który zwraca konkatenacje łańcuchów wejściowych.  
+    Operator `==`, `!=`, który zwraca `bool`
 
- - Wszystkie
-   Operator `[a..b]`, który zwraca listę o elementach od indeksu `a` do indeksu `b` (które są wyrażeniami typu `int`).
+Operator `[a..b]`, który zwraca listę o elementach od indeksu `a` do indeksu `b` (które są wyrażeniami typu `int`).
 
 ### Nawiasy
 Operacje mogą być zawarte w nawiasach `(` `)`, aby wymusić inny priorytet wykonania.
@@ -210,21 +206,21 @@ Pętle zwracają listę o ile typ zwrotny bloku jest typem bazowym: `int`, `floa
 let a: int = 5;
 let b: int = 10;
 
-let a_b_range: int[] = while a <> b {
+let a_b_range: [] = while a < b {
     a = a + 1;
     a
 };
 ```
 ```
-let xs: int[] = 
+let xs: [] = 
 
-let incremented_xs: int[] = for x in xs {
+let incremented_xs: [] = for x in xs {
     x + 1
 };
 ```
 
 ### Wywołania funkcji
-Mają postać 
+Mają postać identyfikatora, a następnie `(` `)`, w których zawarte są argumenty.
 
 Naturalnie przyjmują wartość obliczoną z wywołania funkcji.
 Jeżeli funkcja nie definiowała typu zwrotnego, to zwraca typ `none`.
@@ -279,16 +275,14 @@ fn print_but_dont_return(x: int) {
 }
 ```
 
-### Funkcje o zmiennym typie parametrów
-Może istnieć wiele funkcji o tej samej nazwie, ale różnych typach parametrów:
+### Funkcje
+Może istnieć tylko jedna funkcja o danej nazwie, wyjątkami są funkcje wbudowane:
 ```
 print(0)
 print(1.0)
 print(true)
-print("Hello world!")
+print("Hello world!", "Hello again!")
 ```
-Do realizacji tego zostanie wykorzystany wewnętrzny typ `any`
-i będzie to dostępne tylko w funkcjach standardowych.
 
 ### Instrukcja `return`
 Funkcja zwróci wartość wyrażenia bloku kodu ciała funkcji,
@@ -298,67 +292,53 @@ poprzez instrukcję `return x`.
 W przypadku funkcji, które nie zwracają wartości (zwracają typ `none`)
 można zastosować samo słowo kluczowe `return`.
 
-## Zgodność typów
-Typy muszą być zgodne w m.in.:
- - operacjach arytmetycznych, logicznych, przypisania
- - wartości bloku kodu ciała funkcji i instrukcjach `return`
- - wywołaniach funkcji
- - przypisaniu wartości do zmiennej
- - wyrażeniach pętli
- - wyrażeniach warunkowych
-
 ## Kolejność operatorów
 Nawiasy `(` `)` mogą wymusić inną kolejnośc.
 
     Priorytet       Operator/-y         Opis                    -arność     Łączność        Pozycja
 
     9               (a, b, ...)         wywołanie funkcji       N-nary      -               suffix
-                    [a..b]              dostęp do pod-listy     Trinary     -               suffix
+                    [a..b]              dostęp do pod-listy     Trynary     -               suffix
                     [a]                 dostęp do indeksu       Binary      -               suffix
 
-    8               -                   negacja arytmetyczna    Unarny      prawostronna    prefix
-                    !                   negacja logiczna        Unarny      prawostronna    prefix
+    8               -                   negacja arytmetyczna    Unarny      -               prefix
+                    !                   negacja logiczna        Unarny      -               prefix
 
-    7               *                   mnożenie                Binarny     lewostronna     infix
-                    /                   dzielenie               Binarny     lewostronna     infix
-                    %                   reszta z dzielenia      Binarny     lewostronna     infix
+    7               *                   mnożenie                Binarny     lewostronna     -
+                    /                   dzielenie               Binarny     lewostronna     -
+                    %                   reszta z dzielenia      Binarny     lewostronna     -
     
-    6               +                   dodawanie               Binarny     lewostronna     infix
-                    -                   odejmowanie             Binarny     lewostronna     infix
+    6               +                   dodawanie               Binarny     lewostronna     -
+                    -                   odejmowanie             Binarny     lewostronna     -
                 
-    5               ==                  równość                 Binarny     lewostronna     infix
-                    !=                  nierówność              Binarny     lewostronna     infix
-                    <                   mniejszość              Binarny     lewostronna     infix
-                    <=                  mniejszość lub równość  Binarny     lewostronna     infix
-                    >                   większość               Binarny     lewostronna     infix
-                    >=                  większośc lub równość   Binarny     lewostronna     infix
+    5               ==                  równość                 Binarny     lewostronna     -
+                    !=                  nierówność              Binarny     lewostronna     -
+                    <                   mniejszość              Binarny     lewostronna     -
+                    <=                  mniejszość lub równość  Binarny     lewostronna     -
+                    >                   większość               Binarny     lewostronna     -
+                    >=                  większośc lub równość   Binarny     lewostronna     -
     
-    4               &                   koniunkcja logiczna     Binarny     lewostronna     infix
+    4               &                   koniunkcja logiczna     Binarny     lewostronna     -
 
-    3               |                   alternatywa logiczna    Binarny     lewostronna     infix
+    3               |                   alternatywa logiczna    Binarny     lewostronna     -
 
-    2               =                   przypisanie wartości    Binarny     prawostronna    infix
+    2               =                   przypisanie wartości    Binarny     prawostronna    -
 
-    1               return              wyjście z funkcji       Unarny      prawostronna    prefix
-                    let                 deklaracja zmiennej     Binarny     prawostronna    prefix/suffix
+    1               return              wyjście z funkcji       Unarny      -               prefix
+                    let                 deklaracja zmiennej     Binarny     prawostronna    -
    
 ## Biblioteka standardowa
 Zaoferuje metody:
  - `print(arg1)`  
     wypisze wartość argumentu do strumienia wyjściowego
- - `float(arg1)`  
-    zamieni argument na typ `float`
-    (poprawne tylko dla argumentów typu `string` i `int`)
- - `int(arg1)`  
-    zamieni argument na typ `int`
-    (poprawne tylko dla argumentów typu `string` i `float`)
- - `append(arg1, arg2)`  
-    doda element do końca listy
-    (poprawne tylko dla argumentów typu `int[]`, `float[]`, `bool[]`
-    i odpowiadającym im typom `int`, `float`, `bool`)
- - `len(arg1)`  
-    zwróci długość listy
-    (poprawne tylko dla argumentów typu `int[]`, `float[]`, `bool[]`, `string`)
+ - `cast_int(arg1)`, `cast_float(arg1)`, `cast_bool(arg1)`, `cast_string(arg1)`  
+    spróbuje zamienić wartość jednego typu na drugi
+ - `push(arg1, arg2)`  
+    doda element do końca listy i ją zwróci
+    (poprawne tylko dla arg1 typu `[]`)
+ - `length(arg1)`  
+    zwróci długość
+    (poprawne tylko dla argumentów typów `[]`, `string`)
 
 ## Punkt wejściowy
 Język jako pierwszą wywoła funkcję `main`,
@@ -376,6 +356,7 @@ co ułatwi tworzenie testów.
 Moduły, które na pewno się znajdą to:
  - analizator leksykalny
  - analizator składniowy
+ - interpreter
 
 # Obsługiwane wejścia
 Język pozwoli na interpretacje pliku lub strumienia wejściowego w formacie utf-8.
@@ -392,16 +373,14 @@ Uruchomienie z flagą `-f <path>` wykorzysta podany plik jako wejście.
 Uruchomienie z flagą `-i` wykorzysta strumień wejściowy procesu.
 
 # Obsługa błędów statyczna
-Błędy będą ignorowane w czasie analizy (leksykalnej, składniowej, semantycznej),
-ale ich wystąpienie uniemożliwi wykonanie programu.
+Błędy będą ignorowane w czasie analizy (leksykalnej, składniowej), ale ich wystąpienie uniemożliwi wykonanie programu.
 Wiadomości o wszystkich błędach zostaną wypisane do strumienia błędów.
 
 # Obsługa błędów dynamiczna
 Wystąpienie błędu w czasie wykonania kodu, np.:
- - overflow
  - dzielenie przez 0
  - błąd zamiany typu (np. `string` w `float`)
- - dostęp do nieistniejącego indeksu
+ - dostęp do nieistniejącego indeksu, zmiennej
 
 spowoduje zatrzymanie wykonania i zwrócenie komunikatu o błędzie do strumienia błędów.
 

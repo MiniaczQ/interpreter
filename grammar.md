@@ -79,14 +79,11 @@ parameter
     ;
 
 type
-    = primitive_type, [OPEN_LIST, CLOSE_LIST]
-    | TYPE_STRING
-    ;
-
-primitive_type
     = TYPE_INT
     | TYPE_FLOAT
     | TYPE_BOOL
+    | TYPE_STRING
+    | OPEN_LIST, CLOSE_LIST
     ;
 ```
 
@@ -127,34 +124,22 @@ for_expression
 
 ### Constants
 ```ebnf
-list_constant
+list_expression
     = OPEN_LIST, [expression, {SPLIT, expression}], CLOSE_LIST
     ;
 
 constant
-    = list_constant
-    | CONST_INT
+    = CONST_INT
     | CONST_FLOAT
     | CONST_BOOL
     | CONST_STRING
     ;
 ```
 
-### Constant or identifier
+### Identifier or function call
 ```ebnf
-const_or_identifier_expression
-    = constant | IDENTIFIER | grouped
-    ;
-
-grouped
-    = OPEN_BRACKET, expression, CLOSE_BRACKET
-    ;
-```
-
-### Function call, list access
-```ebnf
-function_call_or_list_access_expression
-    = const_or_identifier_expression, (function_call | list_access)
+identifier_or_function_call
+    = IDENTIFIER, [function_call]
     ;
 
 function_call
@@ -164,7 +149,24 @@ function_call
 function_arguments
     = [expression, {SPLIT, expression}]
     ;
+```
 
+### Grouped
+```ebnf
+grouped
+    = OPEN_BRACKET, expression, CLOSE_BRACKET
+    ;
+```
+
+### Constant or identifier
+```ebnf
+const_or_identifier_or_function_call_expression
+    = constant | list_expression | identifier_or_function_call | grouped
+    ;
+```
+
+### List access
+```ebnf
 list_access
     = OPEN_LIST, index_or_range_access, CLOSE_LIST
     ;
@@ -172,13 +174,16 @@ list_access
 index_or_range_access
     = expression, [RANGE, expression]
     ;
+
+list_access_expression
+    = const_or_identifier_or_function_call_expression, [list_access]
+    ;
 ```
 
 ### Unary operators
 ```ebnf
 unary_operator_expression
-    = unary_operators, unary_operator_expression
-    | function_call_or_list_access_expression
+    = {unary_operators}, list_access_expression
     ;
 
 unary_operators
@@ -236,7 +241,7 @@ logical_alternative_expression
 ### Variable assignment
 ```ebnf
 variable_assignment_expression
-    = logical_alternative_expression, [ASSIGN, expression]
+    = logical_alternative_expression, {ASSIGN, expression}
     ;
 ```
 
@@ -251,13 +256,25 @@ control_flow_expression
     ;
 ```
 
-### Expression (return or variable declaration)
+### Return
+```ebnf
+return_expression
+    = KW_RETURN, [control_flow_expression]
+    ;
+```
+
+### Variable declaration
+```ebnf
+variable_declaration_expression
+    = KW_LET, IDENTIFIER, COLON, TYPE_SIGNATURE, type, ASSIGN, control_flow_expression
+    ;
+```
+
+### Expression
 ```ebnf
 expression
-    = [KW_RETURN | variable_declaration], control_flow_expression
-    ;
-
-variable_declaration
-    = KW_LET, IDENTIFIER, TYPE_SIGNATURE, type, ASSIGN
+    = return_expression
+    | variable_declaration
+    | control_flow_expression
     ;
 ```

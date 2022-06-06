@@ -10,26 +10,37 @@ pub mod tests {
 
     pub struct DummyScanner {
         tokens: Vec<Token>,
-        curr: Option<Token>,
+        curr: Token,
     }
 
     impl DummyScanner {
         pub fn new(mut tokens: Vec<Token>) -> Self {
             tokens.reverse();
-            let mut scanner = Self { tokens, curr: None };
+            let mut scanner = Self {
+                tokens,
+                curr: Token::empty(),
+            };
             scanner.pop();
             scanner
         }
     }
 
-    impl Scannable<Option<Token>> for DummyScanner {
-        fn curr(&self) -> Option<Token> {
+    impl Scannable<Token> for DummyScanner {
+        fn curr(&self) -> Token {
             self.curr.clone()
         }
 
         fn pop(&mut self) -> bool {
-            self.curr = self.tokens.pop();
-            self.curr.is_some()
+            self.curr = if let Some(t) = self.tokens.pop() {
+                t
+            } else {
+                Token {
+                    token_type: TokenType::EndOfTokens,
+                    start: self.curr.stop,
+                    ..self.curr
+                }
+            };
+            self.curr.token_type != TokenType::EndOfTokens
         }
     }
 
@@ -55,7 +66,7 @@ pub mod tests {
 
     pub fn parse(tokens: Vec<Token>) -> (Result<Program, ParserError>, Vec<ParserWarning>) {
         let scanner = DummyScanner::new(tokens);
-        let mut parser = Parser::new(scanner);
+        let mut parser = Parser::new_with_defaults(scanner);
         (parser.parse(), parser.get_warnings())
     }
 }

@@ -25,6 +25,7 @@ impl IndexOrRange {
     }
 }
 
+/// List access expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ListAccessExpr {
     list: Box<Expression>,

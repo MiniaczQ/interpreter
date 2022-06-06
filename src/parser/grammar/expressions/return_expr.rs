@@ -5,6 +5,7 @@ use crate::{
 
 use super::{super::utility::*, parse_control_flow_expression, Evaluable, Expression};
 
+/// Return expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ReturnExpr(Option<Box<Expression>>);
 

@@ -13,6 +13,7 @@ use super::{
     Evaluable, Expression,
 };
 
+/// While loop expresison
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct WhileExpr {
     condition: Box<Expression>,

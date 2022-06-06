@@ -12,6 +12,7 @@ pub enum UnaryOperator {
     LogicalNegation,
 }
 
+/// Unary expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct UnaryExpr {
     operator: UnaryOperator,

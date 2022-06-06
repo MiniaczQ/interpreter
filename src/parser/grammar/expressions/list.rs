@@ -5,6 +5,7 @@ use crate::{
 
 use super::{super::utility::*, parse_expression, Evaluable, Expression};
 
+/// List expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct ListExpr(Vec<Expression>);
 

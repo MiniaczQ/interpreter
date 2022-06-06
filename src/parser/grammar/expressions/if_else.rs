@@ -13,7 +13,7 @@ use super::{
     Evaluable, Expression,
 };
 
-/// If [else] expression
+/// If-else expression
 #[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct IfElseExpr {
     condition: Box<Expression>,
@@ -87,7 +87,9 @@ mod tests {
         interpreter::{test_utils::tests::TestCtx, ExecutionErrorVariant},
         parser::grammar::expressions::{
             if_else::{parse_if_else_expression, IfElseExpr},
-            parse_expression, return_expr::ReturnExpr, statement::Statement,
+            parse_expression,
+            return_expr::ReturnExpr,
+            statement::Statement,
         },
     };
 
@@ -250,9 +252,13 @@ mod tests {
     fn eval_no_value() {
         let ctx = TestCtx::new();
         assert_eq!(
-            IfElseExpr::new(Value::Bool(true).into(), vec![Value::Int(8).into(), Statement::Semicolon], None)
-                .eval(&ctx)
-                .unwrap(),
+            IfElseExpr::new(
+                Value::Bool(true).into(),
+                vec![Value::Int(8).into(), Statement::Semicolon],
+                None
+            )
+            .eval(&ctx)
+            .unwrap(),
             Value::None
         );
     }
@@ -318,9 +324,13 @@ mod tests {
     fn eval_only_if_false_forward_return() {
         let ctx = TestCtx::new();
         assert_eq!(
-            IfElseExpr::new(Value::Bool(false).into(), vec![ReturnExpr::new(Value::Int(5).into()).into()], None)
-                .eval(&ctx)
-                .unwrap(),
+            IfElseExpr::new(
+                Value::Bool(false).into(),
+                vec![ReturnExpr::new(Value::Int(5).into()).into()],
+                None
+            )
+            .eval(&ctx)
+            .unwrap(),
             Value::None
         );
         assert_eq!(ctx.returning.take(), None);

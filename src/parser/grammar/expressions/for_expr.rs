@@ -1,12 +1,14 @@
+use std::{cell::RefCell, collections::HashMap};
+
 use crate::{
-    interpreter::{context::Context, ExecutionError},
+    interpreter::{context::Context, types::validate_types, ExecutionError, ExecutionErrorVariant},
     parser::grammar::Value,
 };
 
 use super::{
     super::utility::*,
     parse_expression,
-    statement::{parse_code_block, Statement},
+    statement::{alternate_statements, parse_code_block, Statement},
     Evaluable, Expression,
 };
 
@@ -36,7 +38,81 @@ impl From<ForExpr> for Expression {
 
 impl Evaluable for ForExpr {
     fn eval(&self, ctx: &dyn Context) -> Result<Value, ExecutionError> {
-        todo!()
+        let provider = self.provider.eval(ctx)?;
+        if let Value::List(list) = provider {
+            let ctx = ForCtx::new(ctx);
+            let mut results = vec![];
+            for v in list {
+                ctx.variables.borrow_mut().insert(self.variable.clone(), v);
+                results.push(alternate_statements(&self.body, &ctx)?);
+                if ctx.is_ret() {
+                    break;
+                }
+            }
+            Ok(Value::List(results))
+        } else {
+            Err(ExecutionError::new(ExecutionErrorVariant::InvalidType))
+        }
+    }
+}
+
+pub struct ForCtx<'a> {
+    parent: &'a dyn Context,
+    variables: RefCell<HashMap<String, Value>>,
+}
+
+impl<'a> ForCtx<'a> {
+    pub fn new(parent: &'a dyn Context) -> Self {
+        Self {
+            parent,
+            variables: RefCell::new(HashMap::new()),
+        }
+    }
+}
+
+impl Context for ForCtx<'_> {
+    fn get_variable(&self, id: &str) -> Result<Value, ExecutionError> {
+        if let Some(v) = self.variables.borrow().get(id) {
+            Ok(v.clone())
+        } else {
+            self.parent.get_variable(id)
+        }
+    }
+
+    fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+            validate_types(v, &value)?;
+            *v = value;
+            Ok(())
+        } else {
+            self.parent.set_variable(id, value)
+        }
+    }
+
+    fn new_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if self.variables.borrow().contains_key(id) {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::VariableAlreadyExists,
+            ));
+        }
+        self.variables.borrow_mut().insert(id.to_owned(), value);
+        Ok(())
+    }
+
+    fn ret(&self, value: Value) {
+        self.parent.ret(value);
+    }
+
+    fn is_ret(&self) -> bool {
+        self.parent.is_ret()
+    }
+
+    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        self.parent.call_function(id, args)
+    }
+
+    fn name(&self) -> String {
+        "code block".to_owned()
     }
 }
 
@@ -60,10 +136,15 @@ pub fn parse_for_expression(p: &mut Parser) -> OptRes<Expression> {
 
 #[cfg(test)]
 mod tests {
-    use crate::parser::grammar::expressions::{
-        for_expr::{parse_for_expression, ForExpr},
-        identifier::IdentifierExpr,
-        parse_expression,
+    use crate::{
+        interpreter::test_utils::tests::TestCtx,
+        parser::grammar::expressions::{
+            for_expr::{parse_for_expression, ForExpr},
+            identifier::IdentifierExpr,
+            parse_expression,
+            return_expr::ReturnExpr,
+            statement::Statement,
+        },
     };
 
     use super::super::super::test_utils::tests::*;
@@ -227,5 +308,84 @@ mod tests {
         );
 
         assert!(warnings.is_empty());
+    }
+
+    #[test]
+    fn eval_empty() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ForExpr::new("a".to_owned(), Value::List(vec![]).into(), vec![])
+                .eval(&ctx)
+                .unwrap(),
+            Value::List(vec![])
+        );
+    }
+
+    #[test]
+    fn eval_single() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ForExpr::new(
+                "a".to_owned(),
+                Value::List(vec![Value::Int(8)]).into(),
+                vec![IdentifierExpr::new("a".to_owned()).into()]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::List(vec![Value::Int(8)])
+        );
+    }
+
+    #[test]
+    fn eval_many_mixed() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ForExpr::new(
+                "a".to_owned(),
+                Value::List(vec![Value::Int(8), Value::Float(9.0), Value::List(vec![])]).into(),
+                vec![IdentifierExpr::new("a".to_owned()).into()]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::List(vec![Value::Int(8), Value::Float(9.0), Value::List(vec![])])
+        );
+    }
+
+    #[test]
+    fn eval_no_ending() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ForExpr::new(
+                "a".to_owned(),
+                Value::List(vec![Value::Int(8), Value::Int(8)]).into(),
+                vec![
+                    IdentifierExpr::new("a".to_owned()).into(),
+                    Statement::Semicolon
+                ]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::List(vec![Value::None, Value::None])
+        );
+    }
+
+    #[test]
+    fn eval_forward_return() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ForExpr::new(
+                "a".to_owned(),
+                Value::List(vec![Value::Int(8), Value::Int(9)]).into(),
+                vec![
+                    ReturnExpr::new(IdentifierExpr::new("a".to_owned()).into()).into(),
+                    Statement::Semicolon,
+                    IdentifierExpr::new("a".to_owned()).into()
+                ]
+            )
+            .eval(&ctx)
+            .unwrap(),
+            Value::List(vec![Value::None])
+        );
+        assert_eq!(ctx.returning.take().unwrap(), Value::Int(8));
     }
 }

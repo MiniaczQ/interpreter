@@ -1,8 +1,0 @@
-// do nothing
-fn main() {
-    let a: int = 5;
-    let b: float = let c: float = 6.0;
-    b = c = 3.0;
-    a = a + cast_int(b * 2.0);
-    print(a);
-}

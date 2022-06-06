@@ -140,7 +140,7 @@ fn run(input: InputType) -> Result<(), AppError> {
 
     match result {
         Ok(program) => {
-            println!("{}", program);
+            //println!("{}", program);
             match program.run() {
                 Ok(_) => println!("Program ended."),
                 Err(error) => eprintln!("{}", error),

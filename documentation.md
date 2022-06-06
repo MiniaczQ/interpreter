@@ -3,8 +3,9 @@ General topic: Lists
 Author: Jakub Motyka
 
 # Functionality
-The language is strongly and dynamically typed.  
-While most types can be determined during parsing, list would require an additional layer of type resolving, which is outside of this project's scope.
+Language focuses on list operations.  
+It's is strongly and dynamically typed.  
+(While most types can be determined during parsing, lists would require an additional layer of type resolving, which is outside of this project's scope.)
 
 ## Data types
 The language provides few basic data types:
@@ -12,7 +13,7 @@ The language provides few basic data types:
 - `float`
 - `bool`
 - `string`
-- `list`
+- `list` - `[]`
 
 as well as a hidden `none` type (aka `void`).
 

@@ -137,7 +137,7 @@ pub fn parse_for_expression(p: &mut Parser) -> OptRes<Expression> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        interpreter::test_utils::tests::TestCtx,
+        interpreter::{test_utils::tests::TestCtx, ExecutionErrorVariant},
         parser::grammar::expressions::{
             for_expr::{parse_for_expression, ForExpr},
             identifier::IdentifierExpr,
@@ -387,5 +387,25 @@ mod tests {
             Value::List(vec![Value::None])
         );
         assert_eq!(ctx.returning.take().unwrap(), Value::Int(8));
+    }
+
+    #[test]
+    fn eval_wrong_provider() {
+        let ctx = TestCtx::new();
+        assert_eq!(
+            ForExpr::new(
+                "a".to_owned(),
+                Value::Int(8).into(),
+                vec![
+                    ReturnExpr::new(IdentifierExpr::new("a".to_owned()).into()).into(),
+                    Statement::Semicolon,
+                    IdentifierExpr::new("a".to_owned()).into()
+                ]
+            )
+            .eval(&ctx)
+            .unwrap_err()
+            .variant,
+            ExecutionErrorVariant::InvalidType
+        );
     }
 }

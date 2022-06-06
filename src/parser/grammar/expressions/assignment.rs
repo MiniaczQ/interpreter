@@ -4,7 +4,8 @@ use crate::{
 };
 
 use super::{
-    super::utility::*, binary::parse_logical_alternative_expression, Evaluable, Expression, parse_expression,
+    super::utility::*, binary::parse_logical_alternative_expression, parse_expression, Evaluable,
+    Expression,
 };
 
 /// Variable assignment expression

@@ -37,7 +37,7 @@ impl Evaluable for AssignmentExpr {
             Ok(value)
         } else {
             Err(ExecutionError::new(
-                ExecutionErrorVariant::VariableDoesNotExist,
+                ExecutionErrorVariant::ExpectedIdentifier,
             ))
         }
     }

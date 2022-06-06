@@ -123,7 +123,7 @@ impl Context for FunctionCtx<'_> {
     }
 
     fn name(&self) -> String {
-        self.name.clone()
+        format!("`{}` function", self.name)
     }
 }
 

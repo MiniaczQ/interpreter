@@ -112,7 +112,7 @@ impl Context for ForCtx<'_> {
     }
 
     fn name(&self) -> String {
-        "code block".to_owned()
+        "for loop".to_owned()
     }
 }
 

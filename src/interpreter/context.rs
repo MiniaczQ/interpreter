@@ -1,6 +1,8 @@
+use std::{cell::RefCell, collections::HashMap};
+
 use crate::parser::grammar::Value;
 
-use super::{ExecutionError, ExecutionErrorVariant};
+use super::{types::validate_types, ExecutionError, ExecutionErrorVariant};
 
 pub trait Context {
     fn get_variable(&self, _id: &str) -> Result<Value, ExecutionError> {
@@ -30,4 +32,66 @@ pub trait Context {
     fn is_ret(&self) -> bool;
     fn call_function(&self, identifier: &str, args: Vec<Value>) -> Result<Value, ExecutionError>;
     fn name(&self) -> String;
+}
+
+pub struct BlockCtx<'a> {
+    name: String,
+    parent: &'a dyn Context,
+    pub variables: RefCell<HashMap<String, Value>>,
+}
+
+impl<'a> BlockCtx<'a> {
+    pub fn new(parent: &'a dyn Context, name: String) -> Self {
+        Self {
+            name,
+            parent,
+            variables: RefCell::new(HashMap::new()),
+        }
+    }
+}
+
+impl Context for BlockCtx<'_> {
+    fn get_variable(&self, id: &str) -> Result<Value, ExecutionError> {
+        if let Some(v) = self.variables.borrow().get(id) {
+            Ok(v.clone())
+        } else {
+            self.parent.get_variable(id)
+        }
+    }
+
+    fn set_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if let Some(v) = self.variables.borrow_mut().get_mut(id) {
+            validate_types(v, &value)?;
+            *v = value;
+            Ok(())
+        } else {
+            self.parent.set_variable(id, value)
+        }
+    }
+
+    fn new_variable(&self, id: &str, value: Value) -> Result<(), ExecutionError> {
+        if self.variables.borrow().contains_key(id) {
+            return Err(ExecutionError::new(
+                ExecutionErrorVariant::VariableAlreadyExists,
+            ));
+        }
+        self.variables.borrow_mut().insert(id.to_owned(), value);
+        Ok(())
+    }
+
+    fn ret(&self, value: Value) {
+        self.parent.ret(value);
+    }
+
+    fn is_ret(&self) -> bool {
+        self.parent.is_ret()
+    }
+
+    fn call_function(&self, id: &str, args: Vec<Value>) -> Result<Value, ExecutionError> {
+        self.parent.call_function(id, args)
+    }
+
+    fn name(&self) -> String {
+        self.name.clone()
+    }
 }
